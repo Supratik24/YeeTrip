@@ -1,0 +1,271 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/money.dart';
+import '../../../../data/providers.dart';
+import '../../../trips/domain/trip_model.dart';
+import '../../domain/settle_calculator.dart';
+
+/// Screen displaying individual balances and greedy settlement instructions.
+class SettleScreen extends ConsumerWidget {
+  final TripWithDetails trip;
+
+  const SettleScreen({
+    super.key,
+    required this.trip,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final expensesAsync = ref.watch(tripExpensesProvider(trip.id));
+    final theme = Theme.of(context);
+    final travelersMap = {
+      for (final t in trip.travelers) t.id: t.name,
+    };
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Settle up'),
+      ),
+      body: expensesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, _) => Center(child: Text('Error loading expenses: $err')),
+        data: (expenses) {
+          final balances = SettleCalculator.calculateBalances(
+            travelers: trip.travelers,
+            expenses: expenses,
+          );
+
+          final settlements = SettleCalculator.calculateSettlements(
+            balances: balances,
+          );
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+            children: [
+              // Section 1: Individual Balances
+              Text(
+                'Individual balances',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              ...balances.map((person) {
+                final net = person.netBalancePaise;
+                final isCreditor = net > 0;
+                final isDebtor = net < 0;
+
+                final netColor = isCreditor
+                    ? const Color(0xFF10B981) // Green
+                    : (isDebtor ? theme.colorScheme.error : Colors.grey.shade600);
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor:
+                              theme.colorScheme.primary.withValues(alpha: 0.1),
+                          foregroundColor: theme.colorScheme.primary,
+                          child: Text(
+                            person.travelerName.isNotEmpty
+                                ? person.travelerName[0].toUpperCase()
+                                : '?',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                person.travelerName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Paid ${Money.formatRupees(person.paidPaise)} • Share ${Money.formatRupees(person.sharePaise)}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              isCreditor
+                                  ? '+${Money.formatRupees(net)}'
+                                  : (isDebtor
+                                      ? '-${Money.formatRupees(net.abs())}'
+                                      : '₹0'),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                                color: netColor,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              isCreditor
+                                  ? 'gets back'
+                                  : (isDebtor ? 'owes' : 'settled'),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: netColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+
+              const SizedBox(height: 24),
+
+              // Section 2: Greedy Settlement Plan
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Settlement plan',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (settlements.isNotEmpty)
+                    Text(
+                      '${settlements.length} ${settlements.length == 1 ? "payment" : "payments"}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              if (settlements.isEmpty)
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 32,
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.check_circle_outline,
+                            size: 48,
+                            color: const Color(0xFF10B981),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'All settled up!',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            expenses.isEmpty
+                                ? 'Add expenses to see settlements.'
+                                : 'No outstanding balances between group members.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else
+                ...settlements.map((payment) {
+                  final fromName =
+                      travelersMap[payment.fromTravelerId] ?? 'Someone';
+                  final toName =
+                      travelersMap[payment.toTravelerId] ?? 'Someone';
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.arrow_circle_right_outlined,
+                            color: theme.colorScheme.primary,
+                            size: 28,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: RichText(
+                              text: TextSpan(
+                                style: theme.textTheme.bodyMedium,
+                                children: [
+                                  TextSpan(
+                                    text: fromName,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const TextSpan(text: ' pays '),
+                                  TextSpan(
+                                    text: toName,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              Money.formatRupees(payment.amountPaise),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onPrimaryContainer,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
