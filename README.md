@@ -142,33 +142,17 @@ lib/
 
 ## Running Tests
 
-YeeTrip features 100% passing tests covering money utilities, property-based rebalancer tests (1,000 runs), property-based split tests (1,000 runs each), greedy settlement proofs, in-memory SQLite database operations, and end-to-end trip flows.
+YeeTrip features 100% passing tests covering money utilities, property-based rebalancer tests (1,000 runs), property-based split tests (1,000 runs each), greedy settlement proofs, in-memory SQLite database operations, widget tests, and end-to-end trip flows.
 
-### 1. Master Test Suite
-To run all 60 tests across all 9 test suites in a single fast execution:
+### 1. Flutter Test Suite
+To run all 61 tests across all test suites with the official Flutter test engine:
 ```bash
-dart run test/run_all_tests.dart
+flutter test
 ```
 
 Expected output:
 ```
-======================================================
-          YEETRIP COMPREHENSIVE TEST SUITE            
-======================================================
- [PASS ✓] Money Utilities & Indian Grouping
- [PASS ✓] Drift SQLite In-Memory Database
- [PASS ✓] Trip Repository & Allocations
- [PASS ✓] Trip Setup Validation Rules
- [PASS ✓] Budget Rebalance (Proportional & Largest-Remainder)
- [PASS ✓] Split Calculator (Equal, Percent, Shares, Exact)
- [PASS ✓] Settle-Up Greedy Debt Resolution Engine
- [PASS ✓] CSV Exporter (RFC 4180 Format)
- [PASS ✓] End-to-End Trip Flow Integration
-------------------------------------------------------
- Total Tests Passed: 60
- Total Tests Failed: 0
- Total Elapsed Time: ~450 ms
-======================================================
+00:16 +61: All tests passed!
 ```
 
 ### 2. Static Code Analysis
