@@ -280,19 +280,27 @@ class _BudgetSlidersScreenState extends ConsumerState<BudgetSlidersScreen> {
 
                     // ₹ Amount, ₹ per person, ₹ per day breakdown
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _StatItem(
-                          label: 'Total',
-                          value: Money.formatRupees(catBudget),
+                        Expanded(
+                          child: _StatItem(
+                            label: 'Total',
+                            value: Money.formatRupees(catBudget),
+                            alignment: CrossAxisAlignment.start,
+                          ),
                         ),
-                        _StatItem(
-                          label: 'Per person',
-                          value: Money.formatRupees(perPerson),
+                        Expanded(
+                          child: _StatItem(
+                            label: 'Per person',
+                            value: Money.formatRupees(perPerson),
+                            alignment: CrossAxisAlignment.center,
+                          ),
                         ),
-                        _StatItem(
-                          label: 'Per day',
-                          value: Money.formatRupees(perDay),
+                        Expanded(
+                          child: _StatItem(
+                            label: 'Per day',
+                            value: Money.formatRupees(perDay),
+                            alignment: CrossAxisAlignment.end,
+                          ),
                         ),
                       ],
                     ),
@@ -310,16 +318,18 @@ class _BudgetSlidersScreenState extends ConsumerState<BudgetSlidersScreen> {
 class _StatItem extends StatelessWidget {
   final String label;
   final String value;
+  final CrossAxisAlignment alignment;
 
   const _StatItem({
     required this.label,
     required this.value,
+    this.alignment = CrossAxisAlignment.start,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: alignment,
       children: [
         Text(
           label,
@@ -329,11 +339,14 @@ class _StatItem extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],

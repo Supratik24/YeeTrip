@@ -91,15 +91,17 @@ class PlannedVsActualBars extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          cat.displayName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
+                        Expanded(
+                          child: Text(
+                            cat.displayName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Text(
                           isOverPlan
                               ? 'Over by ${Money.formatRupees(diffPaise)}'
@@ -126,15 +128,18 @@ class PlannedVsActualBars extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Spent: ${Money.formatRupees(actualPaise)}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade600,
+                        Expanded(
+                          child: Text(
+                            'Spent: ${Money.formatRupees(actualPaise)}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Text(
                           'Planned: ${Money.formatRupees(plannedPaise)} ($percent%)',
                           style: TextStyle(

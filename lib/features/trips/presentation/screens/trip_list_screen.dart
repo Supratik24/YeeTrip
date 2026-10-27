@@ -162,71 +162,88 @@ class TripListScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Budget',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Budget',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  Money.formatRupees(trip.totalBudgetPaise),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
+                                  const SizedBox(height: 2),
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      Money.formatRupees(trip.totalBudgetPaise),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Spent',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Spent',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  Money.formatRupees(trip.totalSpentPaise),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
+                                  const SizedBox(height: 2),
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      Money.formatRupees(trip.totalSpentPaise),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  isOverBudget ? 'Over by' : 'Remaining',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: isOverBudget
-                                        ? theme.colorScheme.error
-                                        : Colors.grey.shade600,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    isOverBudget ? 'Over by' : 'Remaining',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isOverBudget
+                                          ? theme.colorScheme.error
+                                          : Colors.grey.shade600,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  Money.formatRupees(
-                                    trip.remainingBudgetPaise.abs(),
+                                  const SizedBox(height: 2),
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerRight,
+                                    child: Text(
+                                      Money.formatRupees(
+                                        trip.remainingBudgetPaise.abs(),
+                                      ),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: isOverBudget
+                                            ? theme.colorScheme.error
+                                            : theme.colorScheme.primary,
+                                      ),
+                                    ),
                                   ),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: isOverBudget
-                                        ? theme.colorScheme.error
-                                        : theme.colorScheme.primary,
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ],
                         ),
