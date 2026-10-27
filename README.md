@@ -74,8 +74,11 @@ lib/
 │   ├── local/
 │   │   ├── tables.dart            # Drift table schemas with cascade deletes & indices
 │   │   ├── app_database.dart      # Drift database definition, DAOs, and migrations
-│   │   └── connection/
-│   │       └── native.dart        # Native SQLite connection isolates
+│   │   └── connection/            # Platform-agnostic connection (Native SQLite & WebAssembly WASM)
+│   │       ├── connection.dart    # Conditional export
+│   │       ├── native.dart        # Native background SQLite connection
+│   │       ├── web.dart           # WebAssembly SQLite (sqlite3.wasm + drift_worker.js)
+│   │       └── unsupported.dart   # Fallback stub
 │   ├── providers.dart             # Riverpod providers for DB, repositories, & streams
 │   └── repositories/
 │       ├── trip_repository.dart    # Abstract interface + DriftTripRepository
@@ -135,7 +138,11 @@ lib/
 
 4. **Run the app**:
    ```bash
+   # Run on Android or iOS
    flutter run
+
+   # Or preview on Chrome (supports WASM SQLite)
+   flutter run -d chrome
    ```
 
 ---

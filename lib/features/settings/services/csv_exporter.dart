@@ -1,6 +1,6 @@
-import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
 
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'package:yeetrip/features/expenses/domain/expense_model.dart';
@@ -25,17 +25,19 @@ class CsvExporter {
     required List<ExpenseWithSplits> expenses,
   }) async {
     final csvContent = CsvGenerator.generateCsv(trip: trip, expenses: expenses);
-
-    final tempDir = await getTemporaryDirectory();
     final sanitizedName = trip.name.replaceAll(RegExp(r'[^\w\s]+'), '_');
-    final filePath = '${tempDir.path}/yeetrip_${sanitizedName}_expenses.csv';
-
-    final file = File(filePath);
-    await file.writeAsString(csvContent);
+    final fileName = 'yeetrip_${sanitizedName}_expenses.csv';
+    final bytes = Uint8List.fromList(utf8.encode(csvContent));
 
     await SharePlus.instance.share(
       ShareParams(
-        files: [XFile(file.path, mimeType: 'text/csv')],
+        files: [
+          XFile.fromData(
+            bytes,
+            mimeType: 'text/csv',
+            name: fileName,
+          ),
+        ],
         subject: 'Expenses for ${trip.name}',
         text: 'Exported expenses for ${trip.name} via YeeTrip',
       ),

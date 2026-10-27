@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
 
+import 'connection/connection.dart';
 import 'tables.dart';
 
 part 'app_database.g.dart';
@@ -15,7 +15,7 @@ part 'app_database.g.dart';
   ],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase([QueryExecutor? e]) : super(e ?? NativeDatabase.memory());
+  AppDatabase([QueryExecutor? e]) : super(e ?? openAppConnection());
 
   /// For test instances.
   AppDatabase.forTesting(super.connection);

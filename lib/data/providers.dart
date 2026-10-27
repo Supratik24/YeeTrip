@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/expenses/domain/expense_model.dart';
 import '../features/trips/domain/trip_model.dart';
 import 'local/app_database.dart';
-import 'local/connection/native.dart';
+import 'local/connection/connection.dart';
 import 'repositories/expense_repository.dart';
 import 'repositories/trip_repository.dart';
 
