@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/constants/categories.dart';
 import '../../../../core/money.dart';
+import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
+import '../../../expenses/domain/expense_model.dart';
 import '../../../trips/domain/trip_model.dart';
 import '../../domain/settle_calculator.dart';
 
@@ -14,6 +17,64 @@ class SettleScreen extends ConsumerWidget {
     super.key,
     required this.trip,
   });
+
+  Future<void> _confirmMarkSettled(
+    BuildContext context,
+    WidgetRef ref,
+    SettlementPayment payment,
+    String fromName,
+    String toName,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mark as settled?'),
+        content: Text(
+          'Confirm that $fromName has paid ${Money.formatRupees(payment.amountPaise)} to $toName?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final expenseRepo = ref.read(expenseRepositoryProvider);
+      await expenseRepo.addExpense(
+        tripId: trip.id,
+        description: 'Settlement: $fromName → $toName',
+        amountPaise: payment.amountPaise,
+        category: TripCategory.buffer.key,
+        paidBy: payment.fromTravelerId,
+        source: 'settlement',
+        createdAt: DateTime.now(),
+        splits: [
+          ExpenseSplitModel(
+            expenseId: '',
+            travelerId: payment.toTravelerId,
+            sharePaise: payment.amountPaise,
+          ),
+        ],
+      );
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Recorded settlement: $fromName paid ${Money.formatRupees(payment.amountPaise)} to $toName',
+            ),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,9 +101,10 @@ class SettleScreen extends ConsumerWidget {
             balances: balances,
           );
 
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-            children: [
+          return ResponsiveCenter(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+              children: [
               // Section 1: Individual Balances
               Text(
                 'Individual balances',
@@ -218,8 +280,8 @@ class SettleScreen extends ConsumerWidget {
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: RichText(
-                              text: TextSpan(
+                            child: Text.rich(
+                              TextSpan(
                                 style: theme.textTheme.bodyMedium,
                                 children: [
                                   TextSpan(
@@ -257,12 +319,27 @@ class SettleScreen extends ConsumerWidget {
                               ),
                             ),
                           ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            key: Key('mark_settled_${payment.fromTravelerId}_${payment.toTravelerId}'),
+                            icon: const Icon(Icons.check_circle_outline),
+                            color: const Color(0xFF10B981),
+                            tooltip: 'Mark settled',
+                            onPressed: () => _confirmMarkSettled(
+                              context,
+                              ref,
+                              payment,
+                              fromName,
+                              toName,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   );
                 }),
-            ],
+              ],
+            ),
           );
         },
       ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/categories.dart';
 import '../../../../core/money.dart';
+import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
 import '../../../trips/domain/trip_model.dart';
 import '../../domain/rebalance.dart';
@@ -141,22 +142,25 @@ class _BudgetSlidersScreenState extends ConsumerState<BudgetSlidersScreen> {
         ],
       ),
       bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: FilledButton(
-            onPressed: _hasChanges && !_isSaving ? _saveAllocations : null,
-            child: _isSaving
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(_hasChanges ? 'Save changes' : 'Saved'),
+        child: ResponsiveCenter(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: FilledButton(
+              onPressed: _hasChanges && !_isSaving ? _saveAllocations : null,
+              child: _isSaving
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(_hasChanges ? 'Save changes' : 'Saved'),
+            ),
           ),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      body: ResponsiveCenter(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         children: [
           // Total check header
           Card(
@@ -311,7 +315,8 @@ class _BudgetSlidersScreenState extends ConsumerState<BudgetSlidersScreen> {
           }),
         ],
       ),
-    );
+    ),
+  );
   }
 }
 

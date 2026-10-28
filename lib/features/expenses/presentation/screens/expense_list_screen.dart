@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/constants/categories.dart';
 import '../../../../core/money.dart';
+import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
 import '../../../trips/domain/trip_model.dart';
 import '../../domain/expense_model.dart';
@@ -94,9 +95,10 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
         icon: const Icon(Icons.add),
         label: const Text('Add expense'),
       ),
-      body: Column(
-        children: [
-          // Filter Chips Row
+      body: ResponsiveCenter(
+        child: Column(
+          children: [
+            // Filter Chips Row
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -261,6 +263,28 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                                       const SizedBox(height: 4),
                                       Row(
                                         children: [
+                                          if (exp.source == 'settlement') ...[
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 6,
+                                                vertical: 2,
+                                              ),
+                                              margin: const EdgeInsets.only(right: 6),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF10B981)
+                                                    .withValues(alpha: 0.15),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: const Text(
+                                                'Settlement',
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF10B981),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                           Text(
                                             DateFormat('dd MMM').format(exp.createdAt),
                                             style: TextStyle(
@@ -329,7 +353,8 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   void _showCategoryFilterSheet() {

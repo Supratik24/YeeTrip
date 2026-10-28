@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/money.dart';
+import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
 import '../../../trips/domain/trip_model.dart';
 import '../../services/csv_exporter.dart';
@@ -70,9 +71,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       appBar: AppBar(
         title: const Text('Settings'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+      body: ResponsiveCenter(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
           // Trip Summary Card
           Card(
             elevation: 0,
@@ -252,7 +254,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildDetailRow(BuildContext context, String label, String value) {

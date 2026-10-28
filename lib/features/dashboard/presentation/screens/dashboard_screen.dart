@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
 import '../../../trips/domain/trip_model.dart';
 import '../widgets/category_pie_chart.dart';
@@ -29,37 +30,41 @@ class DashboardScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(child: Text('Error loading expenses: $err')),
         data: (expenses) {
-          final totalSpent = expenses.where((e) => e.confirmed).fold<int>(
+          final totalSpent = expenses
+              .where((e) => e.confirmed && e.source == 'manual')
+              .fold<int>(
                 0,
                 (sum, e) => sum + e.amountPaise,
               );
 
           final effectiveTrip = trip.copyWith(totalSpentPaise: totalSpent);
 
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-            children: [
-              // 1. Metric Cards
-              DashboardMetricCards(trip: effectiveTrip),
-              const SizedBox(height: 16),
+          return ResponsiveCenter(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+              children: [
+                // 1. Metric Cards
+                DashboardMetricCards(trip: effectiveTrip),
+                const SizedBox(height: 16),
 
-              // 2. Cooked Meter
-              CookedMeterWidget(
-                totalSpentPaise: totalSpent,
-                totalBudgetPaise: effectiveTrip.totalBudgetPaise,
-              ),
-              const SizedBox(height: 16),
+                // 2. Cooked Meter
+                CookedMeterWidget(
+                  totalSpentPaise: totalSpent,
+                  totalBudgetPaise: effectiveTrip.totalBudgetPaise,
+                ),
+                const SizedBox(height: 16),
 
-              // 3. Planned vs Actual Bars (Turns error color when over plan)
-              PlannedVsActualBars(
-                trip: effectiveTrip,
-                expenses: expenses,
-              ),
-              const SizedBox(height: 16),
+                // 3. Planned vs Actual Bars (Turns error color when over plan)
+                PlannedVsActualBars(
+                  trip: effectiveTrip,
+                  expenses: expenses,
+                ),
+                const SizedBox(height: 16),
 
-              // 4. Pie Chart of Planned Category Split
-              CategoryPieChart(trip: effectiveTrip),
-            ],
+                // 4. Pie Chart of Planned Category Split
+                CategoryPieChart(trip: effectiveTrip),
+              ],
+            ),
           );
         },
       ),

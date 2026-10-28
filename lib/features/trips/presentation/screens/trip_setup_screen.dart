@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/money.dart';
+import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
 
 /// Screen to create and set up a new trip.
@@ -128,10 +129,11 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
         title: const Text('Plan new trip'),
       ),
       body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
+        child: ResponsiveCenter(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
             children: [
               // Trip name
               TextFormField(
@@ -310,6 +312,7 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

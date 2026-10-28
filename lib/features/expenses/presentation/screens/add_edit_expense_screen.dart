@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/constants/categories.dart';
 import '../../../../core/money.dart';
+import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
 import '../../../trips/domain/trip_model.dart';
 import '../../domain/expense_model.dart';
@@ -345,10 +346,11 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                 ),
             ],
           ),
-          body: Form(
-            key: _formKey,
-            child: ListView(
-              padding: const EdgeInsets.all(16),
+          body: ResponsiveCenter(
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
               children: [
                 // Description
                 TextFormField(
@@ -545,7 +547,8 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
               ],
             ),
           ),
-        );
+        ),
+      );
       },
     );
   }
