@@ -166,10 +166,13 @@ class TripListScreen extends ConsumerWidget {
                           children: [
                             Expanded(
                               child: Column(
+                                mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     trip.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: theme.textTheme.titleMedium?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -177,6 +180,8 @@ class TripListScreen extends ConsumerWidget {
                                   const SizedBox(height: 4),
                                   Text(
                                     '${trip.days} ${trip.days == 1 ? "day" : "days"} • ${trip.travelers.length} ${trip.travelers.length == 1 ? "traveler" : "travelers"}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       fontSize: 13,
                                       color: Colors.grey.shade600,
@@ -199,6 +204,7 @@ class TripListScreen extends ConsumerWidget {
                           children: [
                             Expanded(
                               child: Column(
+                                mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
@@ -224,6 +230,7 @@ class TripListScreen extends ConsumerWidget {
                             ),
                             Expanded(
                               child: Column(
+                                mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   Text(
@@ -249,6 +256,7 @@ class TripListScreen extends ConsumerWidget {
                             ),
                             Expanded(
                               child: Column(
+                                mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(

@@ -57,6 +57,7 @@ class PlannedVsActualBars extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -88,6 +89,7 @@ class PlannedVsActualBars extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 14),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -95,6 +97,8 @@ class PlannedVsActualBars extends StatelessWidget {
                         Expanded(
                           child: Text(
                             cat.displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
@@ -106,6 +110,8 @@ class PlannedVsActualBars extends StatelessWidget {
                           isOverPlan
                               ? 'Over by ${Money.formatRupees(diffPaise)}'
                               : '${Money.formatRupees(diffPaise)} left',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -136,15 +142,20 @@ class PlannedVsActualBars extends StatelessWidget {
                               fontSize: 11,
                               color: Colors.grey.shade600,
                             ),
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          'Planned: ${Money.formatRupees(plannedPaise)} ($percent%)',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade600,
+                        Flexible(
+                          child: Text(
+                            'Planned: ${Money.formatRupees(plannedPaise)} ($percent%)',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
                           ),
                         ),
                       ],

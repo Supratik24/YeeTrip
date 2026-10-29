@@ -250,11 +250,14 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                                 // Details
                                 Expanded(
                                   child: Column(
+                                    mainAxisSize: MainAxisSize.min,
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         exp.description,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 15,
@@ -285,31 +288,32 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                                               ),
                                             ),
                                           ],
-                                          Text(
-                                            DateFormat('dd MMM').format(exp.createdAt),
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey.shade600,
-                                            ),
-                                          ),
-                                          const Text(' • '),
-                                          Text(
-                                            exp.category,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
-                                              color: color,
-                                            ),
-                                          ),
-                                          const Text(' • '),
                                           Expanded(
-                                            child: Text(
-                                              'Paid by $payerName',
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey.shade600,
+                                            child: Text.rich(
+                                              TextSpan(
+                                                children: [
+                                                  TextSpan(
+                                                    text: DateFormat('dd MMM').format(exp.createdAt),
+                                                    style: TextStyle(color: Colors.grey.shade600),
+                                                  ),
+                                                  const TextSpan(text: ' • '),
+                                                  TextSpan(
+                                                    text: exp.category,
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.w500,
+                                                      color: color,
+                                                    ),
+                                                  ),
+                                                  const TextSpan(text: ' • '),
+                                                  TextSpan(
+                                                    text: 'Paid by $payerName',
+                                                    style: TextStyle(color: Colors.grey.shade600),
+                                                  ),
+                                                ],
                                               ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(fontSize: 12),
                                             ),
                                           ),
                                         ],
@@ -321,6 +325,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
 
                                 // Amount & Split info
                                 Column(
+                                  mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text(
@@ -360,27 +365,30 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
   void _showCategoryFilterSheet() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: const Text('All categories'),
-              selected: _selectedCategoryFilter == 'All',
-              onTap: () {
-                setState(() => _selectedCategoryFilter = 'All');
-                Navigator.of(ctx).pop();
-              },
-            ),
-            ...TripCategory.all.map((c) => ListTile(
-                  title: Text(c.displayName),
-                  selected: _selectedCategoryFilter == c.key,
-                  onTap: () {
-                    setState(() => _selectedCategoryFilter = c.key);
-                    Navigator.of(ctx).pop();
-                  },
-                )),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('All categories'),
+                selected: _selectedCategoryFilter == 'All',
+                onTap: () {
+                  setState(() => _selectedCategoryFilter = 'All');
+                  Navigator.of(ctx).pop();
+                },
+              ),
+              ...TripCategory.all.map((c) => ListTile(
+                    title: Text(c.displayName),
+                    selected: _selectedCategoryFilter == c.key,
+                    onTap: () {
+                      setState(() => _selectedCategoryFilter = c.key);
+                      Navigator.of(ctx).pop();
+                    },
+                  )),
+            ],
+          ),
         ),
       ),
     );
@@ -389,27 +397,30 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
   void _showPayerFilterSheet(Map<String, String> travelersMap) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: const Text('All payers'),
-              selected: _selectedPayerFilter == 'All',
-              onTap: () {
-                setState(() => _selectedPayerFilter = 'All');
-                Navigator.of(ctx).pop();
-              },
-            ),
-            ...widget.trip.travelers.map((t) => ListTile(
-                  title: Text(t.name),
-                  selected: _selectedPayerFilter == t.id,
-                  onTap: () {
-                    setState(() => _selectedPayerFilter = t.id);
-                    Navigator.of(ctx).pop();
-                  },
-                )),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('All payers'),
+                selected: _selectedPayerFilter == 'All',
+                onTap: () {
+                  setState(() => _selectedPayerFilter = 'All');
+                  Navigator.of(ctx).pop();
+                },
+              ),
+              ...widget.trip.travelers.map((t) => ListTile(
+                    title: Text(t.name),
+                    selected: _selectedPayerFilter == t.id,
+                    onTap: () {
+                      setState(() => _selectedPayerFilter = t.id);
+                      Navigator.of(ctx).pop();
+                    },
+                  )),
+            ],
+          ),
         ),
       ),
     );

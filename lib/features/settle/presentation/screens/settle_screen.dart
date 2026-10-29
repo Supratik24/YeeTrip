@@ -143,10 +143,13 @@ class SettleScreen extends ConsumerWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 person.travelerName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
@@ -155,6 +158,8 @@ class SettleScreen extends ConsumerWidget {
                               const SizedBox(height: 2),
                               Text(
                                 'Paid ${Money.formatRupees(person.paidPaise)} • Share ${Money.formatRupees(person.sharePaise)}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey.shade600,
@@ -164,6 +169,7 @@ class SettleScreen extends ConsumerWidget {
                           ),
                         ),
                         Column(
+                          mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
@@ -203,12 +209,17 @@ class SettleScreen extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Settlement plan',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      'Settlement plan',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   if (settlements.isNotEmpty)
                     Text(
                       '${settlements.length} ${settlements.length == 1 ? "payment" : "payments"}',
