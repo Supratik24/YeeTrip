@@ -142,19 +142,17 @@ class _BudgetSlidersScreenState extends ConsumerState<BudgetSlidersScreen> {
         ],
       ),
       bottomNavigationBar: SafeArea(
-        child: ResponsiveCenter(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: FilledButton(
-              onPressed: _hasChanges && !_isSaving ? _saveAllocations : null,
-              child: _isSaving
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(_hasChanges ? 'Save changes' : 'Saved'),
-            ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: FilledButton(
+            onPressed: _hasChanges && !_isSaving ? _saveAllocations : null,
+            child: _isSaving
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(_hasChanges ? 'Save changes' : 'Saved'),
           ),
         ),
       ),

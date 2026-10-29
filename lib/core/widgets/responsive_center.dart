@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Centers child and limits its maximum width for optimal readability
 /// on larger displays (tablets, desktop web, Chrome) while maintaining
-/// edge-to-edge layouts on mobile screens.
+/// native edge-to-edge layouts on mobile screens.
 class ResponsiveCenter extends StatelessWidget {
   final Widget child;
   final double maxWidth;
@@ -17,13 +17,23 @@ class ResponsiveCenter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth),
-        child: padding != null
-            ? Padding(padding: padding!, child: child)
-            : child,
-      ),
+    Widget content = child;
+    if (padding != null) {
+      content = Padding(padding: padding!, child: content);
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth > maxWidth) {
+          return Center(
+            child: SizedBox(
+              width: maxWidth,
+              child: content,
+            ),
+          );
+        }
+        return content;
+      },
     );
   }
 }
