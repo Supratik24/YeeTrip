@@ -8,9 +8,10 @@ import '../../../../core/money.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
 import '../../../trips/domain/trip_model.dart';
+import '../../domain/expense_filter.dart';
 import '../../domain/expense_model.dart';
 
-/// Screen listing all trip expenses with category and payer filters.
+/// Screen listing all trip expenses with search, sort, and category/payer filters.
 class ExpenseListScreen extends ConsumerStatefulWidget {
   final TripWithDetails trip;
 
@@ -24,8 +25,15 @@ class ExpenseListScreen extends ConsumerStatefulWidget {
 }
 
 class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
-  String _selectedCategoryFilter = 'All';
-  String _selectedPayerFilter = 'All';
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
+  ExpenseFilterCriteria _criteria = const ExpenseFilterCriteria();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   Color _categoryColor(String key) {
     switch (key.toLowerCase()) {
@@ -87,7 +95,79 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Expenses'),
+        title: _isSearching
+            ? TextField(
+                key: const Key('expense_search_field'),
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Search description, category...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: Colors.grey.shade400),
+                ),
+                onChanged: (val) {
+                  setState(() {
+                    _criteria = _criteria.copyWith(searchQuery: val);
+                  });
+                },
+              )
+            : const Text('Expenses'),
+        actions: [
+          if (_isSearching)
+            IconButton(
+              key: const Key('clear_search_btn'),
+              icon: const Icon(Icons.close),
+              tooltip: 'Close search',
+              onPressed: () {
+                setState(() {
+                  _searchController.clear();
+                  _criteria = _criteria.copyWith(searchQuery: '');
+                  _isSearching = false;
+                });
+              },
+            )
+          else ...[
+            IconButton(
+              key: const Key('open_search_btn'),
+              icon: const Icon(Icons.search),
+              tooltip: 'Search expenses',
+              onPressed: () => setState(() => _isSearching = true),
+            ),
+            PopupMenuButton<ExpenseSortOption>(
+              key: const Key('sort_expenses_menu_btn'),
+              icon: const Icon(Icons.sort),
+              tooltip: 'Sort by',
+              initialValue: _criteria.sortOption,
+              onSelected: (option) {
+                setState(() {
+                  _criteria = _criteria.copyWith(sortOption: option);
+                });
+              },
+              itemBuilder: (context) => ExpenseSortOption.values.map((option) {
+                final isSelected = option == _criteria.sortOption;
+                return PopupMenuItem(
+                  value: option,
+                  child: Row(
+                    children: [
+                      if (isSelected)
+                        Icon(Icons.check, size: 18, color: theme.colorScheme.primary)
+                      else
+                        const SizedBox(width: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          option.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         key: const Key('add_expense_fab'),
@@ -98,104 +178,140 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
       body: ResponsiveCenter(
         child: Column(
           children: [
-            // Filter Chips Row
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                // Category Filter
-                FilterChip(
-                  label: Text('Category: $_selectedCategoryFilter'),
-                  selected: _selectedCategoryFilter != 'All',
-                  onSelected: (_) {
-                    _showCategoryFilterSheet();
-                  },
-                ),
-                const SizedBox(width: 8),
+            // Filter & Sort Chips Row
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  // Active Sort chip (shown if not default)
+                  if (_criteria.sortOption != ExpenseSortOption.dateDesc) ...[
+                    InputChip(
+                      avatar: const Icon(Icons.sort, size: 16),
+                      label: Text(_criteria.sortOption.label),
+                      selected: true,
+                      onDeleted: () {
+                        setState(() {
+                          _criteria = _criteria.copyWith(
+                            sortOption: ExpenseSortOption.dateDesc,
+                          );
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                  ],
 
-                // Payer Filter
-                FilterChip(
-                  label: Text(
-                    _selectedPayerFilter == 'All'
-                        ? 'Paid by: All'
-                        : 'Paid by: ${travelersMap[_selectedPayerFilter] ?? "Traveler"}',
-                  ),
-                  selected: _selectedPayerFilter != 'All',
-                  onSelected: (_) {
-                    _showPayerFilterSheet(travelersMap);
-                  },
-                ),
-
-                if (_selectedCategoryFilter != 'All' ||
-                    _selectedPayerFilter != 'All') ...[
-                  const SizedBox(width: 8),
-                  ActionChip(
-                    label: const Text('Clear filters'),
-                    onPressed: () {
-                      setState(() {
-                        _selectedCategoryFilter = 'All';
-                        _selectedPayerFilter = 'All';
-                      });
+                  // Category Filter
+                  FilterChip(
+                    label: Text('Category: ${_criteria.category}'),
+                    selected: _criteria.category != 'All',
+                    onSelected: (_) {
+                      _showCategoryFilterSheet();
                     },
                   ),
-                ],
-              ],
-            ),
-          ),
-          const Divider(height: 1),
+                  const SizedBox(width: 8),
 
-          // Expenses List
-          Expanded(
-            child: expensesAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Center(child: Text('Error: $err')),
-              data: (expenses) {
-                // Apply filters
-                final filtered = expenses.where((e) {
-                  if (_selectedCategoryFilter != 'All' &&
-                      e.category != _selectedCategoryFilter) {
-                    return false;
-                  }
-                  if (_selectedPayerFilter != 'All' &&
-                      e.paidBy != _selectedPayerFilter) {
-                    return false;
-                  }
-                  return true;
-                }).toList();
-
-                if (filtered.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.receipt_outlined,
-                            size: 48,
-                            color: Colors.grey.shade400,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            expenses.isEmpty
-                                ? 'No expenses recorded yet'
-                                : 'No expenses match the filters',
-                            style: theme.textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            expenses.isEmpty
-                                ? 'Tap "+ Add expense" below to log the first one.'
-                                : 'Try changing or clearing your filters.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey.shade600),
-                          ),
-                        ],
-                      ),
+                  // Payer Filter
+                  FilterChip(
+                    label: Text(
+                      _criteria.paidByTravelerId == 'All'
+                          ? 'Paid by: All'
+                          : 'Paid by: ${travelersMap[_criteria.paidByTravelerId] ?? "Traveler"}',
                     ),
-                  );
-                }
+                    selected: _criteria.paidByTravelerId != 'All',
+                    onSelected: (_) {
+                      _showPayerFilterSheet(travelersMap);
+                    },
+                  ),
+
+                  // Active Search Query chip (shown when search bar is closed)
+                  if (!_isSearching && _criteria.searchQuery.trim().isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    InputChip(
+                      avatar: const Icon(Icons.search, size: 16),
+                      label: Text('"${_criteria.searchQuery.trim()}"'),
+                      onDeleted: () {
+                        setState(() {
+                          _searchController.clear();
+                          _criteria = _criteria.copyWith(searchQuery: '');
+                        });
+                      },
+                    ),
+                  ],
+
+                  if (_criteria.hasActiveFilters) ...[
+                    const SizedBox(width: 8),
+                    ActionChip(
+                      label: const Text('Reset filters'),
+                      onPressed: () {
+                        setState(() {
+                          _searchController.clear();
+                          _criteria = const ExpenseFilterCriteria();
+                          _isSearching = false;
+                        });
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+
+            // Expenses List
+            Expanded(
+              child: expensesAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, _) => Center(child: Text('Error: $err')),
+                data: (expenses) {
+                  // Apply search, filters and sorting
+                  final filtered = _criteria.apply(expenses);
+
+                  if (filtered.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.receipt_outlined,
+                              size: 48,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              expenses.isEmpty
+                                  ? 'No expenses recorded yet'
+                                  : 'No matching expenses found',
+                              style: theme.textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              expenses.isEmpty
+                                  ? 'Tap "+ Add expense" below to log the first one.'
+                                  : 'Try adjusting your search query or filters.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.grey.shade600),
+                            ),
+                            if (_criteria.hasActiveFilters) ...[
+                              const SizedBox(height: 16),
+                              OutlinedButton.icon(
+                                icon: const Icon(Icons.filter_alt_off),
+                                label: const Text('Reset search & filters'),
+                                onPressed: () {
+                                  setState(() {
+                                    _searchController.clear();
+                                    _criteria = const ExpenseFilterCriteria();
+                                    _isSearching = false;
+                                  });
+                                },
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  }
 
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 88),
@@ -373,17 +489,21 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
             children: [
               ListTile(
                 title: const Text('All categories'),
-                selected: _selectedCategoryFilter == 'All',
+                selected: _criteria.category == 'All',
                 onTap: () {
-                  setState(() => _selectedCategoryFilter = 'All');
+                  setState(() {
+                    _criteria = _criteria.copyWith(category: 'All');
+                  });
                   Navigator.of(ctx).pop();
                 },
               ),
               ...TripCategory.all.map((c) => ListTile(
                     title: Text(c.displayName),
-                    selected: _selectedCategoryFilter == c.key,
+                    selected: _criteria.category == c.key,
                     onTap: () {
-                      setState(() => _selectedCategoryFilter = c.key);
+                      setState(() {
+                        _criteria = _criteria.copyWith(category: c.key);
+                      });
                       Navigator.of(ctx).pop();
                     },
                   )),
@@ -405,17 +525,21 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
             children: [
               ListTile(
                 title: const Text('All payers'),
-                selected: _selectedPayerFilter == 'All',
+                selected: _criteria.paidByTravelerId == 'All',
                 onTap: () {
-                  setState(() => _selectedPayerFilter = 'All');
+                  setState(() {
+                    _criteria = _criteria.copyWith(paidByTravelerId: 'All');
+                  });
                   Navigator.of(ctx).pop();
                 },
               ),
               ...widget.trip.travelers.map((t) => ListTile(
                     title: Text(t.name),
-                    selected: _selectedPayerFilter == t.id,
+                    selected: _criteria.paidByTravelerId == t.id,
                     onTap: () {
-                      setState(() => _selectedPayerFilter = t.id);
+                      setState(() {
+                        _criteria = _criteria.copyWith(paidByTravelerId: t.id);
+                      });
                       Navigator.of(ctx).pop();
                     },
                   )),
