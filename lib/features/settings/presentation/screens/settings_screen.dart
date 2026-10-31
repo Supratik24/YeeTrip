@@ -8,6 +8,7 @@ import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../trips/domain/trip_model.dart';
+import '../../../trips/services/trip_backup_service.dart';
 import '../../services/csv_exporter.dart';
 
 /// Settings screen for YeeTrip: exports trip expenses to CSV and provides app information.
@@ -59,6 +60,111 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     } finally {
       if (mounted) {
         setState(() => _isExporting = false);
+      }
+    }
+  }
+
+  bool _isBackingUp = false;
+
+  Future<void> _handleBackupJson() async {
+    final expensesAsync = ref.read(tripExpensesProvider(widget.trip.id));
+    final expenses = expensesAsync.value ?? [];
+
+    setState(() => _isBackingUp = true);
+    try {
+      await TripBackupService.exportAndShareBackup(
+        trip: widget.trip,
+        expenses: expenses,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to backup trip: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isBackingUp = false);
+      }
+    }
+  }
+
+  Future<void> _handleRestoreJson() async {
+    final textController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Restore trip from backup'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Paste the contents of a .yeetrip.json backup file below to restore the trip and its expenses:',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              key: const Key('restore_trip_json_field'),
+              controller: textController,
+              maxLines: 6,
+              decoration: const InputDecoration(
+                hintText: '{\n  "version": 1,\n  "trip": { ... }\n}',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const Key('confirm_restore_btn'),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Restore'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && textController.text.trim().isNotEmpty) {
+      try {
+        final backupService = ref.read(tripBackupServiceProvider);
+        final newTripId =
+            await backupService.restoreTripFromJson(textController.text);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Trip restored successfully!'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          context.push('/trips/$newTripId');
+        }
+      } catch (e) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Restore Failed'),
+              content: Text('Could not restore trip: $e'),
+              actions: [
+                FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
       }
     }
   }
@@ -269,6 +375,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ? (l10n?.exporting ?? 'Exporting...')
                             : (l10n?.exportAndShareCsv ?? 'Export & share CSV'),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      key: const Key('backup_trip_json_btn'),
+                      onPressed: _isBackingUp ? null : _handleBackupJson,
+                      icon: _isBackingUp
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.archive_outlined),
+                      label: Text(
+                        _isBackingUp ? 'Creating backup...' : 'Backup trip (.json)',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      key: const Key('restore_trip_from_settings_btn'),
+                      onPressed: _handleRestoreJson,
+                      icon: const Icon(Icons.unarchive_outlined),
+                      label: const Text('Restore trip from backup'),
                     ),
                   ),
                 ],

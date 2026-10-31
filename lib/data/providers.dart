@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/expenses/domain/expense_model.dart';
 import '../features/trips/domain/trip_model.dart';
+import '../features/trips/services/trip_backup_service.dart';
 import 'local/app_database.dart';
 import 'local/connection/connection.dart';
 import 'repositories/expense_repository.dart';
@@ -24,6 +25,12 @@ final tripRepositoryProvider = Provider<TripRepository>((ref) {
 final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
   final db = ref.watch(databaseProvider);
   return DriftExpenseRepository(db);
+});
+
+/// TripBackupService provider.
+final tripBackupServiceProvider = Provider<TripBackupService>((ref) {
+  final db = ref.watch(databaseProvider);
+  return TripBackupService(db);
 });
 
 /// Stream of all trips for the home screen.
