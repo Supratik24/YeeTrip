@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/categories.dart';
@@ -8,6 +9,7 @@ import '../../../../data/providers.dart';
 import '../../../expenses/domain/expense_model.dart';
 import '../../../trips/domain/trip_model.dart';
 import '../../domain/settle_calculator.dart';
+import '../../services/upi_payment_launcher.dart';
 
 /// Screen displaying individual balances and greedy settlement instructions.
 class SettleScreen extends ConsumerWidget {
@@ -71,6 +73,137 @@ class SettleScreen extends ConsumerWidget {
               'Recorded settlement: $fromName paid ${Money.formatRupees(payment.amountPaise)} to $toName',
             ),
           ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleUpiPayment({
+    required BuildContext context,
+    required SettlementPayment payment,
+    required String fromName,
+    required String toName,
+    required String toVpa,
+  }) async {
+    final launched = await UpiPaymentLauncher.launchUpiPayment(
+      payeeVpa: toVpa,
+      payeeName: toName,
+      amountPaise: payment.amountPaise,
+      note: 'YeeTrip Settlement: $fromName to $toName',
+    );
+
+    if (!launched && context.mounted) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('UPI Payment'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Could not open a UPI app directly.'),
+              const SizedBox(height: 12),
+              Text(
+                'Payee: $toName',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text('UPI ID: $toVpa'),
+              Text('Amount: ${Money.formatRupees(payment.amountPaise)}'),
+              const SizedBox(height: 12),
+              const Text(
+                'You can copy the UPI ID and complete the payment using any UPI app (Google Pay, PhonePe, Paytm, BHIM).',
+                style: TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton.icon(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: toVpa));
+                Navigator.of(ctx).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Copied "$toVpa" to clipboard'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              icon: const Icon(Icons.copy, size: 16),
+              label: const Text('Copy UPI ID'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> _promptAddUpiAndPay({
+    required BuildContext context,
+    required WidgetRef ref,
+    required Traveler toTraveler,
+    required SettlementPayment payment,
+    required String fromName,
+  }) async {
+    final controller = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Add UPI ID for ${toTraveler.name}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Enter ${toTraveler.name}\'s UPI ID (VPA) to pay directly with UPI:',
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              key: const Key('add_vpa_field'),
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'UPI ID',
+                hintText: 'e.g. name@okhdfcbank',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const Key('save_vpa_and_pay_btn'),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Save & Pay'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && controller.text.trim().isNotEmpty) {
+      final vpa = controller.text.trim();
+      await ref.read(tripRepositoryProvider).updateTraveler(
+            travelerId: toTraveler.id,
+            name: toTraveler.name,
+            upiVpa: vpa,
+          );
+
+      if (context.mounted) {
+        await _handleUpiPayment(
+          context: context,
+          payment: payment,
+          fromName: fromName,
+          toName: toTraveler.name,
+          toVpa: vpa,
         );
       }
     }
@@ -277,6 +410,16 @@ class SettleScreen extends ConsumerWidget {
                       travelersMap[payment.fromTravelerId] ?? 'Someone';
                   final toName =
                       travelersMap[payment.toTravelerId] ?? 'Someone';
+                  final toTraveler = trip.travelers.firstWhere(
+                    (t) => t.id == payment.toTravelerId,
+                    orElse: () => Traveler(
+                      id: payment.toTravelerId,
+                      tripId: trip.id,
+                      name: toName,
+                    ),
+                  );
+                  final hasVpa = toTraveler.upiVpa != null &&
+                      toTraveler.upiVpa!.trim().isNotEmpty;
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 10),
@@ -330,9 +473,42 @@ class SettleScreen extends ConsumerWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 4),
                           IconButton(
-                            key: Key('mark_settled_${payment.fromTravelerId}_${payment.toTravelerId}'),
+                            key: Key(
+                              'pay_upi_${payment.fromTravelerId}_${payment.toTravelerId}',
+                            ),
+                            icon: Icon(
+                              Icons.payment,
+                              color: theme.colorScheme.primary,
+                            ),
+                            tooltip: hasVpa
+                                ? 'Pay ${toTraveler.upiVpa} via UPI'
+                                : 'Add UPI ID to pay',
+                            onPressed: () {
+                              if (hasVpa) {
+                                _handleUpiPayment(
+                                  context: context,
+                                  payment: payment,
+                                  fromName: fromName,
+                                  toName: toName,
+                                  toVpa: toTraveler.upiVpa!.trim(),
+                                );
+                              } else {
+                                _promptAddUpiAndPay(
+                                  context: context,
+                                  ref: ref,
+                                  toTraveler: toTraveler,
+                                  payment: payment,
+                                  fromName: fromName,
+                                );
+                              }
+                            },
+                          ),
+                          IconButton(
+                            key: Key(
+                              'mark_settled_${payment.fromTravelerId}_${payment.toTravelerId}',
+                            ),
                             icon: const Icon(Icons.check_circle_outline),
                             color: const Color(0xFF10B981),
                             tooltip: 'Mark settled',
