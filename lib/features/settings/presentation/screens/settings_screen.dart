@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/money.dart';
 import '../../../../core/widgets/responsive_center.dart';
@@ -100,6 +101,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      IconButton(
+                        key: const Key('edit_trip_summary_btn'),
+                        icon: const Icon(Icons.edit_outlined, size: 20),
+                        tooltip: 'Edit trip details',
+                        onPressed: () => context.push('/trips/${widget.trip.id}/edit'),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -125,6 +132,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     context,
                     'Logged expenses',
                     '$expenseCount recorded',
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      key: const Key('edit_trip_and_travelers_btn'),
+                      onPressed: () => context.push('/trips/${widget.trip.id}/edit'),
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      label: const Text('Edit trip & travelers'),
+                    ),
                   ),
                 ],
               ),

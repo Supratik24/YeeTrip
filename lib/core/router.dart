@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/expenses/presentation/screens/add_edit_expense_screen.dart';
 import '../features/trips/presentation/screens/trip_detail_scaffold.dart';
+import '../features/trips/presentation/screens/trip_edit_screen.dart';
 import '../features/trips/presentation/screens/trip_list_screen.dart';
 import '../features/trips/presentation/screens/trip_setup_screen.dart';
 
@@ -25,6 +26,13 @@ final appRouter = GoRouter(
             return TripDetailScaffold(tripId: tripId);
           },
           routes: [
+            GoRoute(
+              path: 'edit',
+              builder: (context, state) {
+                final tripId = state.pathParameters['id']!;
+                return TripEditScreen(tripId: tripId);
+              },
+            ),
             GoRoute(
               path: 'expenses/new',
               builder: (context, state) {

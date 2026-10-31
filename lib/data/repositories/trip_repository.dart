@@ -24,6 +24,24 @@ abstract class TripRepository {
     String tripId,
     Map<String, int> allocations,
   );
+  Future<void> updateTripDetails({
+    required String tripId,
+    required String name,
+    required int totalBudgetPaise,
+    required int days,
+  });
+  Future<String> addTraveler({
+    required String tripId,
+    required String name,
+    String? upiVpa,
+  });
+  Future<void> updateTraveler({
+    required String travelerId,
+    required String name,
+    String? upiVpa,
+  });
+  Future<bool> canDeleteTraveler(String travelerId);
+  Future<void> deleteTraveler(String travelerId);
 }
 
 /// Drift implementation of [TripRepository].
@@ -160,6 +178,92 @@ class DriftTripRepository implements TripRepository {
             );
       }
     });
+  }
+
+  @override
+  Future<void> updateTripDetails({
+    required String tripId,
+    required String name,
+    required int totalBudgetPaise,
+    required int days,
+  }) async {
+    await (_db.update(_db.trips)..where((t) => t.id.equals(tripId))).write(
+      TripsCompanion(
+        name: Value(name.trim()),
+        totalBudgetPaise: Value(totalBudgetPaise),
+        days: Value(days),
+      ),
+    );
+  }
+
+  @override
+  Future<String> addTraveler({
+    required String tripId,
+    required String name,
+    String? upiVpa,
+  }) async {
+    final travelerId = _uuid.v4();
+    final effectiveVpa = upiVpa?.trim();
+    await _db.into(_db.travelers).insert(
+          TravelersCompanion.insert(
+            id: travelerId,
+            tripId: tripId,
+            name: name.trim(),
+            upiVpa: Value(
+              effectiveVpa != null && effectiveVpa.isNotEmpty
+                  ? effectiveVpa
+                  : null,
+            ),
+          ),
+        );
+    return travelerId;
+  }
+
+  @override
+  Future<void> updateTraveler({
+    required String travelerId,
+    required String name,
+    String? upiVpa,
+  }) async {
+    final effectiveVpa = upiVpa?.trim();
+    await (_db.update(_db.travelers)..where((t) => t.id.equals(travelerId))).write(
+      TravelersCompanion(
+        name: Value(name.trim()),
+        upiVpa: Value(
+          effectiveVpa != null && effectiveVpa.isNotEmpty ? effectiveVpa : null,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Future<bool> canDeleteTraveler(String travelerId) async {
+    // Check if traveler paid for any expenses
+    final paidExpenses = await (_db.select(_db.expenses)
+          ..where((e) => e.paidBy.equals(travelerId)))
+        .get();
+    if (paidExpenses.isNotEmpty) return false;
+
+    // Check if traveler is allocated a positive share in any split
+    final splits = await (_db.select(_db.expenseSplits)
+          ..where((s) =>
+              s.travelerId.equals(travelerId) &
+              s.sharePaise.isBiggerThanValue(0)))
+        .get();
+    if (splits.isNotEmpty) return false;
+
+    return true;
+  }
+
+  @override
+  Future<void> deleteTraveler(String travelerId) async {
+    final canDelete = await canDeleteTraveler(travelerId);
+    if (!canDelete) {
+      throw StateError(
+        'Cannot remove a traveler with logged expenses or split shares.',
+      );
+    }
+    await (_db.delete(_db.travelers)..where((t) => t.id.equals(travelerId))).go();
   }
 
   Future<TripWithDetails> _loadTripDetails(Trip row) async {

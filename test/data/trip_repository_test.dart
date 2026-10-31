@@ -130,6 +130,108 @@ void main() async {
 
       tearDown();
     });
+
+    test('updateTripDetails updates trip name, budget and days', () async {
+      setUp();
+
+      final tripId = await tripRepo.createTrip(
+        name: 'Manali ❄️',
+        totalBudgetPaise: 5000000, // ₹50,000
+        days: 5,
+        travelerNames: ['Vikram'],
+      );
+
+      await tripRepo.updateTripDetails(
+        tripId: tripId,
+        name: 'Manali & Kasol 🏔️',
+        totalBudgetPaise: 7500000, // ₹75,000
+        days: 6,
+      );
+
+      final updated = await tripRepo.getTripById(tripId);
+      expect(updated!.name, 'Manali & Kasol 🏔️');
+      expect(updated.totalBudgetPaise, 7500000);
+      expect(updated.days, 6);
+
+      tearDown();
+    });
+
+    test('addTraveler and updateTraveler manage travelers and optional upiVpa', () async {
+      setUp();
+
+      final tripId = await tripRepo.createTrip(
+        name: 'Shimla',
+        totalBudgetPaise: 2000000,
+        days: 2,
+        travelerNames: ['Ananya'],
+      );
+
+      final newTravelerId = await tripRepo.addTraveler(
+        tripId: tripId,
+        name: 'Rohit',
+        upiVpa: 'rohit@okaxis',
+      );
+
+      var trip = await tripRepo.getTripById(tripId);
+      expect(trip!.travelers.length, 2);
+      final rohit = trip.travelers.firstWhere((t) => t.id == newTravelerId);
+      expect(rohit.name, 'Rohit');
+      expect(rohit.upiVpa, 'rohit@okaxis');
+
+      await tripRepo.updateTraveler(
+        travelerId: newTravelerId,
+        name: 'Rohit S.',
+        upiVpa: 'rohit.s@okhdfcbank',
+      );
+
+      trip = await tripRepo.getTripById(tripId);
+      final updatedRohit = trip!.travelers.firstWhere((t) => t.id == newTravelerId);
+      expect(updatedRohit.name, 'Rohit S.');
+      expect(updatedRohit.upiVpa, 'rohit.s@okhdfcbank');
+
+      tearDown();
+    });
+
+    test('canDeleteTraveler allows deletion without expenses, blocks deletion with expenses', () async {
+      setUp();
+
+      final tripId = await tripRepo.createTrip(
+        name: 'Goa',
+        totalBudgetPaise: 3000000,
+        days: 3,
+        travelerNames: ['Traveler 1', 'Traveler 2'],
+      );
+
+      var trip = await tripRepo.getTripById(tripId);
+      final t1 = trip!.travelers[0];
+      final t2 = trip.travelers[1];
+
+      // Traveler 2 has no expenses yet
+      expect(await tripRepo.canDeleteTraveler(t2.id), true);
+      await tripRepo.deleteTraveler(t2.id);
+
+      trip = await tripRepo.getTripById(tripId);
+      expect(trip!.travelers.length, 1);
+      expect(trip.travelers.first.id, t1.id);
+
+      // Now add expense for Traveler 1
+      await expenseRepo.addExpense(
+        tripId: tripId,
+        description: 'Snacks',
+        amountPaise: 20000,
+        category: 'Food',
+        paidBy: t1.id,
+        createdAt: DateTime.now(),
+        splits: [
+          ExpenseSplitModel(expenseId: '', travelerId: t1.id, sharePaise: 20000),
+        ],
+      );
+
+      expect(await tripRepo.canDeleteTraveler(t1.id), false);
+      expect(() => tripRepo.deleteTraveler(t1.id), throwsA(isA<StateError>()));
+
+      tearDown();
+    });
   });
 
   final ok = await runSuite('Trip Repository Tests');
