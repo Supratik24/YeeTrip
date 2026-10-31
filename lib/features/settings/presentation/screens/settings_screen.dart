@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/locale_provider.dart';
 import '../../../../core/money.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../trips/domain/trip_model.dart';
 import '../../services/csv_exporter.dart';
 
@@ -65,12 +67,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final activeLocale = ref.watch(appLocaleProvider);
     final expensesAsync = ref.watch(tripExpensesProvider(widget.trip.id));
     final expenseCount = expensesAsync.value?.length ?? 0;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(l10n?.settingsTab ?? 'Settings'),
       ),
       body: ResponsiveCenter(
         child: ListView(
@@ -104,7 +108,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       IconButton(
                         key: const Key('edit_trip_summary_btn'),
                         icon: const Icon(Icons.edit_outlined, size: 20),
-                        tooltip: 'Edit trip details',
+                        tooltip: l10n?.editTripDetails ?? 'Edit trip details',
                         onPressed: () => context.push('/trips/${widget.trip.id}/edit'),
                       ),
                     ],
@@ -112,26 +116,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(height: 12),
                   _buildDetailRow(
                     context,
-                    'Total budget',
+                    l10n?.totalBudget ?? 'Total budget',
                     Money.formatRupees(widget.trip.totalBudgetPaise),
                   ),
                   const SizedBox(height: 6),
                   _buildDetailRow(
                     context,
-                    'Duration',
-                    '${widget.trip.days} ${widget.trip.days == 1 ? "day" : "days"}',
+                    l10n?.duration ?? 'Duration',
+                    '${widget.trip.days} ${widget.trip.days == 1 ? (l10n?.day ?? "day") : (l10n?.days ?? "days")}',
                   ),
                   const SizedBox(height: 6),
                   _buildDetailRow(
                     context,
-                    'Travelers',
+                    l10n?.travelers ?? 'Travelers',
                     '${widget.trip.travelers.length} (${widget.trip.travelers.map((t) => t.name).join(", ")})',
                   ),
                   const SizedBox(height: 6),
                   _buildDetailRow(
                     context,
-                    'Logged expenses',
-                    '$expenseCount recorded',
+                    l10n?.loggedExpenses ?? 'Logged expenses',
+                    '$expenseCount ${l10n?.recorded ?? "recorded"}',
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
@@ -140,7 +144,74 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       key: const Key('edit_trip_and_travelers_btn'),
                       onPressed: () => context.push('/trips/${widget.trip.id}/edit'),
                       icon: const Icon(Icons.edit_outlined, size: 18),
-                      label: const Text('Edit trip & travelers'),
+                      label: Text(l10n?.editTripAndTravelers ?? 'Edit trip & travelers'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Language Selector Card
+          Card(
+            key: const Key('language_card'),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: colorScheme.outlineVariant),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.language, color: colorScheme.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n?.language ?? 'Language',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    l10n?.languageSubtitle ?? 'Select your preferred display language',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<String>(
+                      key: const Key('language_segmented_button'),
+                      showSelectedIcon: false,
+                      segments: [
+                        ButtonSegment<String>(
+                          value: 'en',
+                          label: Text(l10n?.english ?? 'English'),
+                        ),
+                        ButtonSegment<String>(
+                          value: 'hi',
+                          label: Text(l10n?.hindi ?? 'हिन्दी (Hindi)'),
+                        ),
+                      ],
+                      selected: {
+                        activeLocale?.languageCode == 'hi' ? 'hi' : 'en',
+                      },
+                      onSelectionChanged: (selectedSet) {
+                        final selectedCode = selectedSet.first;
+                        ref.read(appLocaleProvider.notifier).setLanguage(
+                              selectedCode == 'hi'
+                                  ? AppLanguage.hindi
+                                  : AppLanguage.english,
+                            );
+                      },
                     ),
                   ),
                 ],
@@ -166,7 +237,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Icon(Icons.file_download_outlined, color: colorScheme.primary),
                       const SizedBox(width: 8),
                       Text(
-                        'Data export',
+                        l10n?.dataExport ?? 'Data export',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -175,8 +246,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Export all logged expenses for "${widget.trip.name}" as an RFC 4180 compliant CSV file. '
-                    'Includes date, description, category, payer, amount in ₹, and split breakdown.',
+                    l10n?.dataExportDesc(widget.trip.name) ??
+                        'Export all logged expenses for "${widget.trip.name}" as an RFC 4180 compliant CSV file.',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -194,7 +265,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             )
                           : const Icon(Icons.share_outlined),
                       label: Text(
-                        _isExporting ? 'Exporting...' : 'Export & share CSV',
+                        _isExporting
+                            ? (l10n?.exporting ?? 'Exporting...')
+                            : (l10n?.exportAndShareCsv ?? 'Export & share CSV'),
                       ),
                     ),
                   ),
@@ -221,7 +294,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Icon(Icons.info_outline, color: colorScheme.primary),
                       const SizedBox(width: 8),
                       Text(
-                        'About YeeTrip',
+                        l10n?.aboutYeeTrip ?? 'About YeeTrip',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -230,29 +303,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'YeeTrip is an offline-first group trip budget and expense-splitting app crafted specifically for Indian travelers.',
+                    l10n?.aboutYeeTripDesc ??
+                        'YeeTrip is an offline-first group trip budget and expense-splitting app crafted specifically for Indian travelers.',
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 12),
                   _buildFeaturePoint(
                     context,
                     Icons.offline_pin_outlined,
-                    '100% Offline & Private',
-                    'All trip data and expenses remain strictly on this phone. No accounts or internet required.',
+                    l10n?.offlinePrivate ?? '100% Offline & Private',
+                    l10n?.offlinePrivateDesc ??
+                        'All trip data and expenses remain strictly on this phone. No accounts or internet required.',
                   ),
                   const SizedBox(height: 8),
                   _buildFeaturePoint(
                     context,
                     Icons.currency_rupee,
-                    'Exact Integer Paise Precision',
-                    'Calculated in exact integer paise to prevent floating-point rounding errors. Formatted in standard Indian numbering (₹1,00,000).',
+                    l10n?.precisionTitle ?? 'Exact Integer Paise Precision',
+                    l10n?.precisionDesc ??
+                        'Calculated in exact integer paise to prevent floating-point rounding errors. Formatted in standard Indian numbering (₹1,00,000).',
                   ),
                   const SizedBox(height: 8),
                   _buildFeaturePoint(
                     context,
                     Icons.handshake_outlined,
-                    'Greedy Settle-Up Engine',
-                    'Computes optimal debt resolution in at most n-1 transactions with zero balance remainder.',
+                    l10n?.settlementTitle ?? 'Minimum Transactions Settlement',
+                    l10n?.settlementDesc ??
+                        'Greedy balance netting algorithm calculates the fewest peer-to-peer transfers to settle all trip debts.',
                   ),
                   const SizedBox(height: 16),
                   Divider(color: colorScheme.outlineVariant),

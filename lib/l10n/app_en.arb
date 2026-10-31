@@ -3,5 +3,43 @@
   "appTitle": "YeeTrip",
   "@appTitle": {
     "description": "The title of the application"
-  }
+  },
+  "dashboardTab": "Dashboard",
+  "expensesTab": "Expenses",
+  "budgetTab": "Budget",
+  "settleTab": "Settle",
+  "settingsTab": "Settings",
+  "totalBudget": "Total budget",
+  "duration": "Duration",
+  "travelers": "Travelers",
+  "loggedExpenses": "Logged expenses",
+  "recorded": "recorded",
+  "day": "day",
+  "days": "days",
+  "editTripAndTravelers": "Edit trip & travelers",
+  "editTripDetails": "Edit trip details",
+  "dataExport": "Data export",
+  "dataExportDesc": "Export all logged expenses for \"{tripName}\" as an RFC 4180 compliant CSV file. Includes date, description, category, payer, amount in ₹, and split breakdown.",
+  "@dataExportDesc": {
+    "placeholders": {
+      "tripName": { "type": "String" }
+    }
+  },
+  "exportAndShareCsv": "Export & share CSV",
+  "exporting": "Exporting...",
+  "noExpensesToExport": "No expenses logged yet to export.",
+  "aboutYeeTrip": "About YeeTrip",
+  "aboutYeeTripDesc": "YeeTrip is an offline-first group trip budget and expense-splitting app crafted specifically for Indian travelers.",
+  "offlinePrivate": "100% Offline & Private",
+  "offlinePrivateDesc": "All trip data and expenses remain strictly on this phone. No accounts or internet required.",
+  "precisionTitle": "Exact Integer Paise Precision",
+  "precisionDesc": "Calculated in exact integer paise to prevent floating-point rounding errors. Formatted in standard Indian numbering (₹1,00,000).",
+  "settlementTitle": "Minimum Transactions Settlement",
+  "settlementDesc": "Greedy balance netting algorithm calculates the fewest peer-to-peer transfers to settle all trip debts.",
+  "version": "Version",
+  "language": "Language",
+  "languageSubtitle": "Select your preferred display language",
+  "english": "English",
+  "hindi": "हिन्दी (Hindi)",
+  "systemDefault": "System Default"
 }

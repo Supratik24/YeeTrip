@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../data/providers.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../budget/presentation/screens/budget_sliders_screen.dart';
 import '../../../dashboard/presentation/screens/dashboard_screen.dart';
 import '../../../expenses/presentation/screens/expense_list_screen.dart';
@@ -65,6 +66,8 @@ class _TripDetailScaffoldState extends ConsumerState<TripDetailScaffold> {
           SettingsScreen(trip: trip),
         ];
 
+        final l10n = AppLocalizations.of(context);
+
         return Scaffold(
           body: IndexedStack(
             index: _currentIndex,
@@ -73,31 +76,31 @@ class _TripDetailScaffoldState extends ConsumerState<TripDetailScaffold> {
           bottomNavigationBar: NavigationBar(
             selectedIndex: _currentIndex,
             onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
-            destinations: const [
+            destinations: [
               NavigationDestination(
-                icon: Icon(Icons.dashboard_outlined),
-                selectedIcon: Icon(Icons.dashboard),
-                label: 'Dashboard',
+                icon: const Icon(Icons.dashboard_outlined),
+                selectedIcon: const Icon(Icons.dashboard),
+                label: l10n?.dashboardTab ?? 'Dashboard',
               ),
               NavigationDestination(
-                icon: Icon(Icons.receipt_long_outlined),
-                selectedIcon: Icon(Icons.receipt_long),
-                label: 'Expenses',
+                icon: const Icon(Icons.receipt_long_outlined),
+                selectedIcon: const Icon(Icons.receipt_long),
+                label: l10n?.expensesTab ?? 'Expenses',
               ),
               NavigationDestination(
-                icon: Icon(Icons.tune_outlined),
-                selectedIcon: Icon(Icons.tune),
-                label: 'Budget',
+                icon: const Icon(Icons.tune_outlined),
+                selectedIcon: const Icon(Icons.tune),
+                label: l10n?.budgetTab ?? 'Budget',
               ),
               NavigationDestination(
-                icon: Icon(Icons.handshake_outlined),
-                selectedIcon: Icon(Icons.handshake),
-                label: 'Settle',
+                icon: const Icon(Icons.handshake_outlined),
+                selectedIcon: const Icon(Icons.handshake),
+                label: l10n?.settleTab ?? 'Settle',
               ),
               NavigationDestination(
-                icon: Icon(Icons.settings_outlined),
-                selectedIcon: Icon(Icons.settings),
-                label: 'Settings',
+                icon: const Icon(Icons.settings_outlined),
+                selectedIcon: const Icon(Icons.settings),
+                label: l10n?.settingsTab ?? 'Settings',
               ),
             ],
           ),

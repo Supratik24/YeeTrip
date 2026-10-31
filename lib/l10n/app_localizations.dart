@@ -103,6 +103,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'YeeTrip'**
   String get appTitle;
+
+  /// No description provided for @dashboardTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard'**
+  String get dashboardTab;
+
+  /// No description provided for @expensesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses'**
+  String get expensesTab;
+
+  /// No description provided for @budgetTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget'**
+  String get budgetTab;
+
+  /// No description provided for @settleTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Settle'**
+  String get settleTab;
+
+  /// No description provided for @settingsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTab;
+
+  /// No description provided for @totalBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Total budget'**
+  String get totalBudget;
+
+  /// No description provided for @duration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get duration;
+
+  /// No description provided for @travelers.
+  ///
+  /// In en, this message translates to:
+  /// **'Travelers'**
+  String get travelers;
+
+  /// No description provided for @loggedExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged expenses'**
+  String get loggedExpenses;
+
+  /// No description provided for @recorded.
+  ///
+  /// In en, this message translates to:
+  /// **'recorded'**
+  String get recorded;
+
+  /// No description provided for @day.
+  ///
+  /// In en, this message translates to:
+  /// **'day'**
+  String get day;
+
+  /// No description provided for @days.
+  ///
+  /// In en, this message translates to:
+  /// **'days'**
+  String get days;
+
+  /// No description provided for @editTripAndTravelers.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit trip & travelers'**
+  String get editTripAndTravelers;
+
+  /// No description provided for @editTripDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit trip details'**
+  String get editTripDetails;
+
+  /// No description provided for @dataExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Data export'**
+  String get dataExport;
+
+  /// No description provided for @dataExportDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Export all logged expenses for \"{tripName}\" as an RFC 4180 compliant CSV file. Includes date, description, category, payer, amount in ₹, and split breakdown.'**
+  String dataExportDesc(String tripName);
+
+  /// No description provided for @exportAndShareCsv.
+  ///
+  /// In en, this message translates to:
+  /// **'Export & share CSV'**
+  String get exportAndShareCsv;
+
+  /// No description provided for @exporting.
+  ///
+  /// In en, this message translates to:
+  /// **'Exporting...'**
+  String get exporting;
+
+  /// No description provided for @noExpensesToExport.
+  ///
+  /// In en, this message translates to:
+  /// **'No expenses logged yet to export.'**
+  String get noExpensesToExport;
+
+  /// No description provided for @aboutYeeTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'About YeeTrip'**
+  String get aboutYeeTrip;
+
+  /// No description provided for @aboutYeeTripDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'YeeTrip is an offline-first group trip budget and expense-splitting app crafted specifically for Indian travelers.'**
+  String get aboutYeeTripDesc;
+
+  /// No description provided for @offlinePrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'100% Offline & Private'**
+  String get offlinePrivate;
+
+  /// No description provided for @offlinePrivateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'All trip data and expenses remain strictly on this phone. No accounts or internet required.'**
+  String get offlinePrivateDesc;
+
+  /// No description provided for @precisionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact Integer Paise Precision'**
+  String get precisionTitle;
+
+  /// No description provided for @precisionDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculated in exact integer paise to prevent floating-point rounding errors. Formatted in standard Indian numbering (₹1,00,000).'**
+  String get precisionDesc;
+
+  /// No description provided for @settlementTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum Transactions Settlement'**
+  String get settlementTitle;
+
+  /// No description provided for @settlementDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Greedy balance netting algorithm calculates the fewest peer-to-peer transfers to settle all trip debts.'**
+  String get settlementDesc;
+
+  /// No description provided for @version.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get version;
+
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @languageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select your preferred display language'**
+  String get languageSubtitle;
+
+  /// No description provided for @english.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get english;
+
+  /// No description provided for @hindi.
+  ///
+  /// In en, this message translates to:
+  /// **'हिन्दी (Hindi)'**
+  String get hindi;
+
+  /// No description provided for @systemDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'System Default'**
+  String get systemDefault;
 }
 
 class _AppLocalizationsDelegate
