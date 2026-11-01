@@ -10,6 +10,7 @@ import '../../../../data/providers.dart';
 import '../../../trips/domain/trip_model.dart';
 import '../../domain/expense_model.dart';
 import '../../domain/split_calculator.dart';
+import '../widgets/receipt_scanner_sheet.dart';
 
 /// Screen to add or edit an expense with 4 split modes.
 class AddEditExpenseScreen extends ConsumerStatefulWidget {
@@ -293,6 +294,37 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     }
   }
 
+  void _openReceiptScanner(BuildContext context) {
+    ReceiptScannerSheet.show(
+      context,
+      onReceiptApplied: (receipt) {
+        setState(() {
+          if (receipt.merchantName != null && receipt.merchantName!.isNotEmpty) {
+            _descriptionController.text = receipt.merchantName!;
+          }
+          if (receipt.amountPaise != null) {
+            _amountController.text = Money.paiseToDecimalString(receipt.amountPaise!);
+          }
+          if (receipt.date != null) {
+            _selectedDate = receipt.date!;
+          }
+          if (receipt.suggestedCategory.isNotEmpty) {
+            _selectedCategory = receipt.suggestedCategory;
+          }
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Applied receipt: ${receipt.merchantName ?? "Bill"} (${receipt.amountPaise != null ? Money.formatRupees(receipt.amountPaise!) : ""})',
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tripAsync = ref.watch(tripDetailsProvider(widget.tripId));
@@ -338,6 +370,12 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
           appBar: AppBar(
             title: Text(widget.expenseId == null ? 'Add expense' : 'Edit expense'),
             actions: [
+              IconButton(
+                key: const Key('appbar_scan_receipt_button'),
+                icon: const Icon(Icons.document_scanner_outlined),
+                onPressed: () => _openReceiptScanner(context),
+                tooltip: 'Scan Receipt / Bill',
+              ),
               if (widget.expenseId != null)
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
@@ -352,6 +390,53 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
               children: [
+                // Scan Receipt Banner
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.receipt_long, color: theme.colorScheme.primary),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Have a bill or receipt?',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Scan to auto-fill amount & details',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      FilledButton.tonalIcon(
+                        key: const Key('scan_bill_banner_button'),
+                        onPressed: () => _openReceiptScanner(context),
+                        icon: const Icon(Icons.document_scanner, size: 16),
+                        label: const Text('Scan Bill'),
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
                 // Description
                 TextFormField(
                   controller: _descriptionController,
