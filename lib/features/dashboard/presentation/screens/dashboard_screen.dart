@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
+import '../../../sync/presentation/widgets/cloud_sync_sheet.dart';
 import '../../../trips/domain/trip_model.dart';
 import '../widgets/category_pie_chart.dart';
 import '../widgets/cooked_meter.dart';
@@ -26,6 +27,19 @@ class DashboardScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(trip.name),
+        actions: [
+          IconButton(
+            key: const Key('dashboard_cloud_sync_btn'),
+            icon: const Icon(Icons.cloud_sync_outlined),
+            tooltip: 'Cloud Sync & Share',
+            onPressed: () => showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => CloudSyncSheet(trip: trip),
+            ),
+          ),
+        ],
       ),
       body: expensesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/money.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
+import '../../../sync/presentation/widgets/join_trip_dialog.dart';
 import '../../domain/trip_model.dart';
 import '../../services/demo_data_seeder.dart';
 
@@ -139,6 +140,15 @@ class TripListScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('YeeTrip'),
         actions: [
+          IconButton(
+            key: const Key('join_trip_code_btn'),
+            icon: const Icon(Icons.group_add_outlined),
+            tooltip: 'Join trip with invite code',
+            onPressed: () => showDialog(
+              context: context,
+              builder: (_) => const JoinTripDialog(),
+            ),
+          ),
           IconButton(
             key: const Key('import_trip_backup_btn'),
             icon: const Icon(Icons.file_upload_outlined),

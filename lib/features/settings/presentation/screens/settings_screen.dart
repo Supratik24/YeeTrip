@@ -7,6 +7,7 @@ import '../../../../core/money.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../sync/presentation/widgets/cloud_sync_sheet.dart';
 import '../../../trips/domain/trip_model.dart';
 import '../../../trips/services/trip_backup_service.dart';
 import '../../services/csv_exporter.dart';
@@ -251,6 +252,62 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       onPressed: () => context.push('/trips/${widget.trip.id}/edit'),
                       icon: const Icon(Icons.edit_outlined, size: 18),
                       label: Text(l10n?.editTripAndTravelers ?? 'Edit trip & travelers'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Cloud Collaboration & Sync Card
+          Card(
+            key: const Key('cloud_sync_card'),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: colorScheme.outlineVariant),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.cloud_sync, color: colorScheme.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Cloud Sync & Collaboration',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Collaborate with group members via a 6-character Invite Code. Works offline with deterministic sync.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      key: const Key('open_cloud_sync_sheet_btn'),
+                      onPressed: () => showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => CloudSyncSheet(trip: widget.trip),
+                      ),
+                      icon: const Icon(Icons.share, size: 18),
+                      label: const Text('Manage Cloud Sync & Code'),
                     ),
                   ),
                 ],
