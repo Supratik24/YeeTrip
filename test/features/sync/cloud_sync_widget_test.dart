@@ -239,6 +239,9 @@ void main() {
       expect(find.byKey(const Key('cloud_sync_card')), findsOneWidget);
       expect(find.text('Cloud Sync & Collaboration'), findsOneWidget);
 
+      await tester.drag(find.byType(ListView), const Offset(0, -300));
+      await tester.pumpAndSettle();
+
       final openSheetBtn = find.byKey(const Key('open_cloud_sync_sheet_btn'));
       expect(openSheetBtn, findsOneWidget);
 

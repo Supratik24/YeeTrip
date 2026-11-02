@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/locale_provider.dart';
 import '../../../../core/money.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../auth/presentation/widgets/auth_modal.dart';
+import '../../../auth/presentation/widgets/edit_profile_dialog.dart';
 import '../../../sync/presentation/widgets/cloud_sync_sheet.dart';
 import '../../../trips/domain/trip_model.dart';
 import '../../../trips/services/trip_backup_service.dart';
@@ -187,7 +190,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-          // Trip Summary Card
+            // Account & Cloud Profile Card
+            _buildAccountCard(context, ref),
+            const SizedBox(height: 16),
+
+            // Trip Summary Card
           Card(
             elevation: 0,
             color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
@@ -541,6 +548,177 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
     ),
   );
+  }
+
+  Widget _buildAccountCard(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final authState = ref.watch(authStateProvider).value ?? ref.watch(authServiceProvider).currentState;
+    final user = authState.user;
+
+    return Card(
+      key: const Key('account_profile_card'),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: user == null
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade100,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.person_outline, color: Colors.amber.shade900, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Guest User',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Local offline mode',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Sign in or create an account to backup your trips to cloud and link your traveler profile across trips.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      key: const Key('open_auth_modal_btn'),
+                      onPressed: () => showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => const AuthModal(),
+                      ),
+                      icon: const Icon(Icons.login, size: 18),
+                      label: const Text('Sign In / Create Account'),
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: colorScheme.primaryContainer,
+                        child: Text(
+                          user.displayName.isNotEmpty ? user.displayName[0].toUpperCase() : 'U',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user.displayName,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              user.email ?? user.phoneNumber ?? 'Authenticated User',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (user.defaultUpiVpa != null && user.defaultUpiVpa!.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green.shade200),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.account_balance, size: 14, color: Colors.green.shade800),
+                          const SizedBox(width: 6),
+                          Text(
+                            'UPI: ${user.defaultUpiVpa}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green.shade900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          key: const Key('edit_profile_btn'),
+                          onPressed: () => showDialog(
+                            context: context,
+                            builder: (_) => EditProfileDialog(user: user),
+                          ),
+                          icon: const Icon(Icons.edit, size: 16),
+                          label: const Text('Edit Profile'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        key: const Key('sign_out_btn'),
+                        onPressed: () => ref.read(authServiceProvider).signOut(),
+                        icon: const Icon(Icons.logout, size: 16),
+                        label: const Text('Sign Out'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+      ),
+    );
   }
 
   Widget _buildDetailRow(BuildContext context, String label, String value) {
