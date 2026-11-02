@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/categories.dart';
+import '../../../../core/ml/ml_providers.dart';
+import '../../../../core/ml/smart_categorizer.dart';
 import '../../../../core/money.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
@@ -47,9 +49,40 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   String? _splitError;
   bool _isSaving = false;
   bool _initializedFromExisting = false;
+  bool _hasManuallyChangedCategory = false;
+  CategoryPrediction? _smartPrediction;
+
+  @override
+  void initState() {
+    super.initState();
+    _descriptionController.addListener(_onDescriptionChanged);
+  }
+
+  void _onDescriptionChanged() {
+    final text = _descriptionController.text.trim();
+    if (text.isEmpty) {
+      if (_smartPrediction != null) {
+        setState(() => _smartPrediction = null);
+      }
+      return;
+    }
+
+    final categorizer = ref.read(smartCategorizerProvider);
+    final prediction = categorizer.predict(text);
+
+    setState(() {
+      _smartPrediction = prediction.confidence >= 0.40 ? prediction : null;
+      if (!_hasManuallyChangedCategory &&
+          prediction.isHighConfidence &&
+          widget.expenseId == null) {
+        _selectedCategory = prediction.categoryKey;
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _descriptionController.removeListener(_onDescriptionChanged);
     _descriptionController.dispose();
     _amountController.dispose();
     for (final c in _exactControllers.values) {
@@ -452,6 +485,34 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                     return null;
                   },
                 ),
+                if (_smartPrediction != null) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      ActionChip(
+                        key: const Key('smart_category_suggestion_chip'),
+                        avatar: const Icon(
+                          Icons.auto_awesome,
+                          size: 14,
+                          color: Colors.purple,
+                        ),
+                        label: Text(
+                          'Suggested: ${_smartPrediction!.categoryKey} (${(_smartPrediction!.confidence * 100).toInt()}%)',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _selectedCategory = _smartPrediction!.categoryKey;
+                            _hasManuallyChangedCategory = true;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 16),
 
                 // Amount & Date
@@ -509,6 +570,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
 
                 // Category selector
                 DropdownButtonFormField<String>(
+                  key: ValueKey(_selectedCategory),
                   initialValue: _selectedCategory,
                   decoration: const InputDecoration(
                     labelText: 'Category',
@@ -521,7 +583,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                   }).toList(),
                   onChanged: (val) {
                     if (val != null) {
-                      setState(() => _selectedCategory = val);
+                      setState(() {
+                        _selectedCategory = val;
+                        _hasManuallyChangedCategory = true;
+                      });
                     }
                   },
                 ),

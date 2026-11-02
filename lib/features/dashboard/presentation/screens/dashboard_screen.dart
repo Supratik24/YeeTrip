@@ -8,6 +8,7 @@ import '../widgets/category_pie_chart.dart';
 import '../widgets/cooked_meter.dart';
 import '../widgets/metric_cards.dart';
 import '../widgets/planned_vs_actual_bars.dart';
+import '../widgets/spending_velocity_card.dart';
 
 /// Dashboard screen showing spending overview, cooked meter, and planned vs actual.
 class DashboardScreen extends ConsumerWidget {
@@ -54,14 +55,21 @@ class DashboardScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // 3. Planned vs Actual Bars (Turns error color when over plan)
+                // 3. Spending Velocity & Forecast
+                SpendingVelocityCard(
+                  trip: effectiveTrip,
+                  expenses: expenses,
+                ),
+                const SizedBox(height: 16),
+
+                // 4. Planned vs Actual Bars (Turns error color when over plan)
                 PlannedVsActualBars(
                   trip: effectiveTrip,
                   expenses: expenses,
                 ),
                 const SizedBox(height: 16),
 
-                // 4. Pie Chart of Planned Category Split
+                // 5. Pie Chart of Planned Category Split
                 CategoryPieChart(trip: effectiveTrip),
               ],
             ),
