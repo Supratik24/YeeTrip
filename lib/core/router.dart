@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/expenses/presentation/screens/add_edit_expense_screen.dart';
+import '../features/splash/presentation/animated_splash_screen.dart';
 import '../features/trips/presentation/screens/trip_detail_scaffold.dart';
 import '../features/trips/presentation/screens/trip_edit_screen.dart';
 import '../features/trips/presentation/screens/trip_list_screen.dart';
@@ -9,8 +10,12 @@ import '../features/trips/presentation/screens/trip_setup_screen.dart';
 
 /// App router configuration with go_router.
 final appRouter = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/splash',
   routes: [
+    GoRoute(
+      path: '/splash',
+      builder: (context, state) => const AnimatedSplashScreen(),
+    ),
     GoRoute(
       path: '/',
       builder: (context, state) => const TripListScreen(),

@@ -541,11 +541,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Divider(color: colorScheme.outlineVariant),
                   const SizedBox(height: 8),
                   Center(
-                    child: Text(
-                      'YeeTrip Core v1.0.0 • Offline Edition',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'YeeTrip Core v1.0.0 • Offline Edition',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        TextButton.icon(
+                          key: const Key('replay_splash_animation_btn'),
+                          onPressed: () => context.push('/splash'),
+                          icon: const Icon(Icons.play_circle_outline, size: 16),
+                          label: const Text('Replay intro animation'),
+                        ),
+                      ],
                     ),
                   ),
                 ],
