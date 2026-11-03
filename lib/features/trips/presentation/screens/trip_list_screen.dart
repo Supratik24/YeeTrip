@@ -180,10 +180,15 @@ class TripListScreen extends ConsumerWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.flight_takeoff_rounded,
-                        size: 64,
-                        color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                      Image.asset(
+                        'assets/images/logo_transparent.png',
+                        height: 80,
+                        width: 80,
+                        errorBuilder: (_, _, _) => Icon(
+                          Icons.flight_takeoff_rounded,
+                          size: 64,
+                          color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                        ),
                       ),
                       const SizedBox(height: 16),
                       Text(

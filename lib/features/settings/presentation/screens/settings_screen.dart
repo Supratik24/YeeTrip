@@ -489,8 +489,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.info_outline, color: colorScheme.primary),
-                      const SizedBox(width: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.asset(
+                          'assets/images/logo_transparent.png',
+                          width: 32,
+                          height: 32,
+                          errorBuilder: (_, _, _) => Icon(Icons.wallet, color: colorScheme.primary, size: 28),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
                       Text(
                         l10n?.aboutYeeTrip ?? 'About YeeTrip',
                         style: theme.textTheme.titleMedium?.copyWith(
