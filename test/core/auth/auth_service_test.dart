@@ -87,8 +87,24 @@ void main() {
       expect(service.currentState.isAuthenticated, isTrue);
     });
 
+    test('Sign in with Google requires valid email and auto-derives name and UPI', () async {
+      expect(
+        () => service.signInWithGoogle(),
+        throwsA(isA<FormatException>()),
+      );
+      expect(
+        () => service.signInWithGoogle(customEmail: 'invalid-email'),
+        throwsA(isA<FormatException>()),
+      );
+
+      final user = await service.signInWithGoogle(customEmail: 'supratik.sangram@gmail.com');
+      expect(user.displayName, equals('Supratik Sangram'));
+      expect(user.email, equals('supratik.sangram@gmail.com'));
+      expect(user.defaultUpiVpa, equals('supratiksangram@oksbi'));
+    });
+
     test('Update profile modifies display name, UPI VPA, and language', () async {
-      await service.signInWithGoogle();
+      await service.signInWithGoogle(customEmail: 'aarav@gmail.com', customName: 'Aarav Sharma');
 
       final updated = await service.updateProfile(
         displayName: 'Aarav S.',
@@ -103,7 +119,7 @@ void main() {
     });
 
     test('Sign out resets state to Guest and clears storage', () async {
-      await service.signInWithGoogle();
+      await service.signInWithGoogle(customEmail: 'test@gmail.com');
       expect(service.currentState.isAuthenticated, isTrue);
 
       await service.signOut();
@@ -115,7 +131,7 @@ void main() {
     });
 
     test('Restore session recovers stored profile on app relaunch', () async {
-      await service.signInWithGoogle(customName: 'Rohan Mehra');
+      await service.signInWithGoogle(customEmail: 'rohan@gmail.com', customName: 'Rohan Mehra');
 
       // Create a fresh service instance with the same storage
       final newService = AuthService(storage: storage);

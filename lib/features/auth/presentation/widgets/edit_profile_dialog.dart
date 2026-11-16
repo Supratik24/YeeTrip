@@ -106,7 +106,7 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
             controller: _nameController,
             decoration: const InputDecoration(
               labelText: 'Display Name',
-              hintText: 'e.g. Aarav Sharma',
+              hintText: 'e.g. Supratik',
               prefixIcon: Icon(Icons.person),
               border: OutlineInputBorder(),
             ),
@@ -117,7 +117,7 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
             controller: _upiController,
             decoration: const InputDecoration(
               labelText: 'Default UPI ID (for receiving settlements)',
-              hintText: 'e.g. aarav@oksbi',
+              hintText: 'e.g. yourname@oksbi',
               prefixIcon: Icon(Icons.account_balance),
               border: OutlineInputBorder(),
             ),

@@ -78,35 +78,34 @@ class AuthService {
     return user;
   }
 
-  /// Signs in with Google (mock/adapter for multi-platform support).
+  /// Signs in with Google (creates/links user profile from Google credentials).
   Future<UserProfile> signInWithGoogle({
     String? customName,
     String? customEmail,
     String? customAvatarUrl,
     String? defaultUpiVpa,
   }) async {
+    final cleanEmail = customEmail?.trim().toLowerCase();
+    if (cleanEmail == null || cleanEmail.isEmpty || !cleanEmail.contains('@')) {
+      throw const FormatException('Please enter a valid Google email address');
+    }
+
     _setState(_currentState.copyWith(isLoading: true, errorMessage: null));
 
-    final email = customEmail?.trim().isNotEmpty == true
-        ? customEmail!.trim().toLowerCase()
-        : 'user.traveler@gmail.com';
     final name = customName?.trim().isNotEmpty == true
         ? customName!.trim()
-        : (customEmail?.contains('@') == true
-            ? customEmail!.split('@').first
-            : 'Aarav Sharma');
+        : _deriveDisplayNameFromEmail(cleanEmail);
 
+    final cleanPrefix = cleanEmail.split('@').first.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
     final upi = defaultUpiVpa?.trim().isNotEmpty == true
         ? defaultUpiVpa!.trim()
-        : (customEmail?.trim().isNotEmpty == true
-            ? '${customEmail!.trim().split('@').first}@oksbi'
-            : 'aarav@oksbi');
+        : '${cleanPrefix.isNotEmpty ? cleanPrefix : "traveler"}@oksbi';
 
     final user = UserProfile(
       uid: 'google_${_uuid.v4().substring(0, 8)}',
       displayName: name,
-      email: email,
-      avatarUrl: customAvatarUrl ?? 'https://api.dicebear.com/7.x/bottts/svg?seed=$name',
+      email: cleanEmail,
+      avatarUrl: customAvatarUrl ?? 'https://api.dicebear.com/7.x/initials/svg?seed=$name',
       defaultUpiVpa: upi,
       createdAt: DateTime.now().toUtc(),
     );
@@ -114,6 +113,13 @@ class AuthService {
     await _storage.saveProfile(user);
     _setState(AuthState.authenticated(user));
     return user;
+  }
+
+  String _deriveDisplayNameFromEmail(String email) {
+    final prefix = email.split('@').first;
+    final parts = prefix.split(RegExp(r'[._\-]')).where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return 'Traveler';
+    return parts.map((p) => p[0].toUpperCase() + (p.length > 1 ? p.substring(1) : '')).join(' ');
   }
 
   /// Signs in with Indian Phone Number & OTP verification.

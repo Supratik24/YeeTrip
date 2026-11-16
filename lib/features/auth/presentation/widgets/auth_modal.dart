@@ -72,9 +72,16 @@ class _AuthModalState extends ConsumerState<AuthModal> {
     final name = _googleNameController.text.trim();
     final upi = _googleUpiController.text.trim();
 
-    if (email.isNotEmpty && (!email.contains('@') || !email.contains('.'))) {
+    if (email.isEmpty) {
       setState(() {
-        _errorMessage = 'Please enter a valid Google email address';
+        _errorMessage = 'Please enter your Google email address to continue';
+      });
+      return;
+    }
+
+    if (!email.contains('@') || !email.contains('.')) {
+      setState(() {
+        _errorMessage = 'Please enter a valid Google email address (e.g. name@gmail.com)';
       });
       return;
     }
@@ -88,7 +95,7 @@ class _AuthModalState extends ConsumerState<AuthModal> {
       final auth = ref.read(authServiceProvider);
       final user = await auth.signInWithGoogle(
         customName: name.isNotEmpty ? name : null,
-        customEmail: email.isNotEmpty ? email : null,
+        customEmail: email,
         defaultUpiVpa: upi.isNotEmpty ? upi : null,
       );
       await _handlePostSignIn(user);
@@ -96,7 +103,7 @@ class _AuthModalState extends ConsumerState<AuthModal> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = e.toString().replaceFirst('Exception: ', '');
+          _errorMessage = e.toString().replaceFirst('FormatException: ', '').replaceFirst('Exception: ', '');
         });
       }
     }
@@ -323,9 +330,10 @@ class _AuthModalState extends ConsumerState<AuthModal> {
                 controller: _googleEmailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  labelText: 'Google Email Address',
+                  labelText: 'Google Email Address *',
                   hintText: 'e.g. yourname@gmail.com',
                   prefixIcon: const Icon(Icons.mail_outline),
+                  helperText: 'Enter your Gmail address to connect your profile',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
@@ -338,6 +346,7 @@ class _AuthModalState extends ConsumerState<AuthModal> {
                   labelText: 'Your Full Name (optional)',
                   hintText: 'e.g. Supratik',
                   prefixIcon: const Icon(Icons.person_outline),
+                  helperText: 'Defaults to name from email if left blank',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
@@ -378,7 +387,7 @@ class _AuthModalState extends ConsumerState<AuthModal> {
                 controller: _displayNameController,
                 decoration: InputDecoration(
                   labelText: 'Your Name (optional)',
-                  hintText: 'e.g. Aarav Sharma',
+                  hintText: 'e.g. Supratik',
                   prefixIcon: const Icon(Icons.person_outline),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -390,7 +399,7 @@ class _AuthModalState extends ConsumerState<AuthModal> {
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   labelText: 'Email Address',
-                  hintText: 'e.g. aarav@example.com',
+                  hintText: 'e.g. user@example.com',
                   prefixIcon: const Icon(Icons.email_outlined),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),

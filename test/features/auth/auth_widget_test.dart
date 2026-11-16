@@ -78,13 +78,12 @@ void main() {
       expect(find.text('Account & Cloud Profile'), findsOneWidget);
       expect(find.byKey(const Key('google_sign_in_btn')), findsOneWidget);
 
-      // Tap Google Sign In
+      // Tap Google Sign In without entering email -> validation error shown
       await tester.tap(find.byKey(const Key('google_sign_in_btn')));
       await tester.pumpAndSettle();
 
-      // Auth modal should dismiss and user should be authenticated
-      expect(authService.currentState.isAuthenticated, isTrue);
-      expect(authService.currentState.user?.displayName, equals('Aarav Sharma'));
+      expect(find.text('Please enter your Google email address to continue'), findsOneWidget);
+      expect(authService.currentState.isAuthenticated, isFalse);
     });
 
     testWidgets('Google tab signs in with user-entered custom Google email, name, and UPI', (tester) async {
@@ -171,7 +170,10 @@ void main() {
     testWidgets('Pre-populates fields and saves updated display name and UPI ID', (tester) async {
       final storage = InMemoryAuthStorage();
       final authService = AuthService(storage: storage);
-      final initialUser = await authService.signInWithGoogle();
+      final initialUser = await authService.signInWithGoogle(
+        customEmail: 'aarav@gmail.com',
+        customName: 'Aarav Sharma',
+      );
 
       await tester.pumpWidget(
         ProviderScope(
