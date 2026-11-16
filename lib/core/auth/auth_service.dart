@@ -83,18 +83,31 @@ class AuthService {
     String? customName,
     String? customEmail,
     String? customAvatarUrl,
+    String? defaultUpiVpa,
   }) async {
     _setState(_currentState.copyWith(isLoading: true, errorMessage: null));
 
-    final email = customEmail ?? 'user.traveler@gmail.com';
-    final name = customName ?? 'Aarav Sharma';
+    final email = customEmail?.trim().isNotEmpty == true
+        ? customEmail!.trim().toLowerCase()
+        : 'user.traveler@gmail.com';
+    final name = customName?.trim().isNotEmpty == true
+        ? customName!.trim()
+        : (customEmail?.contains('@') == true
+            ? customEmail!.split('@').first
+            : 'Aarav Sharma');
+
+    final upi = defaultUpiVpa?.trim().isNotEmpty == true
+        ? defaultUpiVpa!.trim()
+        : (customEmail?.trim().isNotEmpty == true
+            ? '${customEmail!.trim().split('@').first}@oksbi'
+            : 'aarav@oksbi');
 
     final user = UserProfile(
       uid: 'google_${_uuid.v4().substring(0, 8)}',
       displayName: name,
       email: email,
-      avatarUrl: customAvatarUrl ?? 'https://api.dicebear.com/7.x/bottts/svg?seed=Aarav',
-      defaultUpiVpa: 'aarav@oksbi',
+      avatarUrl: customAvatarUrl ?? 'https://api.dicebear.com/7.x/bottts/svg?seed=$name',
+      defaultUpiVpa: upi,
       createdAt: DateTime.now().toUtc(),
     );
 

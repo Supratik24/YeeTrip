@@ -87,6 +87,44 @@ void main() {
       expect(authService.currentState.user?.displayName, equals('Aarav Sharma'));
     });
 
+    testWidgets('Google tab signs in with user-entered custom Google email, name, and UPI', (tester) async {
+      final storage = InMemoryAuthStorage();
+      final authService = AuthService(storage: storage);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authServiceProvider.overrideWithValue(authService),
+            profileMigrationServiceProvider.overrideWithValue(
+              _FakeMigrationService(AppDatabase()),
+            ),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: AuthModal(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('google_email_field')), findsOneWidget);
+      expect(find.byKey(const Key('google_name_field')), findsOneWidget);
+      expect(find.byKey(const Key('google_upi_field')), findsOneWidget);
+
+      await tester.enterText(find.byKey(const Key('google_email_field')), 'supratik@gmail.com');
+      await tester.enterText(find.byKey(const Key('google_name_field')), 'Supratik');
+      await tester.enterText(find.byKey(const Key('google_upi_field')), 'supratik@okhdfcbank');
+
+      await tester.tap(find.byKey(const Key('google_sign_in_btn')));
+      await tester.pumpAndSettle();
+
+      expect(authService.currentState.isAuthenticated, isTrue);
+      expect(authService.currentState.user?.displayName, equals('Supratik'));
+      expect(authService.currentState.user?.email, equals('supratik@gmail.com'));
+      expect(authService.currentState.user?.defaultUpiVpa, equals('supratik@okhdfcbank'));
+    });
+
     testWidgets('Email tab switches and signs in with email/password', (tester) async {
       final storage = InMemoryAuthStorage();
       final authService = AuthService(storage: storage);

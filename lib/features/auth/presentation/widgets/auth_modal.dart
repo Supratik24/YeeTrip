@@ -19,6 +19,11 @@ class _AuthModalState extends ConsumerState<AuthModal> {
   bool _isLoading = false;
   String? _errorMessage;
 
+  // Google form controllers
+  final _googleEmailController = TextEditingController();
+  final _googleNameController = TextEditingController();
+  final _googleUpiController = TextEditingController();
+
   // Email form controllers
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -31,6 +36,9 @@ class _AuthModalState extends ConsumerState<AuthModal> {
 
   @override
   void dispose() {
+    _googleEmailController.dispose();
+    _googleNameController.dispose();
+    _googleUpiController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _displayNameController.dispose();
@@ -60,6 +68,17 @@ class _AuthModalState extends ConsumerState<AuthModal> {
   }
 
   Future<void> _handleGoogleSignIn() async {
+    final email = _googleEmailController.text.trim();
+    final name = _googleNameController.text.trim();
+    final upi = _googleUpiController.text.trim();
+
+    if (email.isNotEmpty && (!email.contains('@') || !email.contains('.'))) {
+      setState(() {
+        _errorMessage = 'Please enter a valid Google email address';
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -67,7 +86,11 @@ class _AuthModalState extends ConsumerState<AuthModal> {
 
     try {
       final auth = ref.read(authServiceProvider);
-      final user = await auth.signInWithGoogle();
+      final user = await auth.signInWithGoogle(
+        customName: name.isNotEmpty ? name : null,
+        customEmail: email.isNotEmpty ? email : null,
+        defaultUpiVpa: upi.isNotEmpty ? upi : null,
+      );
       await _handlePostSignIn(user);
     } catch (e) {
       if (mounted) {
@@ -244,25 +267,91 @@ class _AuthModalState extends ConsumerState<AuthModal> {
                     color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
                   ),
                 ),
-                child: Column(
+                child: Row(
                   children: [
-                    const Icon(Icons.g_mobiledata, size: 48, color: Colors.blue),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Fast & Secure Sign In',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'G',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF4285F4),
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Connect your Google Account to back up trips and link your name across group expenses.',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Sign in with Google',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Enter your Google account details to link your profile & UPI ID across trips.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                key: const Key('google_email_field'),
+                controller: _googleEmailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: 'Google Email Address',
+                  hintText: 'e.g. yourname@gmail.com',
+                  prefixIcon: const Icon(Icons.mail_outline),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: const Key('google_name_field'),
+                controller: _googleNameController,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  labelText: 'Your Full Name (optional)',
+                  hintText: 'e.g. Supratik',
+                  prefixIcon: const Icon(Icons.person_outline),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: const Key('google_upi_field'),
+                controller: _googleUpiController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: 'Your UPI ID (optional)',
+                  hintText: 'e.g. yourname@oksbi',
+                  prefixIcon: const Icon(Icons.account_balance),
+                  helperText: 'Used for 1-tap UPI debt settlements with friends',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               const SizedBox(height: 16),
