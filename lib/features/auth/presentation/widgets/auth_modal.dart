@@ -8,7 +8,12 @@ import '../../../../core/auth/auth_providers.dart';
 /// Modal bottom sheet allowing users to sign in or create an account via
 /// Google, Email/Password, or Indian Mobile OTP.
 class AuthModal extends ConsumerStatefulWidget {
-  const AuthModal({super.key});
+  final String? reason;
+
+  const AuthModal({
+    super.key,
+    this.reason,
+  });
 
   @override
   ConsumerState<AuthModal> createState() => _AuthModalState();
@@ -230,7 +235,7 @@ class _AuthModalState extends ConsumerState<AuthModal> {
                         ),
                       ),
                       Text(
-                        'Sign in to link your traveler profile across trips',
+                        widget.reason ?? 'Sign in to link your traveler profile across trips',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

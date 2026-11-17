@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yeetrip/core/auth/auth_providers.dart';
+import 'package:yeetrip/core/auth/auth_service.dart';
+import 'package:yeetrip/core/auth/auth_storage.dart';
 import 'package:yeetrip/features/trips/presentation/screens/trip_setup_screen.dart';
 
 void main() {
@@ -13,8 +16,9 @@ void main() {
       ),
     );
 
-    // Verify initial fields are present
+    // Verify initial fields and guest sign-in banner are present
     expect(find.text('Plan new trip'), findsOneWidget);
+    expect(find.textContaining('Sign-in required'), findsOneWidget);
     expect(find.byKey(const Key('trip_name_field')), findsOneWidget);
     expect(find.byKey(const Key('total_budget_field')), findsOneWidget);
     expect(find.byKey(const Key('days_field')), findsOneWidget);
@@ -48,5 +52,33 @@ void main() {
     // Should now have 2 traveler fields
     expect(find.byKey(const Key('traveler_field_0')), findsOneWidget);
     expect(find.byKey(const Key('traveler_field_1')), findsOneWidget);
+  });
+
+  testWidgets('TripSetupScreen pre-populates traveler name when user is authenticated', (WidgetTester tester) async {
+    final storage = InMemoryAuthStorage();
+    final authService = AuthService(storage: storage);
+    await authService.signInWithGoogle(
+      customEmail: 'supratik@gmail.com',
+      customName: 'Supratik',
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authServiceProvider.overrideWithValue(authService),
+        ],
+        child: const MaterialApp(
+          home: TripSetupScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify guest banner is not displayed
+    expect(find.textContaining('Sign-in required'), findsNothing);
+
+    // Traveler 0 should be pre-filled with the authenticated user's name
+    final travelerField = tester.widget<TextFormField>(find.byKey(const Key('traveler_field_0')));
+    expect(travelerField.controller?.text, equals('Supratik'));
   });
 }

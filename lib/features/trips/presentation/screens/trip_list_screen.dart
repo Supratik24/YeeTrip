@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/auth_models.dart';
+import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/money.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
+import '../../../auth/presentation/widgets/auth_modal.dart';
 import '../../../sync/presentation/widgets/join_trip_dialog.dart';
 import '../../domain/trip_model.dart';
 import '../../services/demo_data_seeder.dart';
@@ -131,6 +134,65 @@ class TripListScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _handlePlanTrip(BuildContext context, WidgetRef ref) async {
+    final auth = ref.read(authServiceProvider);
+    if (auth.currentState.isGuest) {
+      final user = await showModalBottomSheet<UserProfile>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => const AuthModal(
+          reason: 'Sign in or create an account to plan a trip',
+        ),
+      );
+      if (user == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Sign-in is required to create a trip'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+    }
+    if (context.mounted) {
+      context.push('/trips/new');
+    }
+  }
+
+  Future<void> _handleJoinTrip(BuildContext context, WidgetRef ref) async {
+    final auth = ref.read(authServiceProvider);
+    if (auth.currentState.isGuest) {
+      final user = await showModalBottomSheet<UserProfile>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => const AuthModal(
+          reason: 'Sign in or create an account to join a trip',
+        ),
+      );
+      if (user == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Sign-in is required to join a trip'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+    }
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (_) => const JoinTripDialog(),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tripsAsync = ref.watch(tripsStreamProvider);
@@ -144,10 +206,7 @@ class TripListScreen extends ConsumerWidget {
             key: const Key('join_trip_code_btn'),
             icon: const Icon(Icons.group_add_outlined),
             tooltip: 'Join trip with invite code',
-            onPressed: () => showDialog(
-              context: context,
-              builder: (_) => const JoinTripDialog(),
-            ),
+            onPressed: () => _handleJoinTrip(context, ref),
           ),
           IconButton(
             key: const Key('import_trip_backup_btn'),
@@ -159,7 +218,7 @@ class TripListScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         key: const Key('plan_trip_fab'),
-        onPressed: () => context.push('/trips/new'),
+        onPressed: () => _handlePlanTrip(context, ref),
         icon: const Icon(Icons.add),
         label: const Text('Plan trip'),
       ),
@@ -206,7 +265,7 @@ class TripListScreen extends ConsumerWidget {
                       const SizedBox(height: 24),
                       FilledButton.icon(
                         key: const Key('plan_first_trip_btn'),
-                        onPressed: () => context.push('/trips/new'),
+                        onPressed: () => _handlePlanTrip(context, ref),
                         icon: const Icon(Icons.add),
                         label: const Text('Plan your first trip'),
                       ),

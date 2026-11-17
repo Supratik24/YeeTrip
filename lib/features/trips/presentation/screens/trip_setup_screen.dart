@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/auth_models.dart';
+import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/money.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
+import '../../../auth/presentation/widgets/auth_modal.dart';
 
 /// Screen to create and set up a new trip.
 class TripSetupScreen extends ConsumerStatefulWidget {
@@ -26,6 +29,15 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
 
   String? _travelersError;
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final currentUser = ref.read(currentUserProvider);
+    if (currentUser != null && currentUser.displayName.trim().isNotEmpty) {
+      _travelerControllers[0].text = currentUser.displayName.trim();
+    }
+  }
 
   @override
   void dispose() {
@@ -86,6 +98,34 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
 
     if (!isFormValid || !areTravelersValid) return;
 
+    // Check mandatory authentication for trip creation
+    final auth = ref.read(authServiceProvider);
+    if (auth.currentState.isGuest) {
+      final user = await showModalBottomSheet<UserProfile>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => const AuthModal(
+          reason: 'Sign in or create an account to save this trip',
+        ),
+      );
+      if (user == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Sign-in is required to create a trip'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+      // If traveler 0 was still default 'You', update it to the user's name
+      if (_travelerControllers.isNotEmpty && _travelerControllers[0].text == 'You') {
+        _travelerControllers[0].text = user.displayName;
+      }
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
@@ -103,6 +143,13 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
         days: days,
         travelerNames: travelerNames,
       );
+
+      // Auto-link traveler profile and default UPI to the new trip
+      final currentUser = ref.read(currentUserProvider);
+      if (currentUser != null) {
+        final migration = ref.read(profileMigrationServiceProvider);
+        await migration.linkProfileToLocalTrips(currentUser);
+      }
 
       if (mounted) {
         context.go('/trips/$tripId');
@@ -123,6 +170,8 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final authState = ref.watch(authStateProvider).value ?? ref.watch(authServiceProvider).currentState;
+    final isGuest = authState.isGuest;
 
     return Scaffold(
       appBar: AppBar(
@@ -135,6 +184,44 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
             children: [
+              if (isGuest) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.lock_outline, color: theme.colorScheme.primary, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Sign-in required: You will be asked to sign in or create an account to save this trip.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => const AuthModal(
+                            reason: 'Sign in or create an account to plan a trip',
+                          ),
+                        ),
+                        child: const Text('Sign in'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               // Trip name
               TextFormField(
                 key: const Key('trip_name_field'),

@@ -4,6 +4,9 @@ import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yeetrip/core/auth/auth_providers.dart';
+import 'package:yeetrip/core/auth/auth_service.dart';
+import 'package:yeetrip/core/auth/auth_storage.dart';
 import 'package:yeetrip/core/sync/remote_sync_repository.dart';
 import 'package:yeetrip/core/sync/sync_engine.dart';
 import 'package:yeetrip/core/sync/sync_models.dart';
@@ -110,10 +113,18 @@ void main() {
         remoteSync: MockRemoteSyncServer(),
       );
 
+      final authStorage = InMemoryAuthStorage();
+      final authService = AuthService(storage: authStorage);
+      await authService.signInWithGoogle(
+        customEmail: 'tester@gmail.com',
+        customName: 'Tester',
+      );
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             syncEngineProvider.overrideWithValue(fakeEngine),
+            authServiceProvider.overrideWithValue(authService),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -145,6 +156,38 @@ void main() {
 
       // Dialog dismissed on success
       expect(find.byKey(const Key('invite_code_input')), findsNothing);
+    });
+
+    testWidgets('Prompts for authentication when guest attempts to join', (tester) async {
+      final fakeEngine = _FakeSyncEngine(
+        db: AppDatabase(),
+        remoteSync: MockRemoteSyncServer(),
+      );
+
+      final authStorage = InMemoryAuthStorage();
+      final authService = AuthService(storage: authStorage); // Guest mode
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            syncEngineProvider.overrideWithValue(fakeEngine),
+            authServiceProvider.overrideWithValue(authService),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: JoinTripDialog(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('invite_code_input')), 'GOA-782');
+      await tester.tap(find.byKey(const Key('submit_join_trip_btn')));
+      await tester.pumpAndSettle();
+
+      // Auth modal bottom sheet is displayed
+      expect(find.text('Account & Cloud Profile'), findsOneWidget);
     });
   });
 

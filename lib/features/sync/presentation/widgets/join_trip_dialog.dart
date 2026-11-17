@@ -3,7 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/auth_models.dart';
+import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/sync/sync_providers.dart';
+import '../../../auth/presentation/widgets/auth_modal.dart';
 import '../../../trips/domain/trip_model.dart';
 
 /// Modal dialog allowing users to enter a 6-7 character Trip Invite Code
@@ -48,6 +51,22 @@ class _JoinTripDialogState extends ConsumerState<JoinTripDialog> {
       return;
     }
 
+    final auth = ref.read(authServiceProvider);
+    if (auth.currentState.isGuest) {
+      final user = await showModalBottomSheet<UserProfile>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => const AuthModal(
+          reason: 'Sign in or create an account to join this trip',
+        ),
+      );
+      if (user == null) {
+        setState(() => _errorMessage = 'Sign-in is required to join a trip');
+        return;
+      }
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -56,6 +75,12 @@ class _JoinTripDialogState extends ConsumerState<JoinTripDialog> {
     try {
       final engine = ref.read(syncEngineProvider);
       final TripWithDetails trip = await engine.joinTripByCode(rawCode);
+
+      final currentUser = ref.read(currentUserProvider);
+      if (currentUser != null) {
+        final migration = ref.read(profileMigrationServiceProvider);
+        await migration.linkProfileToLocalTrips(currentUser);
+      }
 
       if (mounted) {
         Navigator.of(context).pop(trip);
