@@ -9,10 +9,14 @@ import '../../../../core/auth/auth_providers.dart';
 /// Google, Email/Password, or Indian Mobile OTP.
 class AuthModal extends ConsumerStatefulWidget {
   final String? reason;
+  final bool isJoining;
+  final String? prefilledUpi;
 
   const AuthModal({
     super.key,
     this.reason,
+    this.isJoining = false,
+    this.prefilledUpi,
   });
 
   @override
@@ -38,6 +42,14 @@ class _AuthModalState extends ConsumerState<AuthModal> {
   final _phoneController = TextEditingController();
   final _otpController = TextEditingController();
   bool _otpSent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.prefilledUpi != null && widget.prefilledUpi!.isNotEmpty) {
+      _googleUpiController.text = widget.prefilledUpi!;
+    }
+  }
 
   @override
   void dispose() {
@@ -72,10 +84,65 @@ class _AuthModalState extends ConsumerState<AuthModal> {
     }
   }
 
+  Future<void> _handleGoogleOAuthSignIn() async {
+    final upi = _googleUpiController.text.trim();
+    if (widget.isJoining && upi.isEmpty) {
+      setState(() {
+        _errorMessage = 'Please enter your UPI ID below before signing in to join a trip';
+      });
+      return;
+    }
+    if (widget.isJoining && !RegExp(r'^[\w.\-]+@[\w.\-]+$').hasMatch(upi)) {
+      setState(() {
+        _errorMessage = 'Please enter a valid UPI ID (e.g. name@okhdfcbank)';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final auth = ref.read(authServiceProvider);
+      final user = await auth.signInWithGoogleOAuth(
+        defaultUpiVpa: upi.isNotEmpty ? upi : null,
+      );
+      await _handlePostSignIn(user);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          final err = e.toString();
+          if (err.contains('canceled') || err.contains('cancelled') || err.contains('Sign in canceled')) {
+            _errorMessage = 'Google sign-in was cancelled';
+          } else {
+            _errorMessage = 'Google OAuth: $err. You can also sign in manually below.';
+          }
+        });
+      }
+    }
+  }
+
   Future<void> _handleGoogleSignIn() async {
     final email = _googleEmailController.text.trim();
     final name = _googleNameController.text.trim();
     final upi = _googleUpiController.text.trim();
+
+    if (widget.isJoining && upi.isEmpty) {
+      setState(() {
+        _errorMessage = 'UPI ID is mandatory to join a trip (e.g. yourname@okhdfcbank)';
+      });
+      return;
+    }
+
+    if (widget.isJoining && !RegExp(r'^[\w.\-]+@[\w.\-]+$').hasMatch(upi)) {
+      setState(() {
+        _errorMessage = 'Please enter a valid UPI ID (e.g. yourname@okhdfcbank)';
+      });
+      return;
+    }
 
     if (email.isEmpty) {
       setState(() {
@@ -269,65 +336,67 @@ class _AuthModalState extends ConsumerState<AuthModal> {
 
             // Tab Content
             if (_selectedTab == 0) ...[
-              // Google Sign In
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+              // 1-Tap Google OAuth Button
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: FilledButton.icon(
+                  key: const Key('google_oauth_sign_in_btn'),
+                  onPressed: _isLoading ? null : _handleGoogleOAuthSignIn,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF1F1F1F),
+                    elevation: 1,
+                    side: BorderSide(color: Colors.grey.shade300),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Container(
+                          width: 24,
+                          height: 24,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
                           ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'G',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF4285F4),
+                          child: const Center(
+                            child: Text(
+                              'G',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF4285F4),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Sign in with Google',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            'Enter your Google account details to link your profile & UPI ID across trips.',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  label: const Text(
+                    'Sign in with Google (1-Tap OAuth)',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
                 ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      'OR SIGN IN MANUALLY',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
+                ],
               ),
               const SizedBox(height: 16),
               TextField(
@@ -361,10 +430,12 @@ class _AuthModalState extends ConsumerState<AuthModal> {
                 controller: _googleUpiController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  labelText: 'Your UPI ID (optional)',
+                  labelText: widget.isJoining ? 'Your UPI ID * (Required for joining)' : 'Your UPI ID (optional)',
                   hintText: 'e.g. yourname@oksbi',
                   prefixIcon: const Icon(Icons.account_balance),
-                  helperText: 'Used for 1-tap UPI debt settlements with friends',
+                  helperText: widget.isJoining
+                      ? 'Mandatory to join trip for 1-tap debt settlements'
+                      : 'Used for 1-tap UPI debt settlements with friends',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
@@ -372,17 +443,17 @@ class _AuthModalState extends ConsumerState<AuthModal> {
               SizedBox(
                 width: double.infinity,
                 height: 48,
-                child: FilledButton.icon(
+                child: OutlinedButton.icon(
                   key: const Key('google_sign_in_btn'),
                   onPressed: _isLoading ? null : _handleGoogleSignIn,
                   icon: _isLoading
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.login),
-                  label: const Text('Continue with Google'),
+                  label: const Text('Continue with Email Above'),
                 ),
               ),
             ] else if (_selectedTab == 1) ...[

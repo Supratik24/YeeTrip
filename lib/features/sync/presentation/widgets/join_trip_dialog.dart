@@ -20,12 +20,24 @@ class JoinTripDialog extends ConsumerStatefulWidget {
 
 class _JoinTripDialogState extends ConsumerState<JoinTripDialog> {
   final _controller = TextEditingController();
+  final _upiController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
+  String? _upiErrorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    final currentUpi = ref.read(currentUserProvider)?.defaultUpiVpa;
+    if (currentUpi != null && currentUpi.isNotEmpty) {
+      _upiController.text = currentUpi;
+    }
+  }
 
   @override
   void dispose() {
     _controller.dispose();
+    _upiController.dispose();
     super.dispose();
   }
 
@@ -57,29 +69,49 @@ class _JoinTripDialogState extends ConsumerState<JoinTripDialog> {
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (_) => const AuthModal(
+        builder: (_) => AuthModal(
           reason: 'Sign in or create an account to join this trip',
+          isJoining: true,
+          prefilledUpi: _upiController.text.trim().isNotEmpty ? _upiController.text.trim() : null,
         ),
       );
       if (user == null) {
         setState(() => _errorMessage = 'Sign-in is required to join a trip');
         return;
       }
+      if (user.defaultUpiVpa != null && user.defaultUpiVpa!.isNotEmpty) {
+        _upiController.text = user.defaultUpiVpa!;
+      }
+    }
+
+    final upi = _upiController.text.trim();
+    if (upi.isEmpty) {
+      setState(() => _upiErrorMessage = 'UPI ID is required to join a trip');
+      return;
+    }
+
+    if (!RegExp(r'^[\w.\-]+@[\w.\-]+$').hasMatch(upi)) {
+      setState(() => _upiErrorMessage = 'Enter a valid UPI ID (e.g. name@okhdfcbank)');
+      return;
     }
 
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _upiErrorMessage = null;
     });
 
     try {
       final engine = ref.read(syncEngineProvider);
       final TripWithDetails trip = await engine.joinTripByCode(rawCode);
 
+      // Save confirmed mandatory UPI to profile
+      await auth.updateProfile(defaultUpiVpa: upi);
+
       final currentUser = ref.read(currentUserProvider);
       if (currentUser != null) {
         final migration = ref.read(profileMigrationServiceProvider);
-        await migration.linkProfileToLocalTrips(currentUser);
+        await migration.linkProfileToLocalTrips(currentUser.copyWith(defaultUpiVpa: upi));
       }
 
       if (mounted) {
@@ -137,10 +169,27 @@ class _JoinTripDialogState extends ConsumerState<JoinTripDialog> {
               LengthLimitingTextInputFormatter(7),
             ],
             decoration: InputDecoration(
-              labelText: 'Invite Code',
+              labelText: 'Invite Code *',
               hintText: 'e.g. GOA-782',
               errorText: _errorMessage,
               prefixIcon: const Icon(Icons.key),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onSubmitted: (_) => _handleJoin(),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            key: const Key('join_trip_upi_input'),
+            controller: _upiController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: InputDecoration(
+              labelText: 'Your UPI ID * (Required)',
+              hintText: 'e.g. yourname@okhdfcbank',
+              helperText: 'Mandatory for group expense settlement and splits',
+              errorText: _upiErrorMessage,
+              prefixIcon: const Icon(Icons.account_balance),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

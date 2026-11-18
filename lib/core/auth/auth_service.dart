@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:uuid/uuid.dart';
 
 import 'auth_models.dart';
@@ -8,6 +9,8 @@ import 'auth_storage.dart';
 class AuthService {
   final AuthStorage _storage;
   final Uuid _uuid;
+  final GoogleSignIn _googleSignIn;
+  bool _isGoogleSignInInitialized = false;
 
   final _authStateController = StreamController<AuthState>.broadcast();
   AuthState _currentState = AuthState.guest();
@@ -15,8 +18,10 @@ class AuthService {
   AuthService({
     AuthStorage? storage,
     Uuid? uuid,
+    GoogleSignIn? googleSignIn,
   })  : _storage = storage ?? InMemoryAuthStorage(),
-        _uuid = uuid ?? const Uuid();
+        _uuid = uuid ?? const Uuid(),
+        _googleSignIn = googleSignIn ?? GoogleSignIn.instance;
 
   AuthState get currentState => _currentState;
   Stream<AuthState> get authStateChanges => _authStateController.stream;
@@ -76,6 +81,54 @@ class AuthService {
     await _storage.saveProfile(user);
     _setState(AuthState.authenticated(user));
     return user;
+  }
+
+  Future<void> _ensureGoogleSignInInitialized() async {
+    if (!_isGoogleSignInInitialized) {
+      try {
+        await _googleSignIn.initialize();
+      } catch (_) {
+        // May already be initialized or running in headless/mock test mode
+      }
+      _isGoogleSignInInitialized = true;
+    }
+  }
+
+  /// Signs in with native Google OAuth via google_sign_in.
+  Future<UserProfile> signInWithGoogleOAuth({
+    String? defaultUpiVpa,
+  }) async {
+    _setState(_currentState.copyWith(isLoading: true, errorMessage: null));
+
+    try {
+      await _ensureGoogleSignInInitialized();
+      final account = await _googleSignIn.authenticate();
+      final email = account.email.trim().toLowerCase();
+      final name = account.displayName?.trim().isNotEmpty == true
+          ? account.displayName!.trim()
+          : _deriveDisplayNameFromEmail(email);
+
+      final cleanPrefix = email.split('@').first.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+      final upi = defaultUpiVpa?.trim().isNotEmpty == true
+          ? defaultUpiVpa!.trim()
+          : '${cleanPrefix.isNotEmpty ? cleanPrefix : "traveler"}@oksbi';
+
+      final user = UserProfile(
+        uid: 'google_${account.id.isNotEmpty ? account.id : _uuid.v4().substring(0, 8)}',
+        displayName: name,
+        email: email,
+        avatarUrl: account.photoUrl ?? 'https://api.dicebear.com/7.x/initials/svg?seed=$name',
+        defaultUpiVpa: upi,
+        createdAt: DateTime.now().toUtc(),
+      );
+
+      await _storage.saveProfile(user);
+      _setState(AuthState.authenticated(user));
+      return user;
+    } catch (e) {
+      _setState(_currentState.copyWith(isLoading: false));
+      rethrow;
+    }
   }
 
   /// Signs in with Google (creates/links user profile from Google credentials).
@@ -180,6 +233,9 @@ class AuthService {
 
   /// Signs out the user, returning to Guest mode without modifying local trips.
   Future<void> signOut() async {
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
     await _storage.clear();
     _setState(AuthState.guest());
   }

@@ -171,6 +171,7 @@ class TripListScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         builder: (_) => const AuthModal(
           reason: 'Sign in or create an account to join a trip',
+          isJoining: true,
         ),
       );
       if (user == null) {
