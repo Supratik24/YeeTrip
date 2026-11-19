@@ -26,13 +26,14 @@ void main() {
       final user = await service.signInWithGoogle(
         customName: 'Aarav Sharma',
         customEmail: 'aarav@gmail.com',
+        defaultUpiVpa: 'aarav@okhdfcbank',
       );
 
       expect(service.currentState.isAuthenticated, isTrue);
       expect(service.currentState.isGuest, isFalse);
       expect(user.displayName, equals('Aarav Sharma'));
       expect(user.email, equals('aarav@gmail.com'));
-      expect(user.defaultUpiVpa, equals('aarav@oksbi'));
+      expect(user.defaultUpiVpa, equals('aarav@okhdfcbank'));
 
       // Check stored in storage
       final stored = await storage.loadStoredProfile();
@@ -100,7 +101,7 @@ void main() {
       final user = await service.signInWithGoogle(customEmail: 'supratik.sangram@gmail.com');
       expect(user.displayName, equals('Supratik Sangram'));
       expect(user.email, equals('supratik.sangram@gmail.com'));
-      expect(user.defaultUpiVpa, equals('supratiksangram@oksbi'));
+      expect(user.defaultUpiVpa, isNull);
     });
 
     test('Update profile modifies display name, UPI VPA, and language', () async {

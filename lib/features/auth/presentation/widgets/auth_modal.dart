@@ -55,10 +55,7 @@ class _AuthModalState extends ConsumerState<AuthModal> {
   @override
   void initState() {
     super.initState();
-    if (widget.prefilledUpi != null && widget.prefilledUpi!.isNotEmpty) {
-      _googleUpiController.text = widget.prefilledUpi!;
-      _profileUpiController.text = widget.prefilledUpi!;
-    }
+    // Do not pre-fill generated bank names; user writes their own UPI ID.
   }
 
   @override
@@ -115,11 +112,8 @@ class _AuthModalState extends ConsumerState<AuthModal> {
               ? account.displayName!.trim()
               : auth.deriveDisplayNameFromEmail(account.email);
 
-          if (widget.prefilledUpi != null && widget.prefilledUpi!.isNotEmpty) {
-            _profileUpiController.text = widget.prefilledUpi!;
-          } else if (_googleUpiController.text.trim().isNotEmpty) {
-            _profileUpiController.text = _googleUpiController.text.trim();
-          }
+          // Never auto-fill bank names. User must type their own UPI ID!
+          _profileUpiController.clear();
 
           _isGoogleProfileStep = true;
           _isLoading = false;
@@ -440,10 +434,10 @@ class _AuthModalState extends ConsumerState<AuthModal> {
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   labelText: 'Your UPI ID * (Mandatory)',
-                  hintText: 'e.g. yourname@okhdfcbank',
+                  hintText: 'e.g. name@bank or 9876543210@upi',
                   errorText: _profileUpiError,
                   prefixIcon: const Icon(Icons.account_balance),
-                  helperText: 'Mandatory for 1-tap UPI payment settlements with friends',
+                  helperText: 'Mandatory: Enter your own UPI ID for receiving and settling trip payments',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
@@ -698,7 +692,7 @@ class _AuthModalState extends ConsumerState<AuthModal> {
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   labelText: widget.isJoining ? 'Your UPI ID * (Required for joining)' : 'Your UPI ID (optional)',
-                  hintText: 'e.g. yourname@oksbi',
+                  hintText: 'e.g. name@bank or 9876543210@upi',
                   prefixIcon: const Icon(Icons.account_balance),
                   helperText: widget.isJoining
                       ? 'Mandatory to join trip for 1-tap debt settlements'

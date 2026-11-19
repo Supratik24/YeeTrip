@@ -117,7 +117,7 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
             controller: _upiController,
             decoration: const InputDecoration(
               labelText: 'Default UPI ID (for receiving settlements)',
-              hintText: 'e.g. yourname@oksbi',
+              hintText: 'e.g. name@bank or 9876543210@upi',
               prefixIcon: Icon(Icons.account_balance),
               border: OutlineInputBorder(),
             ),

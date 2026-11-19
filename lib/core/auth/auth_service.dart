@@ -159,10 +159,9 @@ class AuthService {
               ? account.displayName!.trim()
               : deriveDisplayNameFromEmail(account.email));
 
-      final cleanPrefix = account.email.split('@').first.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
       final upi = defaultUpiVpa?.trim().isNotEmpty == true
           ? defaultUpiVpa!.trim()
-          : '${cleanPrefix.isNotEmpty ? cleanPrefix : "traveler"}@oksbi';
+          : null;
 
       final user = UserProfile(
         uid: 'google_${account.id.isNotEmpty ? account.id : _uuid.v4().substring(0, 8)}',
@@ -200,10 +199,9 @@ class AuthService {
         ? customName!.trim()
         : deriveDisplayNameFromEmail(cleanEmail);
 
-    final cleanPrefix = cleanEmail.split('@').first.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
     final upi = defaultUpiVpa?.trim().isNotEmpty == true
         ? defaultUpiVpa!.trim()
-        : '${cleanPrefix.isNotEmpty ? cleanPrefix : "traveler"}@oksbi';
+        : null;
 
     final user = UserProfile(
       uid: 'google_${_uuid.v4().substring(0, 8)}',
