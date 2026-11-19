@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:uuid/uuid.dart';
 
@@ -83,10 +84,17 @@ class AuthService {
     return user;
   }
 
+  /// Google Web / Server Client ID configured in Google Cloud Console
+  static const String googleServerClientId =
+      '673277644230-g3s08484hsr8r8i87q2986tej1216l90.apps.googleusercontent.com';
+
   Future<void> _ensureGoogleSignInInitialized() async {
     if (!_isGoogleSignInInitialized) {
       try {
-        await _googleSignIn.initialize();
+        await _googleSignIn.initialize(
+          serverClientId: googleServerClientId,
+          clientId: kIsWeb ? googleServerClientId : null,
+        );
       } catch (_) {
         // May already be initialized or running in headless/mock test mode
       }
