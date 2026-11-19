@@ -102,21 +102,64 @@ class AuthService {
     }
   }
 
+  /// Authenticates with native Google OAuth and returns the raw account details
+  /// so the user can verify/edit their name and enter a mandatory UPI ID in Step 2.
+  Future<GoogleSignInAccount> authenticateWithGoogleOAuth() async {
+    await _ensureGoogleSignInInitialized();
+    return await _googleSignIn.authenticate();
+  }
+
+  /// Completes sign-in with Google OAuth credentials, customizable display name,
+  /// and mandatory UPI ID.
+  Future<UserProfile> completeGoogleOAuthSignIn({
+    required GoogleSignInAccount account,
+    required String displayName,
+    required String defaultUpiVpa,
+  }) async {
+    final cleanUpi = defaultUpiVpa.trim();
+    if (cleanUpi.isEmpty) {
+      throw const FormatException('UPI ID is mandatory');
+    }
+    if (!RegExp(r'^[\w.\-]+@[\w.\-]+$').hasMatch(cleanUpi)) {
+      throw const FormatException('Please enter a valid UPI ID (e.g. name@okhdfcbank)');
+    }
+
+    final name = displayName.trim().isNotEmpty
+        ? displayName.trim()
+        : deriveDisplayNameFromEmail(account.email);
+
+    _setState(_currentState.copyWith(isLoading: true, errorMessage: null));
+
+    final user = UserProfile(
+      uid: 'google_${account.id.isNotEmpty ? account.id : _uuid.v4().substring(0, 8)}',
+      displayName: name,
+      email: account.email.trim().toLowerCase(),
+      avatarUrl: account.photoUrl ?? 'https://api.dicebear.com/7.x/initials/svg?seed=$name',
+      defaultUpiVpa: cleanUpi,
+      createdAt: DateTime.now().toUtc(),
+    );
+
+    await _storage.saveProfile(user);
+    _setState(AuthState.authenticated(user));
+    return user;
+  }
+
   /// Signs in with native Google OAuth via google_sign_in.
   Future<UserProfile> signInWithGoogleOAuth({
+    String? customName,
     String? defaultUpiVpa,
   }) async {
     _setState(_currentState.copyWith(isLoading: true, errorMessage: null));
 
     try {
-      await _ensureGoogleSignInInitialized();
-      final account = await _googleSignIn.authenticate();
-      final email = account.email.trim().toLowerCase();
-      final name = account.displayName?.trim().isNotEmpty == true
-          ? account.displayName!.trim()
-          : _deriveDisplayNameFromEmail(email);
+      final account = await authenticateWithGoogleOAuth();
+      final name = customName?.trim().isNotEmpty == true
+          ? customName!.trim()
+          : (account.displayName?.trim().isNotEmpty == true
+              ? account.displayName!.trim()
+              : deriveDisplayNameFromEmail(account.email));
 
-      final cleanPrefix = email.split('@').first.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+      final cleanPrefix = account.email.split('@').first.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
       final upi = defaultUpiVpa?.trim().isNotEmpty == true
           ? defaultUpiVpa!.trim()
           : '${cleanPrefix.isNotEmpty ? cleanPrefix : "traveler"}@oksbi';
@@ -124,7 +167,7 @@ class AuthService {
       final user = UserProfile(
         uid: 'google_${account.id.isNotEmpty ? account.id : _uuid.v4().substring(0, 8)}',
         displayName: name,
-        email: email,
+        email: account.email.trim().toLowerCase(),
         avatarUrl: account.photoUrl ?? 'https://api.dicebear.com/7.x/initials/svg?seed=$name',
         defaultUpiVpa: upi,
         createdAt: DateTime.now().toUtc(),
@@ -155,7 +198,7 @@ class AuthService {
 
     final name = customName?.trim().isNotEmpty == true
         ? customName!.trim()
-        : _deriveDisplayNameFromEmail(cleanEmail);
+        : deriveDisplayNameFromEmail(cleanEmail);
 
     final cleanPrefix = cleanEmail.split('@').first.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
     final upi = defaultUpiVpa?.trim().isNotEmpty == true
@@ -176,7 +219,7 @@ class AuthService {
     return user;
   }
 
-  String _deriveDisplayNameFromEmail(String email) {
+  String deriveDisplayNameFromEmail(String email) {
     final prefix = email.split('@').first;
     final parts = prefix.split(RegExp(r'[._\-]')).where((p) => p.isNotEmpty).toList();
     if (parts.isEmpty) return 'Traveler';

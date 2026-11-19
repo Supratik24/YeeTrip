@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../../core/auth/auth_models.dart';
 import '../../../../core/auth/auth_providers.dart';
@@ -28,6 +29,14 @@ class _AuthModalState extends ConsumerState<AuthModal> {
   bool _isLoading = false;
   String? _errorMessage;
 
+  // Google OAuth Step 2 profile completion state
+  bool _isGoogleProfileStep = false;
+  GoogleSignInAccount? _pendingGoogleAccount;
+  final _profileNameController = TextEditingController();
+  final _profileUpiController = TextEditingController();
+  String? _profileNameError;
+  String? _profileUpiError;
+
   // Google form controllers
   final _googleEmailController = TextEditingController();
   final _googleNameController = TextEditingController();
@@ -48,11 +57,14 @@ class _AuthModalState extends ConsumerState<AuthModal> {
     super.initState();
     if (widget.prefilledUpi != null && widget.prefilledUpi!.isNotEmpty) {
       _googleUpiController.text = widget.prefilledUpi!;
+      _profileUpiController.text = widget.prefilledUpi!;
     }
   }
 
   @override
   void dispose() {
+    _profileNameController.dispose();
+    _profileUpiController.dispose();
     _googleEmailController.dispose();
     _googleNameController.dispose();
     _googleUpiController.dispose();
@@ -85,31 +97,35 @@ class _AuthModalState extends ConsumerState<AuthModal> {
   }
 
   Future<void> _handleGoogleOAuthSignIn() async {
-    final upi = _googleUpiController.text.trim();
-    if (widget.isJoining && upi.isEmpty) {
-      setState(() {
-        _errorMessage = 'Please enter your UPI ID below before signing in to join a trip';
-      });
-      return;
-    }
-    if (widget.isJoining && !RegExp(r'^[\w.\-]+@[\w.\-]+$').hasMatch(upi)) {
-      setState(() {
-        _errorMessage = 'Please enter a valid UPI ID (e.g. name@okhdfcbank)';
-      });
-      return;
-    }
-
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _profileNameError = null;
+      _profileUpiError = null;
     });
 
     try {
       final auth = ref.read(authServiceProvider);
-      final user = await auth.signInWithGoogleOAuth(
-        defaultUpiVpa: upi.isNotEmpty ? upi : null,
-      );
-      await _handlePostSignIn(user);
+      final account = await auth.authenticateWithGoogleOAuth();
+
+      if (mounted) {
+        setState(() {
+          _pendingGoogleAccount = account;
+          _profileNameController.text = account.displayName?.trim().isNotEmpty == true
+              ? account.displayName!.trim()
+              : auth.deriveDisplayNameFromEmail(account.email);
+
+          if (widget.prefilledUpi != null && widget.prefilledUpi!.isNotEmpty) {
+            _profileUpiController.text = widget.prefilledUpi!;
+          } else if (_googleUpiController.text.trim().isNotEmpty) {
+            _profileUpiController.text = _googleUpiController.text.trim();
+          }
+
+          _isGoogleProfileStep = true;
+          _isLoading = false;
+          _errorMessage = null;
+        });
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -120,6 +136,53 @@ class _AuthModalState extends ConsumerState<AuthModal> {
           } else {
             _errorMessage = 'Google OAuth: $err. You can also sign in manually below.';
           }
+        });
+      }
+    }
+  }
+
+  Future<void> _handleCompleteGoogleProfile() async {
+    final name = _profileNameController.text.trim();
+    final upi = _profileUpiController.text.trim();
+
+    setState(() {
+      _profileNameError = null;
+      _profileUpiError = null;
+    });
+
+    if (name.isEmpty) {
+      setState(() => _profileNameError = 'Please enter your display name');
+      return;
+    }
+
+    if (upi.isEmpty) {
+      setState(() => _profileUpiError = 'UPI ID is mandatory (e.g. yourname@okhdfcbank)');
+      return;
+    }
+
+    if (!RegExp(r'^[\w.\-]+@[\w.\-]+$').hasMatch(upi)) {
+      setState(() => _profileUpiError = 'Please enter a valid UPI ID (e.g. yourname@okhdfcbank)');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final auth = ref.read(authServiceProvider);
+      final user = await auth.completeGoogleOAuthSignIn(
+        account: _pendingGoogleAccount!,
+        displayName: name,
+        defaultUpiVpa: upi,
+      );
+      await _handlePostSignIn(user);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.toString().replaceFirst('FormatException: ', '').replaceFirst('Exception: ', '');
         });
       }
     }
@@ -245,6 +308,210 @@ class _AuthModalState extends ConsumerState<AuthModal> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    // Step 2: After Google OAuth succeeds, allow editing name and mandate entering UPI ID
+    if (_isGoogleProfileStep && _pendingGoogleAccount != null) {
+      return Container(
+        padding: EdgeInsets.fromLTRB(
+          24,
+          16,
+          24,
+          MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Header with Google avatar & verified email
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: theme.colorScheme.primaryContainer,
+                    backgroundImage: _pendingGoogleAccount!.photoUrl != null
+                        ? NetworkImage(_pendingGoogleAccount!.photoUrl!)
+                        : null,
+                    child: _pendingGoogleAccount!.photoUrl == null
+                        ? Text(
+                            _profileNameController.text.isNotEmpty
+                                ? _profileNameController.text[0].toUpperCase()
+                                : 'G',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Complete Profile',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            const Icon(Icons.verified, color: Color(0xFF4285F4), size: 18),
+                          ],
+                        ),
+                        Text(
+                          _pendingGoogleAccount!.email,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 20, color: theme.colorScheme.primary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Google sign-in verified! Confirm your name and enter your UPI ID to settle debts with trip mates.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Editable Name Field
+              TextField(
+                key: const Key('google_profile_name_field'),
+                controller: _profileNameController,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  labelText: 'Your Name *',
+                  hintText: 'e.g. Supratik',
+                  errorText: _profileNameError,
+                  prefixIcon: const Icon(Icons.person_outline),
+                  helperText: 'Pre-filled from your Google account. You can edit this.',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Mandatory UPI ID Field
+              TextField(
+                key: const Key('google_profile_upi_field'),
+                controller: _profileUpiController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: 'Your UPI ID * (Mandatory)',
+                  hintText: 'e.g. yourname@okhdfcbank',
+                  errorText: _profileUpiError,
+                  prefixIcon: const Icon(Icons.account_balance),
+                  helperText: 'Mandatory for 1-tap UPI payment settlements with friends',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              if (_errorMessage != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline, color: theme.colorScheme.error, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(color: theme.colorScheme.onErrorContainer, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Complete Profile Button
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: FilledButton.icon(
+                  key: const Key('complete_google_profile_btn'),
+                  onPressed: _isLoading ? null : _handleCompleteGoogleProfile,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.check_circle_outline),
+                  label: const Text(
+                    'Complete Setup & Continue',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Center(
+                child: TextButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                          setState(() {
+                            _isGoogleProfileStep = false;
+                            _pendingGoogleAccount = null;
+                            _errorMessage = null;
+                          });
+                        },
+                  child: const Text('Use a different account'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Container(
       padding: EdgeInsets.fromLTRB(

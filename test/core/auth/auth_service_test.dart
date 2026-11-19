@@ -118,6 +118,13 @@ void main() {
       expect(service.currentState.user?.displayName, equals('Aarav S.'));
     });
 
+    test('deriveDisplayNameFromEmail formats dot, underscore, dash separated emails', () {
+      expect(service.deriveDisplayNameFromEmail('john.doe@gmail.com'), equals('John Doe'));
+      expect(service.deriveDisplayNameFromEmail('priya_sharma@gmail.com'), equals('Priya Sharma'));
+      expect(service.deriveDisplayNameFromEmail('rahul-patel@gmail.com'), equals('Rahul Patel'));
+      expect(service.deriveDisplayNameFromEmail('supratik@gmail.com'), equals('Supratik'));
+    });
+
     test('Sign out resets state to Guest and clears storage', () async {
       await service.signInWithGoogle(customEmail: 'test@gmail.com');
       expect(service.currentState.isAuthenticated, isTrue);
