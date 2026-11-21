@@ -183,16 +183,39 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // 1. Animated Cyan Mark / Wallet Icon
+                          // 1. Animated Cyan Mark / Wallet Icon with Pulsing Aura
                           AnimatedBuilder(
                             animation: _controller,
                             builder: (context, child) {
-                              return Transform.rotate(
-                                angle: _markRotate.value,
-                                child: Transform.scale(
-                                  scale: _markScale.value,
-                                  child: child,
-                                ),
+                              final ringScale = 0.8 + 0.45 * _controller.value;
+                              final ringOpacity = (1.0 - _controller.value).clamp(0.0, 0.45);
+
+                              return Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  // Subtle expanding cyan aura ring
+                                  Transform.scale(
+                                    scale: ringScale,
+                                    child: Container(
+                                      width: 104,
+                                      height: 104,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: const Color(0xFF00E5FF).withValues(alpha: ringOpacity),
+                                          width: 2,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Transform.rotate(
+                                    angle: _markRotate.value,
+                                    child: Transform.scale(
+                                      scale: _markScale.value,
+                                      child: child,
+                                    ),
+                                  ),
+                                ],
                               );
                             },
                             child: Container(
@@ -206,8 +229,8 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
                                     : Colors.white,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF00E5FF).withValues(alpha: 0.25),
-                                    blurRadius: 28,
+                                    color: const Color(0xFF00E5FF).withValues(alpha: 0.28),
+                                    blurRadius: 30,
                                     spreadRadius: 4,
                                     offset: const Offset(0, 8),
                                   ),

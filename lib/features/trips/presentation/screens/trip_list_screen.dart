@@ -233,84 +233,111 @@ class TripListScreen extends ConsumerWidget {
         ),
         data: (trips) {
           if (trips.isEmpty) {
-            return Center(
-              child: ResponsiveCenter(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Image.asset(
-                        'assets/images/logo_transparent.png',
-                        height: 80,
-                        width: 80,
-                        errorBuilder: (_, _, _) => Icon(
-                          Icons.flight_takeoff_rounded,
-                          size: 64,
-                          color: theme.colorScheme.primary.withValues(alpha: 0.5),
+            return TweenAnimationBuilder<double>(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOutCubic,
+              tween: Tween<double>(begin: 0.0, end: 1.0),
+              builder: (context, value, child) {
+                return Opacity(
+                  opacity: value,
+                  child: Transform.translate(
+                    offset: Offset(0, 16 * (1.0 - value)),
+                    child: child,
+                  ),
+                );
+              },
+              child: Center(
+                child: ResponsiveCenter(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(
+                          'assets/images/logo_transparent.png',
+                          height: 80,
+                          width: 80,
+                          errorBuilder: (_, _, _) => Icon(
+                            Icons.flight_takeoff_rounded,
+                            size: 64,
+                            color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No trips planned yet',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                        const SizedBox(height: 16),
+                        Text(
+                          'No trips planned yet',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Plan your group budget and split expenses offline with ease.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey.shade600),
-                      ),
-                      const SizedBox(height: 24),
-                      FilledButton.icon(
-                        key: const Key('plan_first_trip_btn'),
-                        onPressed: () => _handlePlanTrip(context, ref),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Plan your first trip'),
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        key: const Key('seed_demo_trip_btn'),
-                        onPressed: () async {
-                          final scaffoldMessenger = ScaffoldMessenger.of(context);
-                          scaffoldMessenger.showSnackBar(
-                            const SnackBar(
-                              content: Text('Setting up demo trip...'),
-                              duration: Duration(seconds: 1),
-                            ),
-                          );
-                          try {
-                            final tripId = await DemoDataSeeder.seedDemoTrip(
-                              tripRepo: ref.read(tripRepositoryProvider),
-                              expenseRepo: ref.read(expenseRepositoryProvider),
-                            );
-                            if (context.mounted) {
-                              context.go('/trips/$tripId');
-                            }
-                          } catch (e) {
+                        const SizedBox(height: 8),
+                        Text(
+                          'Plan your group budget and split expenses offline with ease.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                        const SizedBox(height: 24),
+                        FilledButton.icon(
+                          key: const Key('plan_first_trip_btn'),
+                          onPressed: () => _handlePlanTrip(context, ref),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Plan your first trip'),
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          key: const Key('seed_demo_trip_btn'),
+                          onPressed: () async {
+                            final scaffoldMessenger = ScaffoldMessenger.of(context);
                             scaffoldMessenger.showSnackBar(
-                              SnackBar(content: Text('Failed to seed demo trip: $e')),
+                              const SnackBar(
+                                content: Text('Setting up demo trip...'),
+                                duration: Duration(seconds: 1),
+                              ),
                             );
-                          }
-                        },
-                        icon: const Icon(Icons.auto_awesome),
-                        label: const Text('Explore with demo trip'),
-                      ),
-                    ],
+                            try {
+                              final tripId = await DemoDataSeeder.seedDemoTrip(
+                                tripRepo: ref.read(tripRepositoryProvider),
+                                expenseRepo: ref.read(expenseRepositoryProvider),
+                              );
+                              if (context.mounted) {
+                                context.go('/trips/$tripId');
+                              }
+                            } catch (e) {
+                              scaffoldMessenger.showSnackBar(
+                                SnackBar(content: Text('Failed to seed demo trip: $e')),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.auto_awesome),
+                          label: const Text('Explore with demo trip'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             );
           }
 
-          return ResponsiveCenter(
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-              itemCount: trips.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
+          return TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutCubic,
+            tween: Tween<double>(begin: 0.0, end: 1.0),
+            builder: (context, value, child) {
+              return Opacity(
+                opacity: value,
+                child: Transform.translate(
+                  offset: Offset(0, 16 * (1.0 - value)),
+                  child: child,
+                ),
+              );
+            },
+            child: ResponsiveCenter(
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+                itemCount: trips.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
               final trip = trips[index];
               final isOverBudget = trip.remainingBudgetPaise < 0;
 
@@ -458,8 +485,9 @@ class TripListScreen extends ConsumerWidget {
               );
             },
           ),
-        );
-      },
+        ),
+      );
+    },
     ),
   );
   }
