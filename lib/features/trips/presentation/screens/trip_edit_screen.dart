@@ -6,22 +6,29 @@ import '../../../../core/money.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
 import '../../domain/trip_model.dart';
+import '../widgets/contact_picker_sheet.dart';
 
 class _EditableTraveler {
   final String? id; // null if newly added
   final TextEditingController nameController;
   final TextEditingController vpaController;
+  final FocusNode nameFocusNode;
+  final FocusNode vpaFocusNode;
 
   _EditableTraveler({
     this.id,
     required String name,
     String? upiVpa,
   })  : nameController = TextEditingController(text: name),
-        vpaController = TextEditingController(text: upiVpa ?? '');
+        vpaController = TextEditingController(text: upiVpa ?? ''),
+        nameFocusNode = FocusNode(),
+        vpaFocusNode = FocusNode();
 
   void dispose() {
     nameController.dispose();
     vpaController.dispose();
+    nameFocusNode.dispose();
+    vpaFocusNode.dispose();
   }
 }
 
@@ -40,9 +47,15 @@ class TripEditScreen extends ConsumerStatefulWidget {
 
 class _TripEditScreenState extends ConsumerState<TripEditScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _scrollController = ScrollController();
+
   final _nameController = TextEditingController();
   final _budgetController = TextEditingController();
   final _daysController = TextEditingController();
+
+  final _nameFocusNode = FocusNode();
+  final _budgetFocusNode = FocusNode();
+  final _daysFocusNode = FocusNode();
 
   final List<_EditableTraveler> _travelers = [];
   final List<String> _deletedTravelerIds = [];
@@ -53,9 +66,13 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _nameController.dispose();
     _budgetController.dispose();
     _daysController.dispose();
+    _nameFocusNode.dispose();
+    _budgetFocusNode.dispose();
+    _daysFocusNode.dispose();
     for (final t in _travelers) {
       t.dispose();
     }
@@ -83,11 +100,76 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
     _initialized = true;
   }
 
-  void _addTraveler() {
+  void _addTraveler({bool requestFocus = true, String name = '', String? upiVpa}) {
+    final traveler = _EditableTraveler(name: name, upiVpa: upiVpa);
     setState(() {
-      _travelers.add(_EditableTraveler(name: ''));
+      _travelers.add(traveler);
       _travelersError = null;
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (requestFocus) {
+        traveler.nameFocusNode.requestFocus();
+      }
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent + 120,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _importFromContacts() async {
+    final existingNames = _travelers
+        .map((t) => t.nameController.text.trim())
+        .where((n) => n.isNotEmpty)
+        .toList();
+
+    final results = await showContactPicker(
+      context: context,
+      existingNames: existingNames,
+    );
+
+    if (results == null || results.isEmpty) return;
+
+    int addedCount = 0;
+    setState(() {
+      for (final contact in results) {
+        final name = contact.name.trim();
+        if (name.isEmpty) continue;
+
+        final alreadyExists = _travelers.any(
+          (t) => t.nameController.text.trim().toLowerCase() == name.toLowerCase(),
+        );
+        if (!alreadyExists) {
+          _travelers.add(_EditableTraveler(name: name));
+          addedCount++;
+        }
+      }
+      _travelersError = null;
+    });
+
+    if (addedCount > 0 && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent + 120,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Added $addedCount traveler${addedCount > 1 ? "s" : ""} from contacts'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _removeTraveler(int index) async {
@@ -182,7 +264,9 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
       return false;
     }
 
-    setState(() => _travelersError = null);
+    if (_travelersError != null) {
+      setState(() => _travelersError = null);
+    }
     return true;
   }
 
@@ -285,12 +369,16 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
               child: Form(
                 key: _formKey,
                 child: ListView(
+                  controller: _scrollController,
                   padding: const EdgeInsets.all(16),
                   children: [
                     // Trip Name
                     TextFormField(
                       key: const Key('edit_trip_name_field'),
                       controller: _nameController,
+                      focusNode: _nameFocusNode,
+                      textInputAction: TextInputAction.next,
+                      onFieldSubmitted: (_) => _budgetFocusNode.requestFocus(),
                       decoration: const InputDecoration(
                         labelText: 'Trip name',
                         hintText: 'e.g. Goa with friends',
@@ -314,6 +402,9 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
                           child: TextFormField(
                             key: const Key('edit_trip_budget_field'),
                             controller: _budgetController,
+                            focusNode: _budgetFocusNode,
+                            textInputAction: TextInputAction.next,
+                            onFieldSubmitted: (_) => _daysFocusNode.requestFocus(),
                             decoration: const InputDecoration(
                               labelText: 'Total budget (₹)',
                               prefixText: '₹ ',
@@ -343,6 +434,13 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
                           child: TextFormField(
                             key: const Key('edit_trip_days_field'),
                             controller: _daysController,
+                            focusNode: _daysFocusNode,
+                            textInputAction: TextInputAction.next,
+                            onFieldSubmitted: (_) {
+                              if (_travelers.isNotEmpty) {
+                                _travelers.first.nameFocusNode.requestFocus();
+                              }
+                            },
                             decoration: const InputDecoration(
                               labelText: 'Days',
                               hintText: 'e.g. 4',
@@ -379,7 +477,7 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
                                 ),
                               ),
                               Text(
-                                'Manage names and optional UPI IDs',
+                                '${_travelers.length} companion${_travelers.length == 1 ? "" : "s"}',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey.shade600,
@@ -388,11 +486,28 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
                             ],
                           ),
                         ),
+                        // Contacts import button
+                        OutlinedButton.icon(
+                          key: const Key('edit_import_contacts_button'),
+                          onPressed: _importFromContacts,
+                          icon: const Icon(Icons.perm_contact_calendar_outlined, size: 16),
+                          label: const Text('Contacts'),
+                          style: OutlinedButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Add person button
                         TextButton.icon(
                           key: const Key('add_traveler_btn'),
-                          onPressed: _addTraveler,
+                          onPressed: () => _addTraveler(requestFocus: true),
                           icon: const Icon(Icons.person_add_alt_1, size: 18),
                           label: const Text('Add person'),
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                          ),
                         ),
                       ],
                     ),
@@ -413,6 +528,8 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
                     // Traveler cards
                     ...List.generate(_travelers.length, (index) {
                       final t = _travelers[index];
+                      final isLast = index == _travelers.length - 1;
+
                       return Card(
                         margin: const EdgeInsets.only(bottom: 10),
                         child: Padding(
@@ -440,24 +557,40 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
                                     TextFormField(
                                       key: Key('edit_traveler_name_$index'),
                                       controller: t.nameController,
-                                      decoration: InputDecoration(
+                                      focusNode: t.nameFocusNode,
+                                      textInputAction: TextInputAction.next,
+                                      onFieldSubmitted: (_) => t.vpaFocusNode.requestFocus(),
+                                      decoration: const InputDecoration(
                                         labelText: 'Name',
                                         isDense: true,
-                                        contentPadding: const EdgeInsets.symmetric(
+                                        contentPadding: EdgeInsets.symmetric(
                                           horizontal: 10,
                                           vertical: 10,
                                         ),
                                       ),
                                       textCapitalization: TextCapitalization.words,
-                                      onChanged: (_) => _validateTravelers(),
+                                      onChanged: (_) {
+                                        if (_travelersError != null) {
+                                          _validateTravelers();
+                                        }
+                                      },
                                     ),
                                     const SizedBox(height: 6),
                                     TextFormField(
                                       key: Key('edit_traveler_vpa_$index'),
                                       controller: t.vpaController,
+                                      focusNode: t.vpaFocusNode,
+                                      textInputAction: isLast ? TextInputAction.done : TextInputAction.next,
+                                      onFieldSubmitted: (_) {
+                                        if (isLast) {
+                                          _addTraveler(requestFocus: true);
+                                        } else {
+                                          _travelers[index + 1].nameFocusNode.requestFocus();
+                                        }
+                                      },
                                       decoration: const InputDecoration(
                                         labelText: 'UPI ID (optional)',
-                                        hintText: 'e.g. name@okhdfcbank',
+                                        hintText: 'e.g. name@bank or 9876543210@upi',
                                         isDense: true,
                                         contentPadding: EdgeInsets.symmetric(
                                           horizontal: 10,
