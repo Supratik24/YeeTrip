@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
 import 'receipt_parser.dart';
 
@@ -18,6 +20,30 @@ class SampleReceipt {
 /// Service that coordinates receipt parsing, camera OCR, and sample bills.
 class ReceiptScannerService {
   const ReceiptScannerService();
+
+  /// Recognizes text from a local image file using on-device Google ML Kit OCR.
+  /// Runs on Android & iOS devices completely offline.
+  Future<String> recognizeTextFromImage(String imagePath) async {
+    if (kIsWeb ||
+        defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.linux) {
+      return '';
+    }
+
+    try {
+      final inputImage = InputImage.fromFilePath(imagePath);
+      final textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+      try {
+        final recognizedText = await textRecognizer.processImage(inputImage);
+        return recognizedText.text;
+      } finally {
+        await textRecognizer.close();
+      }
+    } catch (e) {
+      debugPrint('Error performing OCR on receipt image: $e');
+      return '';
+    }
+  }
 
   /// Parses arbitrary raw OCR or pasted receipt text into [ReceiptData].
   ReceiptData parseText(String rawText) {

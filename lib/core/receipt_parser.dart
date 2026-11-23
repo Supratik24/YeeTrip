@@ -80,23 +80,47 @@ class ReceiptData {
 class ReceiptParser {
   ReceiptParser._();
 
-  static const List<String> _totalKeywords = [
-    'grand total',
-    'total amount',
-    'net payable',
-    'net amount',
-    'amount payable',
-    'bill total',
-    'total due',
-    'total bill',
-    'total paid',
-    'final total',
-    'total',
-    'amt payable',
-    'subtotal',
-    'sub total',
-    'amount',
-    'amt',
+  static const List<List<String>> _totalKeywordTiers = [
+    // Tier 1: Highest priority explicit grand total / final payable
+    [
+      'grand total',
+      'net payable',
+      'amount payable',
+      'net amount',
+      'final total',
+      'bill total',
+      'total due',
+      'total paid',
+      'total sale',
+      'amount paid',
+      'paid amount',
+      'net total',
+      'invoice total',
+      'total charge',
+      'upi paid',
+      'cash paid',
+      'card paid',
+      'paid via upi',
+    ],
+    // Tier 2: General total phrases
+    [
+      'total amount',
+      'total bill',
+      'total inr',
+      'total rs',
+      'amt payable',
+      'bill amt',
+      'balance due',
+      'total',
+      'amt',
+      'amount',
+    ],
+    // Tier 3: Subtotal fallback
+    [
+      'subtotal',
+      'sub total',
+      'sub-total',
+    ],
   ];
 
   static const List<String> _taxKeywords = [
@@ -104,20 +128,23 @@ class ReceiptParser {
     'sgst',
     'igst',
     'vat',
-    'tax',
     'service charge',
+    'service tax',
     'round off',
     'discount',
-    'rate',
-    'qty',
-    'table',
     'gstin',
+    'gst no',
+    'fssai',
+    'table #',
+    'order #',
+    'invoice #',
   ];
 
   static const List<String> _headerSkipKeywords = [
     'tax invoice',
     'retail invoice',
     'cash receipt',
+    'cash memo',
     'estimate',
     'bill of supply',
     'order #',
@@ -137,6 +164,10 @@ class ReceiptParser {
     'email',
     'welcome',
     'thank you',
+    'original copy',
+    'duplicate copy',
+    'customer copy',
+    'merchant copy',
   ];
 
   /// Parses OCR/scanned text into structured [ReceiptData].
@@ -216,25 +247,44 @@ class ReceiptParser {
     return null;
   }
 
+  static bool _isItemCountLine(String lower) {
+    if (lower.contains('total item') ||
+        lower.contains('total qty') ||
+        lower.contains('total pcs') ||
+        lower.contains('total count') ||
+        lower.contains('items count') ||
+        lower.contains('total quantity')) {
+      if (!lower.contains('₹') && !lower.contains('rs') && !lower.contains('inr') && !lower.contains('.')) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Extracts total amount in paise and indicates if found on an explicit total line.
   static (int? amountPaise, bool onExplicitTotal) _extractAmount(List<String> lines) {
-    // 1. Scan for lines containing total keywords (highest priority)
-    for (final keyword in _totalKeywords) {
-      // Traverse backwards so later summary lines take priority over earlier lines
-      for (int i = lines.length - 1; i >= 0; i--) {
-        final line = lines[i];
-        final lower = line.toLowerCase();
+    // 1. Scan tiered keywords (Tier 1 explicit grand totals -> Tier 2 totals -> Tier 3 subtotal)
+    for (final tier in _totalKeywordTiers) {
+      for (final keyword in tier) {
+        // Traverse backwards so later summary lines take priority over earlier lines
+        for (int i = lines.length - 1; i >= 0; i--) {
+          final line = lines[i];
+          final lower = line.toLowerCase();
 
-        if (lower.contains(keyword)) {
-          // Check that this is not a tax breakdown line (e.g. CGST Total or SGST Rate)
-          final isTaxLine = _taxKeywords.any(
-            (taxKw) => lower.contains(taxKw) && !lower.contains('grand') && !lower.contains('payable'),
-          );
-          if (isTaxLine) continue;
+          if (lower.contains(keyword)) {
+            // Ignore item-count lines like "TOTAL ITEMS: 15"
+            if (_isItemCountLine(lower)) continue;
 
-          final paise = _findAmountInString(line);
-          if (paise != null && paise > 0) {
-            return (paise, true);
+            // Check that this is not a tax breakdown line (e.g. CGST Total or SGST Rate)
+            final isTaxLine = _taxKeywords.any(
+              (taxKw) => lower.contains(taxKw) && !lower.contains('grand') && !lower.contains('payable'),
+            );
+            if (isTaxLine) continue;
+
+            final paise = _findAmountInString(line);
+            if (paise != null && paise > 0) {
+              return (paise, true);
+            }
           }
         }
       }
@@ -247,6 +297,7 @@ class ReceiptParser {
 
       // Avoid tax/item number lines
       if (_taxKeywords.any((taxKw) => lower.contains(taxKw))) continue;
+      if (_isItemCountLine(lower)) continue;
 
       final paise = _findAmountInString(line);
       if (paise != null && paise > 0) {
@@ -259,38 +310,76 @@ class ReceiptParser {
 
   /// Extracts numeric currency value from a string and converts to paise.
   static int? _findAmountInString(String text) {
-    // Matches patterns like:
-    // ₹ 1,450.50
-    // Rs. 2500.00
-    // 1,280.00
-    // 950/-
-    final patterns = [
-      RegExp(r'(?:₹|Rs\.?|INR)\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)', caseSensitive: false),
-      RegExp(r'\b([0-9][0-9,]*(?:\.[0-9]{2}))\b'),
-      RegExp(r'\b([0-9][0-9,]*)\s*/-'),
-      RegExp(r'\b([0-9]{2,7}\.[0-9]{2})\b'),
-      RegExp(r'\b([0-9]{2,6})\b'),
-    ];
+    // 1. Strip item count / quantity fragments so numbers like "items: 4" don't become ₹4
+    var cleaned = text.replaceAll(
+      RegExp(r'\b(?:items?|qty|quantity|pcs|pieces|count)\s*[:\-]?\s*\d+\b', caseSensitive: false),
+      ' ',
+    );
 
-    for (final pattern in patterns) {
-      final matches = pattern.allMatches(text);
-      // Take the last match on the line, as amounts are typically placed on the right
-      if (matches.isNotEmpty) {
-        final match = matches.last;
-        final rawNum = match.group(1) ?? match.group(0);
-        if (rawNum != null) {
-          try {
-            final paise = Money.decimalStringToPaise(rawNum);
-            // Basic sanity bounds (10 paise to 50 lakh rupees)
-            if (paise >= 10 && paise <= 500000000) {
-              return paise;
-            }
-          } catch (_) {
-            // Ignore parse errors from regex fragments
-          }
-        }
+    // 2. Strip phone numbers (10 digits starting with 6-9)
+    cleaned = cleaned.replaceAll(RegExp(r'\b[6-9]\d{9}\b'), ' ');
+
+    // 3. Strip dates (DD/MM/YYYY or YYYY-MM-DD)
+    cleaned = cleaned.replaceAll(RegExp(r'\b\d{1,4}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\b'), ' ');
+
+    // 4. Strip times (e.g. 14:30 or 20:45:10)
+    cleaned = cleaned.replaceAll(RegExp(r'\b\d{1,2}:\d{2}(?::\d{2})?\b'), ' ');
+
+    // Priority 1: Currency symbols (₹, Rs, INR)
+    final currencyPattern = RegExp(
+      r'(?:₹|Rs\.?|INR)\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)',
+      caseSensitive: false,
+    );
+    final currencyMatches = currencyPattern.allMatches(cleaned);
+    if (currencyMatches.isNotEmpty) {
+      final rawNum = currencyMatches.last.group(1);
+      if (rawNum != null) {
+        try {
+          final paise = Money.decimalStringToPaise(rawNum);
+          if (paise >= 10 && paise <= 500000000) return paise;
+        } catch (_) {}
       }
     }
+
+    // Priority 2: Decimal currency values (e.g. 1,480.00 or 250.50)
+    final decimalPattern = RegExp(r'\b([0-9]{1,3}(?:,[0-9]{2,3})*\.[0-9]{2})\b');
+    final decimalMatches = decimalPattern.allMatches(cleaned);
+    if (decimalMatches.isNotEmpty) {
+      final rawNum = decimalMatches.last.group(1);
+      if (rawNum != null) {
+        try {
+          final paise = Money.decimalStringToPaise(rawNum);
+          if (paise >= 10 && paise <= 500000000) return paise;
+        } catch (_) {}
+      }
+    }
+
+    // Priority 3: Slash-dash currency values (e.g. 950/- or 1200/-)
+    final dashPattern = RegExp(r'\b([0-9][0-9,]*)\s*/-');
+    final dashMatches = dashPattern.allMatches(cleaned);
+    if (dashMatches.isNotEmpty) {
+      final rawNum = dashMatches.last.group(1);
+      if (rawNum != null) {
+        try {
+          final paise = Money.decimalStringToPaise(rawNum);
+          if (paise >= 10 && paise <= 500000000) return paise;
+        } catch (_) {}
+      }
+    }
+
+    // Priority 4: Plain integer numbers (e.g. 1450)
+    final intPattern = RegExp(r'\b([0-9]{2,6})\b');
+    final intMatches = intPattern.allMatches(cleaned);
+    if (intMatches.isNotEmpty) {
+      final rawNum = intMatches.last.group(1);
+      if (rawNum != null) {
+        try {
+          final paise = Money.decimalStringToPaise(rawNum);
+          if (paise >= 10 && paise <= 500000000) return paise;
+        } catch (_) {}
+      }
+    }
+
     return null;
   }
 

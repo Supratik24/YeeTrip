@@ -75,14 +75,15 @@ class _ReceiptScannerSheetState extends ConsumerState<ReceiptScannerSheet> {
   Future<void> _pickImage(ImageSource source) async {
     setState(() {
       _isProcessing = true;
-      _statusMessage = 'Accessing camera/gallery...';
+      _statusMessage = 'Opening ${source == ImageSource.camera ? "camera" : "gallery"}...';
     });
 
     try {
       final file = await _picker.pickImage(
         source: source,
-        maxWidth: 1600,
-        maxHeight: 1600,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 90,
       );
 
       if (file == null) {
@@ -94,27 +95,23 @@ class _ReceiptScannerSheetState extends ConsumerState<ReceiptScannerSheet> {
       }
 
       setState(() {
-        _statusMessage = 'Processing image receipt...';
+        _statusMessage = 'Scanning bill with on-device OCR...';
       });
 
-      // Simulated OCR fallback for offline headless platforms
-      // In production with native platform channels, text recognition reads OCR blocks.
-      // If OCR text is blank, prompt user to review or use manual OCR text box.
-      final fileName = file.name.toLowerCase();
-      String simulatedText = '';
-      if (fileName.contains('fuel') || fileName.contains('petrol')) {
-        simulatedText = ref.read(receiptScannerServiceProvider).getSampleReceipts()[1].rawText;
-      } else if (fileName.contains('dmart') || fileName.contains('grocery')) {
-        simulatedText = ref.read(receiptScannerServiceProvider).getSampleReceipts()[2].rawText;
-      } else {
-        simulatedText = ref.read(receiptScannerServiceProvider).getSampleReceipts()[0].rawText;
-      }
+      final service = ref.read(receiptScannerServiceProvider);
+      final recognizedText = await service.recognizeTextFromImage(file.path);
 
-      _textController.text = simulatedText;
-      _parseCurrentText(simulatedText);
+      if (recognizedText.trim().isNotEmpty) {
+        _textController.text = recognizedText.trim();
+        _parseCurrentText(recognizedText.trim());
+      } else {
+        setState(() {
+          _statusMessage = 'Could not detect clear text from this photo. Please ensure the bill is well-lit and in focus, or paste the text below.';
+        });
+      }
     } catch (e) {
       setState(() {
-        _statusMessage = 'Error reading image: $e';
+        _statusMessage = 'Error scanning bill: $e';
       });
     } finally {
       if (mounted) {
@@ -222,7 +219,7 @@ class _ReceiptScannerSheetState extends ConsumerState<ReceiptScannerSheet> {
 
                     // Quick Indian Receipt Samples
                     Text(
-                      'Quick Demo Receipts (1-Tap Test):',
+                      'Sample Receipts for Quick Testing:',
                       style: theme.textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.primary,

@@ -172,6 +172,31 @@ Visit us again!
       expect(result.merchantName, equals('Goa Handicrafts & Souvenirs'));
     });
 
+    test('handles receipt with TOTAL ITEMS and distinguishes item count from grand total', () {
+      const sample = '''
+Cafe Coffee Day
+Airport Road, Dabolim
+Date: 22/10/2026
+Cappuccino x 2                   400.00
+Blueberry Muffin x 1             180.00
+---------------------------------------
+TOTAL ITEMS: 3
+SUBTOTAL:                        580.00
+CGST 2.5%:                        14.50
+SGST 2.5%:                        14.50
+---------------------------------------
+GRAND TOTAL:                   ₹ 609.00
+---------------------------------------
+''';
+
+      final result = ReceiptParser.parse(sample);
+
+      expect(result.merchantName, equals('Cafe Coffee Day'));
+      expect(result.amountPaise, equals(60900)); // ₹609.00 = 60900 paise (NOT 3 items = ₹3)
+      expect(result.date, equals(DateTime(2026, 10, 22)));
+      expect(result.suggestedCategory, equals(TripCategory.food.key));
+    });
+
     test('ReceiptScannerService provides ready samples that all parse valid amounts', () {
       const service = ReceiptScannerService();
       final samples = service.getSampleReceipts();
