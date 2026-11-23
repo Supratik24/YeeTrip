@@ -22,6 +22,7 @@ class ReceiptScannerService {
   const ReceiptScannerService();
 
   /// Recognizes text from a local image file using on-device Google ML Kit OCR.
+  /// Uses 2D spatial clustering to preserve columns and row alignment.
   /// Runs on Android & iOS devices completely offline.
   Future<String> recognizeTextFromImage(String imagePath) async {
     if (kIsWeb ||
@@ -32,17 +33,107 @@ class ReceiptScannerService {
 
     try {
       final inputImage = InputImage.fromFilePath(imagePath);
-      final textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+      final latinRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+      RecognizedText recognizedText;
       try {
-        final recognizedText = await textRecognizer.processImage(inputImage);
-        return recognizedText.text;
+        recognizedText = await latinRecognizer.processImage(inputImage);
       } finally {
-        await textRecognizer.close();
+        await latinRecognizer.close();
       }
+
+      String spatialText = reconstructSpatialText(recognizedText);
+
+      // If Latin text is sparse or empty, attempt Devanagari recognition
+      if (spatialText.trim().length < 15) {
+        try {
+          final devanagariRecognizer = TextRecognizer(script: TextRecognitionScript.devanagiri);
+          try {
+            final devanagariText = await devanagariRecognizer.processImage(inputImage);
+            final devanagariSpatial = reconstructSpatialText(devanagariText);
+            if (devanagariSpatial.trim().length > spatialText.trim().length) {
+              spatialText = devanagariSpatial;
+            }
+          } finally {
+            await devanagariRecognizer.close();
+          }
+        } catch (e) {
+          debugPrint('Devanagari OCR fallback: $e');
+        }
+      }
+
+      return spatialText;
     } catch (e) {
       debugPrint('Error performing OCR on receipt image: $e');
       return '';
     }
+  }
+
+  /// Reconstructs 2D physical receipt rows from OCR bounding boxes.
+  /// Solves the multi-column disconnect where labels (e.g. "TOTAL") and
+  /// values (e.g. "1,450.00") are placed in separate blocks.
+  static String reconstructSpatialText(RecognizedText recognized) {
+    final allLines = <TextLine>[];
+    for (final block in recognized.blocks) {
+      allLines.addAll(block.lines);
+    }
+
+    if (allLines.isEmpty) {
+      return recognized.text;
+    }
+
+    // Sort lines primarily by vertical center
+    allLines.sort((a, b) {
+      final aCenterY = a.boundingBox.top + (a.boundingBox.height / 2);
+      final bCenterY = b.boundingBox.top + (b.boundingBox.height / 2);
+      return aCenterY.compareTo(bCenterY);
+    });
+
+    final rows = <List<TextLine>>[];
+    for (final line in allLines) {
+      final centerY = line.boundingBox.top + (line.boundingBox.height / 2);
+      final lineHeight = line.boundingBox.height;
+
+      if (rows.isEmpty) {
+        rows.add([line]);
+        continue;
+      }
+
+      final lastRow = rows.last;
+      // Average center Y of the current row
+      final rowAvgCenterY = lastRow
+              .map((l) => l.boundingBox.top + (l.boundingBox.height / 2))
+              .reduce((a, b) => a + b) /
+          lastRow.length;
+      final avgHeight = lastRow
+              .map((l) => l.boundingBox.height)
+              .reduce((a, b) => a + b) /
+          lastRow.length;
+
+      final threshold = (avgHeight > 0 ? avgHeight : lineHeight) * 0.6;
+      final effectiveThreshold = threshold.clamp(12.0, 40.0);
+
+      if ((centerY - rowAvgCenterY).abs() <= effectiveThreshold) {
+        lastRow.add(line);
+      } else {
+        rows.add([line]);
+      }
+    }
+
+    // Within each row, sort lines horizontally (left to right)
+    final buffer = StringBuffer();
+    for (final row in rows) {
+      row.sort((a, b) => a.boundingBox.left.compareTo(b.boundingBox.left));
+      final lineStr = row
+          .map((l) => l.text.trim())
+          .where((t) => t.isNotEmpty)
+          .join(' ');
+      if (lineStr.isNotEmpty) {
+        buffer.writeln(lineStr);
+      }
+    }
+
+    final reconstructed = buffer.toString().trim();
+    return reconstructed.isNotEmpty ? reconstructed : recognized.text;
   }
 
   /// Parses arbitrary raw OCR or pasted receipt text into [ReceiptData].

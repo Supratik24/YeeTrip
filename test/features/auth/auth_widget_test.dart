@@ -245,6 +245,7 @@ void main() {
       await authService.signInWithGoogle(
         customName: 'Aarav Sharma',
         customEmail: 'aarav@example.com',
+        defaultUpiVpa: 'aarav@oksbi',
       );
 
       await tester.pumpWidget(

@@ -63,7 +63,10 @@ void main() {
       // Verify extracted details card appears
       expect(find.text('EXTRACTED BILL DETAILS'), findsOneWidget);
       expect(find.text("THE FISHERMAN'S WHARF"), findsOneWidget);
-      expect(find.text('₹1,845.50'), findsOneWidget);
+      expect(
+        find.descendant(of: find.byType(Card), matching: find.text('₹1,845.50')),
+        findsOneWidget,
+      );
       expect(find.text('Food'), findsOneWidget);
 
       // Tap Apply to Expense button
@@ -133,7 +136,10 @@ void main() {
 
       // Verify extracted details
       expect(find.text('BHARAT PETROLEUM CORP LTD'), findsOneWidget);
-      expect(find.text('₹2,500'), findsOneWidget);
+      expect(
+        find.descendant(of: find.byType(Card), matching: find.text('₹2,500')),
+        findsOneWidget,
+      );
       expect(find.text('Transport'), findsOneWidget);
 
       // Tap Apply to Expense
@@ -211,7 +217,10 @@ void main() {
 
       // Verify live extraction
       expect(find.text('Taj Exotica Resort & Spa'), findsOneWidget);
-      expect(find.text('₹1,25,000'), findsOneWidget);
+      expect(
+        find.descendant(of: find.byType(Card), matching: find.text('₹1,25,000')),
+        findsOneWidget,
+      );
       expect(
         find.descendant(of: find.byType(Card), matching: find.text('Stay')),
         findsOneWidget,

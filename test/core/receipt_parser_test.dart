@@ -1,4 +1,7 @@
+import 'dart:ui';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:yeetrip/core/constants/categories.dart';
 import 'package:yeetrip/core/receipt_parser.dart';
 import 'package:yeetrip/core/receipt_scanner_service.dart';
@@ -209,6 +212,69 @@ GRAND TOTAL:                   ₹ 609.00
         expect(parsed.merchantName, isNotNull);
         expect(parsed.date, isNotNull);
       }
+    });
+
+    test('ReceiptData extracts all candidate amounts found in bill', () {
+      const sample = '''
+Green Park Restaurant
+Item 1: 150.00
+Item 2: 350.00
+Subtotal: 500.00
+CGST: 12.50
+SGST: 12.50
+Grand Total: 525.00
+''';
+      final result = ReceiptParser.parse(sample);
+      expect(result.amountPaise, equals(52500));
+      expect(result.candidateAmountsPaise, containsAll([52500, 50000, 35000, 15000, 1250]));
+    });
+
+    test('ReceiptScannerService reconstructs spatial columns into aligned rows', () {
+      final leftLine1 = TextLine(
+        text: 'GRAND TOTAL',
+        elements: const [],
+        boundingBox: const Rect.fromLTWH(20.0, 200.0, 100.0, 30.0),
+        recognizedLanguages: const [],
+        cornerPoints: const [],
+        confidence: 0.9,
+        angle: 0,
+      );
+      final rightLine1 = TextLine(
+        text: '₹ 1,450.00',
+        elements: const [],
+        boundingBox: const Rect.fromLTWH(250.0, 202.0, 80.0, 28.0),
+        recognizedLanguages: const [],
+        cornerPoints: const [],
+        confidence: 0.9,
+        angle: 0,
+      );
+
+      final blockLeft = TextBlock(
+        text: 'GRAND TOTAL',
+        lines: [leftLine1],
+        boundingBox: const Rect.fromLTWH(20.0, 200.0, 100.0, 30.0),
+        recognizedLanguages: const [],
+        cornerPoints: const [],
+      );
+
+      final blockRight = TextBlock(
+        text: '₹ 1,450.00',
+        lines: [rightLine1],
+        boundingBox: const Rect.fromLTWH(250.0, 202.0, 80.0, 28.0),
+        recognizedLanguages: const [],
+        cornerPoints: const [],
+      );
+
+      final recognized = RecognizedText(
+        text: 'GRAND TOTAL\n₹ 1,450.00',
+        blocks: [blockLeft, blockRight],
+      );
+
+      final reconstructed = ReceiptScannerService.reconstructSpatialText(recognized);
+      expect(reconstructed, contains('GRAND TOTAL ₹ 1,450.00'));
+
+      final parsed = ReceiptParser.parse(reconstructed);
+      expect(parsed.amountPaise, equals(145000));
     });
   });
 }

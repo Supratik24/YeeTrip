@@ -21,6 +21,15 @@ class ReceiptData {
   /// Raw input text that was parsed.
   final String rawText;
 
+  /// All distinct valid currency amounts detected on the receipt (in paise), sorted descending.
+  final List<int> candidateAmountsPaise;
+
+  /// Detected item lines or description.
+  final List<String> items;
+
+  /// Optional parser notes or status explanations.
+  final String? notes;
+
   const ReceiptData({
     this.amountPaise,
     this.merchantName,
@@ -28,6 +37,9 @@ class ReceiptData {
     this.suggestedCategory = 'Food',
     this.confidence = 0.0,
     required this.rawText,
+    this.candidateAmountsPaise = const [],
+    this.items = const [],
+    this.notes,
   });
 
   ReceiptData copyWith({
@@ -37,6 +49,9 @@ class ReceiptData {
     String? suggestedCategory,
     double? confidence,
     String? rawText,
+    List<int>? candidateAmountsPaise,
+    List<String>? items,
+    String? notes,
   }) {
     return ReceiptData(
       amountPaise: amountPaise ?? this.amountPaise,
@@ -45,6 +60,9 @@ class ReceiptData {
       suggestedCategory: suggestedCategory ?? this.suggestedCategory,
       confidence: confidence ?? this.confidence,
       rawText: rawText ?? this.rawText,
+      candidateAmountsPaise: candidateAmountsPaise ?? this.candidateAmountsPaise,
+      items: items ?? this.items,
+      notes: notes ?? this.notes,
     );
   }
 
@@ -58,7 +76,8 @@ class ReceiptData {
           date == other.date &&
           suggestedCategory == other.suggestedCategory &&
           confidence == other.confidence &&
-          rawText == other.rawText;
+          rawText == other.rawText &&
+          notes == other.notes;
 
   @override
   int get hashCode => Object.hash(
@@ -68,11 +87,12 @@ class ReceiptData {
         suggestedCategory,
         confidence,
         rawText,
+        notes,
       );
 
   @override
   String toString() {
-    return 'ReceiptData(merchant: $merchantName, amountPaise: $amountPaise, date: $date, category: $suggestedCategory, confidence: ${(confidence * 100).toStringAsFixed(1)}%)';
+    return 'ReceiptData(merchant: $merchantName, amountPaise: $amountPaise, date: $date, category: $suggestedCategory, candidates: ${candidateAmountsPaise.length}, confidence: ${(confidence * 100).toStringAsFixed(1)}%)';
   }
 }
 
@@ -188,6 +208,10 @@ class ReceiptParser {
 
     final merchantName = _extractMerchant(lines);
     final (amountPaise, amountFoundOnExplicitTotal) = _extractAmount(lines);
+    final candidateAmounts = _extractAllCandidateAmounts(lines);
+    if (amountPaise != null && !candidateAmounts.contains(amountPaise)) {
+      candidateAmounts.insert(0, amountPaise);
+    }
     final date = _extractDate(lines);
     final category = _inferCategory(lines, merchantName);
 
@@ -213,6 +237,7 @@ class ReceiptParser {
       suggestedCategory: category,
       confidence: confidence.clamp(0.0, 1.0),
       rawText: rawText,
+      candidateAmountsPaise: candidateAmounts,
     );
   }
 
@@ -381,6 +406,81 @@ class ReceiptParser {
     }
 
     return null;
+  }
+
+  /// Extracts all distinct candidate amounts found across the receipt lines, sorted descending.
+  static List<int> _extractAllCandidateAmounts(List<String> lines) {
+    final amounts = <int>{};
+    for (final line in lines) {
+      final lower = line.toLowerCase();
+      if (_isItemCountLine(lower)) continue;
+      if (lower.contains('gstin') ||
+          lower.contains('fssai') ||
+          lower.contains('cin') ||
+          lower.contains('phone') ||
+          lower.contains('tel:') ||
+          lower.contains('mob:')) {
+        continue;
+      }
+      final found = _findAllAmountsInString(line);
+      amounts.addAll(found);
+    }
+    final sorted = amounts.toList()..sort((a, b) => b.compareTo(a));
+    return sorted;
+  }
+
+  /// Finds all monetary values within a single string line.
+  static List<int> _findAllAmountsInString(String text) {
+    var cleaned = text.replaceAll(
+      RegExp(r'\b(?:items?|qty|quantity|pcs|pieces|count)\s*[:\-]?\s*\d+\b', caseSensitive: false),
+      ' ',
+    );
+    cleaned = cleaned.replaceAll(RegExp(r'\b[6-9]\d{9}\b'), ' ');
+    cleaned = cleaned.replaceAll(RegExp(r'\b\d{1,4}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\b'), ' ');
+    cleaned = cleaned.replaceAll(RegExp(r'\b\d{1,2}:\d{2}(?::\d{2})?\b'), ' ');
+
+    final results = <int>{};
+
+    // 1. Currency symbols
+    final currencyPattern = RegExp(
+      r'(?:₹|Rs\.?|INR)\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)',
+      caseSensitive: false,
+    );
+    for (final match in currencyPattern.allMatches(cleaned)) {
+      final rawNum = match.group(1);
+      if (rawNum != null) {
+        try {
+          final paise = Money.decimalStringToPaise(rawNum);
+          if (paise >= 100 && paise <= 500000000) results.add(paise);
+        } catch (_) {}
+      }
+    }
+
+    // 2. Decimal values (e.g. 1,480.00)
+    final decimalPattern = RegExp(r'\b([0-9]{1,3}(?:,[0-9]{2,3})*\.[0-9]{2})\b');
+    for (final match in decimalPattern.allMatches(cleaned)) {
+      final rawNum = match.group(1);
+      if (rawNum != null) {
+        try {
+          final paise = Money.decimalStringToPaise(rawNum);
+          if (paise >= 100 && paise <= 500000000) results.add(paise);
+        } catch (_) {}
+      }
+    }
+
+    // 3. Slash-dash (e.g. 950/-)
+    final dashPattern = RegExp(r'\b([0-9][0-9,]*)\s*/-');
+    for (final match in dashPattern.allMatches(cleaned)) {
+      final rawNum = match.group(1);
+      if (rawNum != null) {
+        try {
+          final paise = Money.decimalStringToPaise(rawNum);
+          if (paise >= 100 && paise <= 500000000) results.add(paise);
+        } catch (_) {}
+      }
+    }
+
+    return results.toList();
   }
 
   /// Extracts date from receipt text lines.
