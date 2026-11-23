@@ -128,7 +128,7 @@ class _AuthModalState extends ConsumerState<AuthModal> {
           if (err.contains('canceled') || err.contains('cancelled') || err.contains('Sign in canceled')) {
             _errorMessage = 'Google sign-in was cancelled';
           } else {
-            _errorMessage = 'Google OAuth: $err. You can also sign in manually below.';
+            _errorMessage = 'Google sign-in: $err. You can also sign in manually below.';
           }
         });
       }
@@ -150,12 +150,12 @@ class _AuthModalState extends ConsumerState<AuthModal> {
     }
 
     if (upi.isEmpty) {
-      setState(() => _profileUpiError = 'UPI ID is mandatory (e.g. yourname@okhdfcbank)');
+      setState(() => _profileUpiError = 'UPI ID is mandatory (e.g. name@bank or 9876543210@upi)');
       return;
     }
 
     if (!RegExp(r'^[\w.\-]+@[\w.\-]+$').hasMatch(upi)) {
-      setState(() => _profileUpiError = 'Please enter a valid UPI ID (e.g. yourname@okhdfcbank)');
+      setState(() => _profileUpiError = 'Please enter a valid UPI ID (e.g. name@bank or 9876543210@upi)');
       return;
     }
 
@@ -673,7 +673,7 @@ class _AuthModalState extends ConsumerState<AuthModal> {
                           ),
                         ),
                   label: const Text(
-                    'Sign in with Google (1-Tap OAuth)',
+                    'Sign in with Google',
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                 ),
