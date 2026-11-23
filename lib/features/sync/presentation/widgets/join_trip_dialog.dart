@@ -186,8 +186,8 @@ class _JoinTripDialogState extends ConsumerState<JoinTripDialog> {
             keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(
               labelText: 'Your UPI ID * (Required)',
-              hintText: 'e.g. yourname@okhdfcbank',
-              helperText: 'Mandatory for group expense settlement and splits',
+              hintText: 'e.g. name@bank or 9876543210@upi',
+              helperText: 'Caution: Please add correct UPI ID for seamless settlement',
               errorText: _upiErrorMessage,
               prefixIcon: const Icon(Icons.account_balance),
               border: OutlineInputBorder(

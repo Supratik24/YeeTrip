@@ -302,6 +302,7 @@ class _AuthModalState extends ConsumerState<AuthModal> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     // Step 2: After Google OAuth succeeds, allow editing name and mandate entering UPI ID
     if (_isGoogleProfileStep && _pendingGoogleAccount != null) {
@@ -437,8 +438,44 @@ class _AuthModalState extends ConsumerState<AuthModal> {
                   hintText: 'e.g. name@bank or 9876543210@upi',
                   errorText: _profileUpiError,
                   prefixIcon: const Icon(Icons.account_balance),
-                  helperText: 'Mandatory: Enter your own UPI ID for receiving and settling trip payments',
+                  helperText: 'Please add correct UPI ID for seamless settlement',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Caution Line Banner
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.amber.shade900.withValues(alpha: 0.25)
+                      : Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.amber.shade700.withValues(alpha: 0.4)
+                        : Colors.amber.shade300,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      size: 18,
+                      color: isDark ? Colors.amber.shade300 : Colors.amber.shade800,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Caution: Please add correct UPI ID for seamless settlement',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: isDark ? Colors.amber.shade200 : Colors.amber.shade900,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 20),
@@ -694,9 +731,7 @@ class _AuthModalState extends ConsumerState<AuthModal> {
                   labelText: widget.isJoining ? 'Your UPI ID * (Required for joining)' : 'Your UPI ID (optional)',
                   hintText: 'e.g. name@bank or 9876543210@upi',
                   prefixIcon: const Icon(Icons.account_balance),
-                  helperText: widget.isJoining
-                      ? 'Mandatory to join trip for 1-tap debt settlements'
-                      : 'Used for 1-tap UPI debt settlements with friends',
+                  helperText: 'Caution: Please add correct UPI ID for seamless settlement',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
