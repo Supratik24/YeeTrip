@@ -1,3 +1,4 @@
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,20 +16,24 @@ class YeeTripApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final activeLocale = ref.watch(appLocaleProvider);
 
-    return MaterialApp.router(
-      title: 'YeeTrip',
-      debugShowCheckedModeBanner: false,
-      locale: activeLocale,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      routerConfig: appRouter,
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
+    return DynamicColorBuilder(
+      builder: (lightDynamic, darkDynamic) {
+        return MaterialApp.router(
+          title: 'YeeTrip',
+          debugShowCheckedModeBanner: false,
+          locale: activeLocale,
+          theme: AppTheme.lightTheme(dynamicColorScheme: lightDynamic),
+          darkTheme: AppTheme.darkTheme(dynamicColorScheme: darkDynamic),
+          routerConfig: appRouter,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+        );
+      },
     );
   }
 }

@@ -6,7 +6,7 @@ enum SplitMode {
   shares,
 }
 
-/// Domain model for an expense split entry.
+/// Split share for a single traveler.
 class ExpenseSplitModel {
   final String expenseId;
   final String travelerId;
@@ -17,6 +17,18 @@ class ExpenseSplitModel {
     required this.travelerId,
     required this.sharePaise,
   });
+
+  ExpenseSplitModel copyWith({
+    String? expenseId,
+    String? travelerId,
+    int? sharePaise,
+  }) {
+    return ExpenseSplitModel(
+      expenseId: expenseId ?? this.expenseId,
+      travelerId: travelerId ?? this.travelerId,
+      sharePaise: sharePaise ?? this.sharePaise,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -31,7 +43,7 @@ class ExpenseSplitModel {
   int get hashCode => Object.hash(expenseId, travelerId, sharePaise);
 }
 
-/// Domain model for an expense with full details and split allocations.
+/// Domain model for an expense including all its splits.
 class ExpenseWithSplits {
   final String id;
   final String tripId;
@@ -39,11 +51,12 @@ class ExpenseWithSplits {
   final int amountPaise;
   final String category;
   final String paidBy; // travelerId
-  final String source; // 'manual', 'upi'
+  final String source; // 'manual', 'upi', 'settlement'
   final String? upiTxnId;
   final bool confirmed;
   final DateTime createdAt;
   final List<ExpenseSplitModel> splits;
+  final String? receiptImagePath;
 
   const ExpenseWithSplits({
     required this.id,
@@ -57,6 +70,7 @@ class ExpenseWithSplits {
     this.confirmed = true,
     required this.createdAt,
     this.splits = const [],
+    this.receiptImagePath,
   });
 
   ExpenseWithSplits copyWith({
@@ -71,6 +85,7 @@ class ExpenseWithSplits {
     bool? confirmed,
     DateTime? createdAt,
     List<ExpenseSplitModel>? splits,
+    String? receiptImagePath,
   }) {
     return ExpenseWithSplits(
       id: id ?? this.id,
@@ -84,6 +99,7 @@ class ExpenseWithSplits {
       confirmed: confirmed ?? this.confirmed,
       createdAt: createdAt ?? this.createdAt,
       splits: splits ?? this.splits,
+      receiptImagePath: receiptImagePath ?? this.receiptImagePath,
     );
   }
 }

@@ -6,6 +6,7 @@ import '../../../../core/auth/auth_models.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/money.dart';
 import '../../../../core/widgets/responsive_center.dart';
+import '../../../../core/widgets/traveler_avatar.dart';
 import '../../../../data/providers.dart';
 import '../../../auth/presentation/widgets/auth_modal.dart';
 import '../widgets/contact_picker_sheet.dart';
@@ -38,10 +39,12 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
   final _scrollController = ScrollController();
 
   final _nameController = TextEditingController();
+  final _destinationController = TextEditingController();
   final _budgetController = TextEditingController();
   final _daysController = TextEditingController(text: '1');
 
   final _nameFocusNode = FocusNode();
+  final _destinationFocusNode = FocusNode();
   final _budgetFocusNode = FocusNode();
   final _daysFocusNode = FocusNode();
 
@@ -64,9 +67,11 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
   void dispose() {
     _scrollController.dispose();
     _nameController.dispose();
+    _destinationController.dispose();
     _budgetController.dispose();
     _daysController.dispose();
     _nameFocusNode.dispose();
+    _destinationFocusNode.dispose();
     _budgetFocusNode.dispose();
     _daysFocusNode.dispose();
     for (final t in _travelers) {
@@ -237,11 +242,13 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
           _travelers.map((c) => c.controller.text.trim()).toList();
 
       final tripRepo = ref.read(tripRepositoryProvider);
+      final destination = _destinationController.text.trim();
       final tripId = await tripRepo.createTrip(
         name: name,
         totalBudgetPaise: totalBudgetPaise,
         days: days,
         travelerNames: travelerNames,
+        destination: destination.isNotEmpty ? destination : null,
       );
 
       // Auto-link traveler profile and default UPI to the new trip
@@ -341,6 +348,22 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
                     }
                     return null;
                   },
+                ),
+                const SizedBox(height: 14),
+
+                // Destination field (optional)
+                TextFormField(
+                  key: const Key('trip_destination_field'),
+                  controller: _destinationController,
+                  focusNode: _destinationFocusNode,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) => _budgetFocusNode.requestFocus(),
+                  decoration: const InputDecoration(
+                    labelText: 'Destination (optional)',
+                    hintText: 'e.g. Goa, Manali, Kerala',
+                    prefixIcon: Icon(Icons.location_on_outlined, size: 20),
+                  ),
+                  textCapitalization: TextCapitalization.words,
                 ),
                 const SizedBox(height: 16),
 
@@ -485,18 +508,12 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Row(
                       children: [
-                        CircleAvatar(
+                        TravelerAvatar(
+                          name: traveler.controller.text.trim().isNotEmpty
+                              ? traveler.controller.text.trim()
+                              : '${index + 1}',
                           radius: 16,
-                          backgroundColor:
-                              theme.colorScheme.primaryContainer,
-                          child: Text(
-                            '${index + 1}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onPrimaryContainer,
-                            ),
-                          ),
+                          fontSize: 11,
                         ),
                         const SizedBox(width: 10),
                         Expanded(

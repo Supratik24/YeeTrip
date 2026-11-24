@@ -69,6 +69,60 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _destinationMeta = const VerificationMeta(
+    'destination',
+  );
+  @override
+  late final GeneratedColumn<String> destination = GeneratedColumn<String>(
+    'destination',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _coverPhotoPathMeta = const VerificationMeta(
+    'coverPhotoPath',
+  );
+  @override
+  late final GeneratedColumn<String> coverPhotoPath = GeneratedColumn<String>(
+    'cover_photo_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('active'),
+  );
+  static const VerificationMeta _startDateMeta = const VerificationMeta(
+    'startDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startDate = GeneratedColumn<DateTime>(
+    'start_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _endDateMeta = const VerificationMeta(
+    'endDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> endDate = GeneratedColumn<DateTime>(
+    'end_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -77,6 +131,11 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
     days,
     currency,
     createdAt,
+    destination,
+    coverPhotoPath,
+    status,
+    startDate,
+    endDate,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -136,6 +195,42 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('destination')) {
+      context.handle(
+        _destinationMeta,
+        destination.isAcceptableOrUnknown(
+          data['destination']!,
+          _destinationMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cover_photo_path')) {
+      context.handle(
+        _coverPhotoPathMeta,
+        coverPhotoPath.isAcceptableOrUnknown(
+          data['cover_photo_path']!,
+          _coverPhotoPathMeta,
+        ),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('start_date')) {
+      context.handle(
+        _startDateMeta,
+        startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta),
+      );
+    }
+    if (data.containsKey('end_date')) {
+      context.handle(
+        _endDateMeta,
+        endDate.isAcceptableOrUnknown(data['end_date']!, _endDateMeta),
+      );
+    }
     return context;
   }
 
@@ -169,6 +264,26 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      destination: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}destination'],
+      ),
+      coverPhotoPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cover_photo_path'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      startDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}start_date'],
+      ),
+      endDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}end_date'],
+      ),
     );
   }
 
@@ -185,6 +300,11 @@ class Trip extends DataClass implements Insertable<Trip> {
   final int days;
   final String currency;
   final DateTime createdAt;
+  final String? destination;
+  final String? coverPhotoPath;
+  final String status;
+  final DateTime? startDate;
+  final DateTime? endDate;
   const Trip({
     required this.id,
     required this.name,
@@ -192,6 +312,11 @@ class Trip extends DataClass implements Insertable<Trip> {
     required this.days,
     required this.currency,
     required this.createdAt,
+    this.destination,
+    this.coverPhotoPath,
+    required this.status,
+    this.startDate,
+    this.endDate,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -202,6 +327,19 @@ class Trip extends DataClass implements Insertable<Trip> {
     map['days'] = Variable<int>(days);
     map['currency'] = Variable<String>(currency);
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || destination != null) {
+      map['destination'] = Variable<String>(destination);
+    }
+    if (!nullToAbsent || coverPhotoPath != null) {
+      map['cover_photo_path'] = Variable<String>(coverPhotoPath);
+    }
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || startDate != null) {
+      map['start_date'] = Variable<DateTime>(startDate);
+    }
+    if (!nullToAbsent || endDate != null) {
+      map['end_date'] = Variable<DateTime>(endDate);
+    }
     return map;
   }
 
@@ -213,6 +351,19 @@ class Trip extends DataClass implements Insertable<Trip> {
       days: Value(days),
       currency: Value(currency),
       createdAt: Value(createdAt),
+      destination: destination == null && nullToAbsent
+          ? const Value.absent()
+          : Value(destination),
+      coverPhotoPath: coverPhotoPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(coverPhotoPath),
+      status: Value(status),
+      startDate: startDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startDate),
+      endDate: endDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endDate),
     );
   }
 
@@ -228,6 +379,11 @@ class Trip extends DataClass implements Insertable<Trip> {
       days: serializer.fromJson<int>(json['days']),
       currency: serializer.fromJson<String>(json['currency']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      destination: serializer.fromJson<String?>(json['destination']),
+      coverPhotoPath: serializer.fromJson<String?>(json['coverPhotoPath']),
+      status: serializer.fromJson<String>(json['status']),
+      startDate: serializer.fromJson<DateTime?>(json['startDate']),
+      endDate: serializer.fromJson<DateTime?>(json['endDate']),
     );
   }
   @override
@@ -240,6 +396,11 @@ class Trip extends DataClass implements Insertable<Trip> {
       'days': serializer.toJson<int>(days),
       'currency': serializer.toJson<String>(currency),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'destination': serializer.toJson<String?>(destination),
+      'coverPhotoPath': serializer.toJson<String?>(coverPhotoPath),
+      'status': serializer.toJson<String>(status),
+      'startDate': serializer.toJson<DateTime?>(startDate),
+      'endDate': serializer.toJson<DateTime?>(endDate),
     };
   }
 
@@ -250,6 +411,11 @@ class Trip extends DataClass implements Insertable<Trip> {
     int? days,
     String? currency,
     DateTime? createdAt,
+    Value<String?> destination = const Value.absent(),
+    Value<String?> coverPhotoPath = const Value.absent(),
+    String? status,
+    Value<DateTime?> startDate = const Value.absent(),
+    Value<DateTime?> endDate = const Value.absent(),
   }) => Trip(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -257,6 +423,13 @@ class Trip extends DataClass implements Insertable<Trip> {
     days: days ?? this.days,
     currency: currency ?? this.currency,
     createdAt: createdAt ?? this.createdAt,
+    destination: destination.present ? destination.value : this.destination,
+    coverPhotoPath: coverPhotoPath.present
+        ? coverPhotoPath.value
+        : this.coverPhotoPath,
+    status: status ?? this.status,
+    startDate: startDate.present ? startDate.value : this.startDate,
+    endDate: endDate.present ? endDate.value : this.endDate,
   );
   Trip copyWithCompanion(TripsCompanion data) {
     return Trip(
@@ -268,6 +441,15 @@ class Trip extends DataClass implements Insertable<Trip> {
       days: data.days.present ? data.days.value : this.days,
       currency: data.currency.present ? data.currency.value : this.currency,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      destination: data.destination.present
+          ? data.destination.value
+          : this.destination,
+      coverPhotoPath: data.coverPhotoPath.present
+          ? data.coverPhotoPath.value
+          : this.coverPhotoPath,
+      status: data.status.present ? data.status.value : this.status,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      endDate: data.endDate.present ? data.endDate.value : this.endDate,
     );
   }
 
@@ -279,14 +461,30 @@ class Trip extends DataClass implements Insertable<Trip> {
           ..write('totalBudgetPaise: $totalBudgetPaise, ')
           ..write('days: $days, ')
           ..write('currency: $currency, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('destination: $destination, ')
+          ..write('coverPhotoPath: $coverPhotoPath, ')
+          ..write('status: $status, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, totalBudgetPaise, days, currency, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    totalBudgetPaise,
+    days,
+    currency,
+    createdAt,
+    destination,
+    coverPhotoPath,
+    status,
+    startDate,
+    endDate,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -296,7 +494,12 @@ class Trip extends DataClass implements Insertable<Trip> {
           other.totalBudgetPaise == this.totalBudgetPaise &&
           other.days == this.days &&
           other.currency == this.currency &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.destination == this.destination &&
+          other.coverPhotoPath == this.coverPhotoPath &&
+          other.status == this.status &&
+          other.startDate == this.startDate &&
+          other.endDate == this.endDate);
 }
 
 class TripsCompanion extends UpdateCompanion<Trip> {
@@ -306,6 +509,11 @@ class TripsCompanion extends UpdateCompanion<Trip> {
   final Value<int> days;
   final Value<String> currency;
   final Value<DateTime> createdAt;
+  final Value<String?> destination;
+  final Value<String?> coverPhotoPath;
+  final Value<String> status;
+  final Value<DateTime?> startDate;
+  final Value<DateTime?> endDate;
   final Value<int> rowid;
   const TripsCompanion({
     this.id = const Value.absent(),
@@ -314,6 +522,11 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     this.days = const Value.absent(),
     this.currency = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.destination = const Value.absent(),
+    this.coverPhotoPath = const Value.absent(),
+    this.status = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.endDate = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TripsCompanion.insert({
@@ -323,6 +536,11 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     required int days,
     this.currency = const Value.absent(),
     required DateTime createdAt,
+    this.destination = const Value.absent(),
+    this.coverPhotoPath = const Value.absent(),
+    this.status = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.endDate = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -336,6 +554,11 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     Expression<int>? days,
     Expression<String>? currency,
     Expression<DateTime>? createdAt,
+    Expression<String>? destination,
+    Expression<String>? coverPhotoPath,
+    Expression<String>? status,
+    Expression<DateTime>? startDate,
+    Expression<DateTime>? endDate,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -345,6 +568,11 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       if (days != null) 'days': days,
       if (currency != null) 'currency': currency,
       if (createdAt != null) 'created_at': createdAt,
+      if (destination != null) 'destination': destination,
+      if (coverPhotoPath != null) 'cover_photo_path': coverPhotoPath,
+      if (status != null) 'status': status,
+      if (startDate != null) 'start_date': startDate,
+      if (endDate != null) 'end_date': endDate,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -356,6 +584,11 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     Value<int>? days,
     Value<String>? currency,
     Value<DateTime>? createdAt,
+    Value<String?>? destination,
+    Value<String?>? coverPhotoPath,
+    Value<String>? status,
+    Value<DateTime?>? startDate,
+    Value<DateTime?>? endDate,
     Value<int>? rowid,
   }) {
     return TripsCompanion(
@@ -365,6 +598,11 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       days: days ?? this.days,
       currency: currency ?? this.currency,
       createdAt: createdAt ?? this.createdAt,
+      destination: destination ?? this.destination,
+      coverPhotoPath: coverPhotoPath ?? this.coverPhotoPath,
+      status: status ?? this.status,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -390,6 +628,21 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (destination.present) {
+      map['destination'] = Variable<String>(destination.value);
+    }
+    if (coverPhotoPath.present) {
+      map['cover_photo_path'] = Variable<String>(coverPhotoPath.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (startDate.present) {
+      map['start_date'] = Variable<DateTime>(startDate.value);
+    }
+    if (endDate.present) {
+      map['end_date'] = Variable<DateTime>(endDate.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -405,6 +658,11 @@ class TripsCompanion extends UpdateCompanion<Trip> {
           ..write('days: $days, ')
           ..write('currency: $currency, ')
           ..write('createdAt: $createdAt, ')
+          ..write('destination: $destination, ')
+          ..write('coverPhotoPath: $coverPhotoPath, ')
+          ..write('status: $status, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -456,8 +714,19 @@ class $TravelersTable extends Travelers
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _avatarPathMeta = const VerificationMeta(
+    'avatarPath',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, tripId, name, upiVpa];
+  late final GeneratedColumn<String> avatarPath = GeneratedColumn<String>(
+    'avatar_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, tripId, name, upiVpa, avatarPath];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -497,6 +766,12 @@ class $TravelersTable extends Travelers
         upiVpa.isAcceptableOrUnknown(data['upi_vpa']!, _upiVpaMeta),
       );
     }
+    if (data.containsKey('avatar_path')) {
+      context.handle(
+        _avatarPathMeta,
+        avatarPath.isAcceptableOrUnknown(data['avatar_path']!, _avatarPathMeta),
+      );
+    }
     return context;
   }
 
@@ -522,6 +797,10 @@ class $TravelersTable extends Travelers
         DriftSqlType.string,
         data['${effectivePrefix}upi_vpa'],
       ),
+      avatarPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}avatar_path'],
+      ),
     );
   }
 
@@ -536,11 +815,13 @@ class Traveler extends DataClass implements Insertable<Traveler> {
   final String tripId;
   final String name;
   final String? upiVpa;
+  final String? avatarPath;
   const Traveler({
     required this.id,
     required this.tripId,
     required this.name,
     this.upiVpa,
+    this.avatarPath,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -550,6 +831,9 @@ class Traveler extends DataClass implements Insertable<Traveler> {
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || upiVpa != null) {
       map['upi_vpa'] = Variable<String>(upiVpa);
+    }
+    if (!nullToAbsent || avatarPath != null) {
+      map['avatar_path'] = Variable<String>(avatarPath);
     }
     return map;
   }
@@ -562,6 +846,9 @@ class Traveler extends DataClass implements Insertable<Traveler> {
       upiVpa: upiVpa == null && nullToAbsent
           ? const Value.absent()
           : Value(upiVpa),
+      avatarPath: avatarPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(avatarPath),
     );
   }
 
@@ -575,6 +862,7 @@ class Traveler extends DataClass implements Insertable<Traveler> {
       tripId: serializer.fromJson<String>(json['tripId']),
       name: serializer.fromJson<String>(json['name']),
       upiVpa: serializer.fromJson<String?>(json['upiVpa']),
+      avatarPath: serializer.fromJson<String?>(json['avatarPath']),
     );
   }
   @override
@@ -585,6 +873,7 @@ class Traveler extends DataClass implements Insertable<Traveler> {
       'tripId': serializer.toJson<String>(tripId),
       'name': serializer.toJson<String>(name),
       'upiVpa': serializer.toJson<String?>(upiVpa),
+      'avatarPath': serializer.toJson<String?>(avatarPath),
     };
   }
 
@@ -593,11 +882,13 @@ class Traveler extends DataClass implements Insertable<Traveler> {
     String? tripId,
     String? name,
     Value<String?> upiVpa = const Value.absent(),
+    Value<String?> avatarPath = const Value.absent(),
   }) => Traveler(
     id: id ?? this.id,
     tripId: tripId ?? this.tripId,
     name: name ?? this.name,
     upiVpa: upiVpa.present ? upiVpa.value : this.upiVpa,
+    avatarPath: avatarPath.present ? avatarPath.value : this.avatarPath,
   );
   Traveler copyWithCompanion(TravelersCompanion data) {
     return Traveler(
@@ -605,6 +896,9 @@ class Traveler extends DataClass implements Insertable<Traveler> {
       tripId: data.tripId.present ? data.tripId.value : this.tripId,
       name: data.name.present ? data.name.value : this.name,
       upiVpa: data.upiVpa.present ? data.upiVpa.value : this.upiVpa,
+      avatarPath: data.avatarPath.present
+          ? data.avatarPath.value
+          : this.avatarPath,
     );
   }
 
@@ -614,13 +908,14 @@ class Traveler extends DataClass implements Insertable<Traveler> {
           ..write('id: $id, ')
           ..write('tripId: $tripId, ')
           ..write('name: $name, ')
-          ..write('upiVpa: $upiVpa')
+          ..write('upiVpa: $upiVpa, ')
+          ..write('avatarPath: $avatarPath')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, tripId, name, upiVpa);
+  int get hashCode => Object.hash(id, tripId, name, upiVpa, avatarPath);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -628,7 +923,8 @@ class Traveler extends DataClass implements Insertable<Traveler> {
           other.id == this.id &&
           other.tripId == this.tripId &&
           other.name == this.name &&
-          other.upiVpa == this.upiVpa);
+          other.upiVpa == this.upiVpa &&
+          other.avatarPath == this.avatarPath);
 }
 
 class TravelersCompanion extends UpdateCompanion<Traveler> {
@@ -636,12 +932,14 @@ class TravelersCompanion extends UpdateCompanion<Traveler> {
   final Value<String> tripId;
   final Value<String> name;
   final Value<String?> upiVpa;
+  final Value<String?> avatarPath;
   final Value<int> rowid;
   const TravelersCompanion({
     this.id = const Value.absent(),
     this.tripId = const Value.absent(),
     this.name = const Value.absent(),
     this.upiVpa = const Value.absent(),
+    this.avatarPath = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TravelersCompanion.insert({
@@ -649,6 +947,7 @@ class TravelersCompanion extends UpdateCompanion<Traveler> {
     required String tripId,
     required String name,
     this.upiVpa = const Value.absent(),
+    this.avatarPath = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        tripId = Value(tripId),
@@ -658,6 +957,7 @@ class TravelersCompanion extends UpdateCompanion<Traveler> {
     Expression<String>? tripId,
     Expression<String>? name,
     Expression<String>? upiVpa,
+    Expression<String>? avatarPath,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -665,6 +965,7 @@ class TravelersCompanion extends UpdateCompanion<Traveler> {
       if (tripId != null) 'trip_id': tripId,
       if (name != null) 'name': name,
       if (upiVpa != null) 'upi_vpa': upiVpa,
+      if (avatarPath != null) 'avatar_path': avatarPath,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -674,6 +975,7 @@ class TravelersCompanion extends UpdateCompanion<Traveler> {
     Value<String>? tripId,
     Value<String>? name,
     Value<String?>? upiVpa,
+    Value<String?>? avatarPath,
     Value<int>? rowid,
   }) {
     return TravelersCompanion(
@@ -681,6 +983,7 @@ class TravelersCompanion extends UpdateCompanion<Traveler> {
       tripId: tripId ?? this.tripId,
       name: name ?? this.name,
       upiVpa: upiVpa ?? this.upiVpa,
+      avatarPath: avatarPath ?? this.avatarPath,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -700,6 +1003,9 @@ class TravelersCompanion extends UpdateCompanion<Traveler> {
     if (upiVpa.present) {
       map['upi_vpa'] = Variable<String>(upiVpa.value);
     }
+    if (avatarPath.present) {
+      map['avatar_path'] = Variable<String>(avatarPath.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -713,6 +1019,7 @@ class TravelersCompanion extends UpdateCompanion<Traveler> {
           ..write('tripId: $tripId, ')
           ..write('name: $name, ')
           ..write('upiVpa: $upiVpa, ')
+          ..write('avatarPath: $avatarPath, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1108,6 +1415,17 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _receiptImagePathMeta = const VerificationMeta(
+    'receiptImagePath',
+  );
+  @override
+  late final GeneratedColumn<String> receiptImagePath = GeneratedColumn<String>(
+    'receipt_image_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1120,6 +1438,7 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
     upiTxnId,
     confirmed,
     createdAt,
+    receiptImagePath,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1210,6 +1529,15 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('receipt_image_path')) {
+      context.handle(
+        _receiptImagePathMeta,
+        receiptImagePath.isAcceptableOrUnknown(
+          data['receipt_image_path']!,
+          _receiptImagePathMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1259,6 +1587,10 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      receiptImagePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}receipt_image_path'],
+      ),
     );
   }
 
@@ -1279,6 +1611,7 @@ class Expense extends DataClass implements Insertable<Expense> {
   final String? upiTxnId;
   final bool confirmed;
   final DateTime createdAt;
+  final String? receiptImagePath;
   const Expense({
     required this.id,
     required this.tripId,
@@ -1290,6 +1623,7 @@ class Expense extends DataClass implements Insertable<Expense> {
     this.upiTxnId,
     required this.confirmed,
     required this.createdAt,
+    this.receiptImagePath,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1306,6 +1640,9 @@ class Expense extends DataClass implements Insertable<Expense> {
     }
     map['confirmed'] = Variable<bool>(confirmed);
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || receiptImagePath != null) {
+      map['receipt_image_path'] = Variable<String>(receiptImagePath);
+    }
     return map;
   }
 
@@ -1323,6 +1660,9 @@ class Expense extends DataClass implements Insertable<Expense> {
           : Value(upiTxnId),
       confirmed: Value(confirmed),
       createdAt: Value(createdAt),
+      receiptImagePath: receiptImagePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(receiptImagePath),
     );
   }
 
@@ -1342,6 +1682,7 @@ class Expense extends DataClass implements Insertable<Expense> {
       upiTxnId: serializer.fromJson<String?>(json['upiTxnId']),
       confirmed: serializer.fromJson<bool>(json['confirmed']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      receiptImagePath: serializer.fromJson<String?>(json['receiptImagePath']),
     );
   }
   @override
@@ -1358,6 +1699,7 @@ class Expense extends DataClass implements Insertable<Expense> {
       'upiTxnId': serializer.toJson<String?>(upiTxnId),
       'confirmed': serializer.toJson<bool>(confirmed),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'receiptImagePath': serializer.toJson<String?>(receiptImagePath),
     };
   }
 
@@ -1372,6 +1714,7 @@ class Expense extends DataClass implements Insertable<Expense> {
     Value<String?> upiTxnId = const Value.absent(),
     bool? confirmed,
     DateTime? createdAt,
+    Value<String?> receiptImagePath = const Value.absent(),
   }) => Expense(
     id: id ?? this.id,
     tripId: tripId ?? this.tripId,
@@ -1383,6 +1726,9 @@ class Expense extends DataClass implements Insertable<Expense> {
     upiTxnId: upiTxnId.present ? upiTxnId.value : this.upiTxnId,
     confirmed: confirmed ?? this.confirmed,
     createdAt: createdAt ?? this.createdAt,
+    receiptImagePath: receiptImagePath.present
+        ? receiptImagePath.value
+        : this.receiptImagePath,
   );
   Expense copyWithCompanion(ExpensesCompanion data) {
     return Expense(
@@ -1400,6 +1746,9 @@ class Expense extends DataClass implements Insertable<Expense> {
       upiTxnId: data.upiTxnId.present ? data.upiTxnId.value : this.upiTxnId,
       confirmed: data.confirmed.present ? data.confirmed.value : this.confirmed,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      receiptImagePath: data.receiptImagePath.present
+          ? data.receiptImagePath.value
+          : this.receiptImagePath,
     );
   }
 
@@ -1415,7 +1764,8 @@ class Expense extends DataClass implements Insertable<Expense> {
           ..write('source: $source, ')
           ..write('upiTxnId: $upiTxnId, ')
           ..write('confirmed: $confirmed, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('receiptImagePath: $receiptImagePath')
           ..write(')'))
         .toString();
   }
@@ -1432,6 +1782,7 @@ class Expense extends DataClass implements Insertable<Expense> {
     upiTxnId,
     confirmed,
     createdAt,
+    receiptImagePath,
   );
   @override
   bool operator ==(Object other) =>
@@ -1446,7 +1797,8 @@ class Expense extends DataClass implements Insertable<Expense> {
           other.source == this.source &&
           other.upiTxnId == this.upiTxnId &&
           other.confirmed == this.confirmed &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.receiptImagePath == this.receiptImagePath);
 }
 
 class ExpensesCompanion extends UpdateCompanion<Expense> {
@@ -1460,6 +1812,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
   final Value<String?> upiTxnId;
   final Value<bool> confirmed;
   final Value<DateTime> createdAt;
+  final Value<String?> receiptImagePath;
   final Value<int> rowid;
   const ExpensesCompanion({
     this.id = const Value.absent(),
@@ -1472,6 +1825,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     this.upiTxnId = const Value.absent(),
     this.confirmed = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.receiptImagePath = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ExpensesCompanion.insert({
@@ -1485,6 +1839,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     this.upiTxnId = const Value.absent(),
     this.confirmed = const Value.absent(),
     required DateTime createdAt,
+    this.receiptImagePath = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        tripId = Value(tripId),
@@ -1504,6 +1859,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     Expression<String>? upiTxnId,
     Expression<bool>? confirmed,
     Expression<DateTime>? createdAt,
+    Expression<String>? receiptImagePath,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1517,6 +1873,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
       if (upiTxnId != null) 'upi_txn_id': upiTxnId,
       if (confirmed != null) 'confirmed': confirmed,
       if (createdAt != null) 'created_at': createdAt,
+      if (receiptImagePath != null) 'receipt_image_path': receiptImagePath,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1532,6 +1889,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     Value<String?>? upiTxnId,
     Value<bool>? confirmed,
     Value<DateTime>? createdAt,
+    Value<String?>? receiptImagePath,
     Value<int>? rowid,
   }) {
     return ExpensesCompanion(
@@ -1545,6 +1903,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
       upiTxnId: upiTxnId ?? this.upiTxnId,
       confirmed: confirmed ?? this.confirmed,
       createdAt: createdAt ?? this.createdAt,
+      receiptImagePath: receiptImagePath ?? this.receiptImagePath,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1582,6 +1941,9 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (receiptImagePath.present) {
+      map['receipt_image_path'] = Variable<String>(receiptImagePath.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1601,6 +1963,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
           ..write('upiTxnId: $upiTxnId, ')
           ..write('confirmed: $confirmed, ')
           ..write('createdAt: $createdAt, ')
+          ..write('receiptImagePath: $receiptImagePath, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1960,6 +2323,11 @@ typedef $$TripsTableCreateCompanionBuilder = TripsCompanion Function({
   required int days,
   Value<String> currency,
   required DateTime createdAt,
+  Value<String?> destination,
+  Value<String?> coverPhotoPath,
+  Value<String> status,
+  Value<DateTime?> startDate,
+  Value<DateTime?> endDate,
   Value<int> rowid,
 });
 typedef $$TripsTableUpdateCompanionBuilder = TripsCompanion Function({
@@ -1969,6 +2337,11 @@ typedef $$TripsTableUpdateCompanionBuilder = TripsCompanion Function({
   Value<int> days,
   Value<String> currency,
   Value<DateTime> createdAt,
+  Value<String?> destination,
+  Value<String?> coverPhotoPath,
+  Value<String> status,
+  Value<DateTime?> startDate,
+  Value<DateTime?> endDate,
   Value<int> rowid,
 });
 
@@ -2073,6 +2446,31 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get destination => $composableBuilder(
+    column: $table.destination,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get coverPhotoPath => $composableBuilder(
+    column: $table.coverPhotoPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get endDate => $composableBuilder(
+    column: $table.endDate,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2190,6 +2588,31 @@ class $$TripsTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get destination => $composableBuilder(
+    column: $table.destination,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get coverPhotoPath => $composableBuilder(
+    column: $table.coverPhotoPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get endDate => $composableBuilder(
+    column: $table.endDate,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TripsTableAnnotationComposer
@@ -2220,6 +2643,25 @@ class $$TripsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get destination => $composableBuilder(
+    column: $table.destination,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get coverPhotoPath => $composableBuilder(
+    column: $table.coverPhotoPath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endDate =>
+      $composableBuilder(column: $table.endDate, builder: (column) => column);
 
   Expression<T> travelersRefs<T extends Object>(
     Expression<T> Function($$TravelersTableAnnotationComposer a) f,
@@ -2336,6 +2778,11 @@ class $$TripsTableTableManager
                 Value<int> days = const Value.absent(),
                 Value<String> currency = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<String?> destination = const Value.absent(),
+                Value<String?> coverPhotoPath = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime?> startDate = const Value.absent(),
+                Value<DateTime?> endDate = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TripsCompanion(
                 id: id,
@@ -2344,6 +2791,11 @@ class $$TripsTableTableManager
                 days: days,
                 currency: currency,
                 createdAt: createdAt,
+                destination: destination,
+                coverPhotoPath: coverPhotoPath,
+                status: status,
+                startDate: startDate,
+                endDate: endDate,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2354,6 +2806,11 @@ class $$TripsTableTableManager
                 required int days,
                 Value<String> currency = const Value.absent(),
                 required DateTime createdAt,
+                Value<String?> destination = const Value.absent(),
+                Value<String?> coverPhotoPath = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime?> startDate = const Value.absent(),
+                Value<DateTime?> endDate = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TripsCompanion.insert(
                 id: id,
@@ -2362,6 +2819,11 @@ class $$TripsTableTableManager
                 days: days,
                 currency: currency,
                 createdAt: createdAt,
+                destination: destination,
+                coverPhotoPath: coverPhotoPath,
+                status: status,
+                startDate: startDate,
+                endDate: endDate,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -2479,6 +2941,7 @@ typedef $$TravelersTableCreateCompanionBuilder = TravelersCompanion Function({
   required String tripId,
   required String name,
   Value<String?> upiVpa,
+  Value<String?> avatarPath,
   Value<int> rowid,
 });
 typedef $$TravelersTableUpdateCompanionBuilder = TravelersCompanion Function({
@@ -2486,6 +2949,7 @@ typedef $$TravelersTableUpdateCompanionBuilder = TravelersCompanion Function({
   Value<String> tripId,
   Value<String> name,
   Value<String?> upiVpa,
+  Value<String?> avatarPath,
   Value<int> rowid,
 });
 
@@ -2569,6 +3033,11 @@ class $$TravelersTableFilterComposer
 
   ColumnFilters<String> get upiVpa => $composableBuilder(
     column: $table.upiVpa,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get avatarPath => $composableBuilder(
+    column: $table.avatarPath,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2670,6 +3139,11 @@ class $$TravelersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get avatarPath => $composableBuilder(
+    column: $table.avatarPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$TripsTableOrderingComposer get tripId {
     final $$TripsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -2711,6 +3185,11 @@ class $$TravelersTableAnnotationComposer
 
   GeneratedColumn<String> get upiVpa =>
       $composableBuilder(column: $table.upiVpa, builder: (column) => column);
+
+  GeneratedColumn<String> get avatarPath => $composableBuilder(
+    column: $table.avatarPath,
+    builder: (column) => column,
+  );
 
   $$TripsTableAnnotationComposer get tripId {
     final $$TripsTableAnnotationComposer composer = $composerBuilder(
@@ -2822,12 +3301,14 @@ class $$TravelersTableTableManager
                 Value<String> tripId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> upiVpa = const Value.absent(),
+                Value<String?> avatarPath = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TravelersCompanion(
                 id: id,
                 tripId: tripId,
                 name: name,
                 upiVpa: upiVpa,
+                avatarPath: avatarPath,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2836,12 +3317,14 @@ class $$TravelersTableTableManager
                 required String tripId,
                 required String name,
                 Value<String?> upiVpa = const Value.absent(),
+                Value<String?> avatarPath = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TravelersCompanion.insert(
                 id: id,
                 tripId: tripId,
                 name: name,
                 upiVpa: upiVpa,
+                avatarPath: avatarPath,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -3269,6 +3752,7 @@ typedef $$ExpensesTableCreateCompanionBuilder = ExpensesCompanion Function({
   Value<String?> upiTxnId,
   Value<bool> confirmed,
   required DateTime createdAt,
+  Value<String?> receiptImagePath,
   Value<int> rowid,
 });
 typedef $$ExpensesTableUpdateCompanionBuilder = ExpensesCompanion Function({
@@ -3282,6 +3766,7 @@ typedef $$ExpensesTableUpdateCompanionBuilder = ExpensesCompanion Function({
   Value<String?> upiTxnId,
   Value<bool> confirmed,
   Value<DateTime> createdAt,
+  Value<String?> receiptImagePath,
   Value<int> rowid,
 });
 
@@ -3388,6 +3873,11 @@ class $$ExpensesTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get receiptImagePath => $composableBuilder(
+    column: $table.receiptImagePath,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3512,6 +4002,11 @@ class $$ExpensesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get receiptImagePath => $composableBuilder(
+    column: $table.receiptImagePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$TripsTableOrderingComposer get tripId {
     final $$TripsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -3595,6 +4090,11 @@ class $$ExpensesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get receiptImagePath => $composableBuilder(
+    column: $table.receiptImagePath,
+    builder: (column) => column,
+  );
 
   $$TripsTableAnnotationComposer get tripId {
     final $$TripsTableAnnotationComposer composer = $composerBuilder(
@@ -3710,6 +4210,7 @@ class $$ExpensesTableTableManager
                 Value<String?> upiTxnId = const Value.absent(),
                 Value<bool> confirmed = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<String?> receiptImagePath = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExpensesCompanion(
                 id: id,
@@ -3722,6 +4223,7 @@ class $$ExpensesTableTableManager
                 upiTxnId: upiTxnId,
                 confirmed: confirmed,
                 createdAt: createdAt,
+                receiptImagePath: receiptImagePath,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3736,6 +4238,7 @@ class $$ExpensesTableTableManager
                 Value<String?> upiTxnId = const Value.absent(),
                 Value<bool> confirmed = const Value.absent(),
                 required DateTime createdAt,
+                Value<String?> receiptImagePath = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExpensesCompanion.insert(
                 id: id,
@@ -3748,6 +4251,7 @@ class $$ExpensesTableTableManager
                 upiTxnId: upiTxnId,
                 confirmed: confirmed,
                 createdAt: createdAt,
+                receiptImagePath: receiptImagePath,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

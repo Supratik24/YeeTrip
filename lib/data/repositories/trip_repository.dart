@@ -18,6 +18,11 @@ abstract class TripRepository {
     required int days,
     required List<String> travelerNames,
     Map<String, int>? allocations,
+    String? destination,
+    String? coverPhotoPath,
+    String? status,
+    DateTime? startDate,
+    DateTime? endDate,
   });
   Future<void> deleteTrip(String tripId);
   Future<void> updateCategoryAllocations(
@@ -107,6 +112,11 @@ class DriftTripRepository implements TripRepository {
     required int days,
     required List<String> travelerNames,
     Map<String, int>? allocations,
+    String? destination,
+    String? coverPhotoPath,
+    String? status,
+    DateTime? startDate,
+    DateTime? endDate,
   }) async {
     final tripId = _uuid.v4();
     final now = DateTime.now();
@@ -120,6 +130,11 @@ class DriftTripRepository implements TripRepository {
               totalBudgetPaise: totalBudgetPaise,
               days: days,
               createdAt: now,
+              destination: Value(destination),
+              coverPhotoPath: Value(coverPhotoPath),
+              status: Value(status ?? 'active'),
+              startDate: Value(startDate),
+              endDate: Value(endDate),
             ),
           );
 
@@ -278,6 +293,7 @@ class DriftTripRepository implements TripRepository {
               tripId: t.tripId,
               name: t.name,
               upiVpa: t.upiVpa,
+              avatarPath: t.avatarPath,
             ))
         .toList();
 
@@ -313,6 +329,11 @@ class DriftTripRepository implements TripRepository {
       travelers: travelers,
       categoryAllocations: allocations,
       totalSpentPaise: totalSpentPaise,
+      destination: row.destination,
+      coverPhotoPath: row.coverPhotoPath,
+      status: row.status,
+      startDate: row.startDate,
+      endDate: row.endDate,
     );
   }
 }

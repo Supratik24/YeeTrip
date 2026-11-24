@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/money.dart';
 import '../../../../core/widgets/responsive_center.dart';
+import '../../../../core/widgets/traveler_avatar.dart';
 import '../../../../data/providers.dart';
 import '../../domain/trip_model.dart';
 import '../widgets/contact_picker_sheet.dart';
@@ -537,17 +538,12 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              CircleAvatar(
+                              TravelerAvatar(
+                                name: t.nameController.text.trim().isNotEmpty
+                                    ? t.nameController.text.trim()
+                                    : '${index + 1}',
                                 radius: 16,
-                                backgroundColor: theme.colorScheme.primaryContainer,
-                                child: Text(
-                                  '${index + 1}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: theme.colorScheme.onPrimaryContainer,
-                                  ),
-                                ),
+                                fontSize: 11,
                               ),
                               const SizedBox(width: 12),
                               Expanded(

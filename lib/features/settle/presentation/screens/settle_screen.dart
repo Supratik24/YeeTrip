@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/categories.dart';
 import '../../../../core/money.dart';
 import '../../../../core/widgets/responsive_center.dart';
+import '../../../../core/widgets/traveler_avatar.dart';
 import '../../../../data/providers.dart';
 import '../../../expenses/domain/expense_model.dart';
 import '../../../trips/domain/trip_model.dart';
@@ -262,16 +263,10 @@ class SettleScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(14),
                     child: Row(
                       children: [
-                        CircleAvatar(
-                          backgroundColor:
-                              theme.colorScheme.primary.withValues(alpha: 0.1),
-                          foregroundColor: theme.colorScheme.primary,
-                          child: Text(
-                            person.travelerName.isNotEmpty
-                                ? person.travelerName[0].toUpperCase()
-                                : '?',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
+                        TravelerAvatar(
+                          name: person.travelerName,
+                          radius: 20,
+                          fontSize: 13,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -427,10 +422,20 @@ class SettleScreen extends ConsumerWidget {
                       padding: const EdgeInsets.all(14),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.arrow_circle_right_outlined,
-                            color: theme.colorScheme.primary,
-                            size: 28,
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TravelerAvatar(name: fromName, radius: 14, fontSize: 9),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                child: Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 14,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                              TravelerAvatar(name: toName, radius: 14, fontSize: 9),
+                            ],
                           ),
                           const SizedBox(width: 12),
                           Expanded(

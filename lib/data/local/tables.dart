@@ -10,6 +10,13 @@ class Trips extends Table {
   TextColumn get currency => text().withDefault(const Constant('INR'))();
   DateTimeColumn get createdAt => dateTime()();
 
+  // Modern 2026 trip enhancements
+  TextColumn get destination => text().nullable()();
+  TextColumn get coverPhotoPath => text().nullable()();
+  TextColumn get status => text().withDefault(const Constant('active'))();
+  DateTimeColumn get startDate => dateTime().nullable()();
+  DateTimeColumn get endDate => dateTime().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -22,6 +29,7 @@ class Travelers extends Table {
       text().references(Trips, #id, onDelete: KeyAction.cascade)();
   TextColumn get name => text()();
   TextColumn get upiVpa => text().nullable()();
+  TextColumn get avatarPath => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -54,6 +62,7 @@ class Expenses extends Table {
   TextColumn get upiTxnId => text().nullable()();
   BoolColumn get confirmed => boolean().withDefault(const Constant(true))();
   DateTimeColumn get createdAt => dateTime()();
+  TextColumn get receiptImagePath => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

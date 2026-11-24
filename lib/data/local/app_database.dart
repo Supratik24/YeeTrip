@@ -21,7 +21,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -38,8 +38,14 @@ class AppDatabase extends _$AppDatabase {
           await customStatement('PRAGMA foreign_keys = ON;');
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          if (from < 1) {
-            await m.createAll();
+          if (from < 2) {
+            await m.addColumn(trips, trips.destination);
+            await m.addColumn(trips, trips.coverPhotoPath);
+            await m.addColumn(trips, trips.status);
+            await m.addColumn(trips, trips.startDate);
+            await m.addColumn(trips, trips.endDate);
+            await m.addColumn(travelers, travelers.avatarPath);
+            await m.addColumn(expenses, expenses.receiptImagePath);
           }
         },
       );

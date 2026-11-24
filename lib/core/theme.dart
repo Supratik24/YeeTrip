@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// App-wide theme configuration for YeeTrip.
-/// Clean, minimal, Material 3 design for light and dark modes.
+/// Clean, minimal, modern Material 3 design supporting Dynamic Color (Material You).
 class AppTheme {
   AppTheme._();
 
@@ -9,51 +10,59 @@ class AppTheme {
   static const _secondaryColor = Color(0xFFF59E0B); // Amber 500
   static const _errorColor = Color(0xFFDC2626); // Red 600
 
-  static ThemeData get lightTheme {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: _primaryColor,
-      primary: _primaryColor,
-      secondary: _secondaryColor,
-      error: _errorColor,
-      brightness: Brightness.light,
-    );
+  static ThemeData lightTheme({ColorScheme? dynamicColorScheme}) {
+    final baseColorScheme = dynamicColorScheme ??
+        ColorScheme.fromSeed(
+          seedColor: _primaryColor,
+          primary: _primaryColor,
+          secondary: _secondaryColor,
+          error: _errorColor,
+          brightness: Brightness.light,
+        );
+
+    final textTheme = GoogleFonts.plusJakartaSansTextTheme(ThemeData.light().textTheme);
 
     return ThemeData(
       useMaterial3: true,
-      colorScheme: colorScheme,
-      scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-      appBarTheme: const AppBarTheme(
+      colorScheme: baseColorScheme,
+      scaffoldBackgroundColor: baseColorScheme.surfaceContainerLowest,
+      textTheme: textTheme,
+      appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 1,
-        backgroundColor: Colors.white,
+        backgroundColor: baseColorScheme.surface,
+        titleTextStyle: textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: baseColorScheme.onSurface,
+        ),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: Colors.grey.shade200),
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: baseColorScheme.outlineVariant.withValues(alpha: 0.7)),
         ),
-        color: Colors.white,
+        color: baseColorScheme.surface,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: baseColorScheme.surface,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: baseColorScheme.outlineVariant),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: baseColorScheme.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: _primaryColor, width: 2),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: baseColorScheme.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: _errorColor),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: baseColorScheme.error),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
@@ -62,54 +71,78 @@ class AppTheme {
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
     );
   }
 
-  static ThemeData get darkTheme {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: _primaryColor,
-      primary: const Color(0xFF14B8A6),
-      secondary: _secondaryColor,
-      error: const Color(0xFFEF4444),
-      brightness: Brightness.dark,
-    );
+  static ThemeData darkTheme({ColorScheme? dynamicColorScheme}) {
+    final baseColorScheme = dynamicColorScheme ??
+        ColorScheme.fromSeed(
+          seedColor: _primaryColor,
+          primary: const Color(0xFF14B8A6),
+          secondary: _secondaryColor,
+          error: const Color(0xFFEF4444),
+          brightness: Brightness.dark,
+        );
+
+    final textTheme = GoogleFonts.plusJakartaSansTextTheme(ThemeData.dark().textTheme);
 
     return ThemeData(
       useMaterial3: true,
-      colorScheme: colorScheme,
-      scaffoldBackgroundColor: const Color(0xFF0F172A),
-      appBarTheme: const AppBarTheme(
+      colorScheme: baseColorScheme,
+      scaffoldBackgroundColor: baseColorScheme.surfaceContainerLowest,
+      textTheme: textTheme,
+      appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 1,
-        backgroundColor: Color(0xFF1E293B),
+        backgroundColor: baseColorScheme.surface,
+        titleTextStyle: textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: baseColorScheme.onSurface,
+        ),
       ),
-      cardTheme: const CardThemeData(
+      cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
-          side: BorderSide(color: Color(0xFF334155)),
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: baseColorScheme.outlineVariant.withValues(alpha: 0.5)),
         ),
-        color: Color(0xFF1E293B),
+        color: baseColorScheme.surfaceContainerLow,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF1E293B),
+        fillColor: baseColorScheme.surfaceContainerLow,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF334155)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: baseColorScheme.outlineVariant),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF334155)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: baseColorScheme.outlineVariant),
         ),
-        focusedBorder: const OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
-          borderSide: BorderSide(color: Color(0xFF14B8A6), width: 2),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: baseColorScheme.primary, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
@@ -118,7 +151,23 @@ class AppTheme {
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),

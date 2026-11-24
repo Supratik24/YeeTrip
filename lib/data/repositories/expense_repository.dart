@@ -20,6 +20,7 @@ abstract class ExpenseRepository {
     bool confirmed = true,
     required DateTime createdAt,
     required List<ExpenseSplitModel> splits,
+    String? receiptImagePath,
   });
   Future<void> updateExpense({
     required String expenseId,
@@ -83,6 +84,7 @@ class DriftExpenseRepository implements ExpenseRepository {
     bool confirmed = true,
     required DateTime createdAt,
     required List<ExpenseSplitModel> splits,
+    String? receiptImagePath,
   }) async {
     // Non-negotiable rule 3: splits must sum EXACTLY to the expense amount in paise.
     final totalSplitPaise =
@@ -108,6 +110,7 @@ class DriftExpenseRepository implements ExpenseRepository {
               upiTxnId: Value(upiTxnId),
               confirmed: Value(confirmed),
               createdAt: createdAt,
+              receiptImagePath: Value(receiptImagePath),
             ),
           );
 
@@ -208,6 +211,7 @@ class DriftExpenseRepository implements ExpenseRepository {
       confirmed: row.confirmed,
       createdAt: row.createdAt,
       splits: splits,
+      receiptImagePath: row.receiptImagePath,
     );
   }
 }

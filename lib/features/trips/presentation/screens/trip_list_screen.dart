@@ -6,6 +6,7 @@ import '../../../../core/auth/auth_models.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/money.dart';
 import '../../../../core/widgets/responsive_center.dart';
+import '../../../../core/widgets/traveler_avatar.dart';
 import '../../../../data/providers.dart';
 import '../../../auth/presentation/widgets/auth_modal.dart';
 import '../../../sync/presentation/widgets/join_trip_dialog.dart';
@@ -255,6 +256,20 @@ class TripListScreen extends ConsumerWidget {
                 itemBuilder: (context, index) {
               final trip = trips[index];
               final isOverBudget = trip.remainingBudgetPaise < 0;
+              final double budgetProgress = trip.totalBudgetPaise > 0
+                  ? (trip.totalSpentPaise / trip.totalBudgetPaise).clamp(0.0, 1.0)
+                  : 0.0;
+              final isCritical = trip.totalBudgetPaise > 0 &&
+                  (trip.totalSpentPaise / trip.totalBudgetPaise) >= 0.90;
+              final isWarning = trip.totalBudgetPaise > 0 &&
+                  (trip.totalSpentPaise / trip.totalBudgetPaise) >= 0.70 &&
+                  !isCritical;
+
+              final burnColor = isOverBudget || isCritical
+                  ? theme.colorScheme.error
+                  : isWarning
+                      ? Colors.amber.shade700
+                      : const Color(0xFF10B981); // Emerald Green
 
               return Card(
                 clipBehavior: Clip.antiAlias,
@@ -393,6 +408,82 @@ class TripListScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 12),
+                        // Visual Budget Burn Bar
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: budgetProgress,
+                            backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                            valueColor: AlwaysStoppedAnimation<Color>(burnColor),
+                            minHeight: 6,
+                          ),
+                        ),
+                        if (trip.travelers.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              SizedBox(
+                                height: 26,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    for (int i = 0; i < trip.travelers.take(4).length; i++)
+                                      Align(
+                                        widthFactor: 0.75,
+                                        child: TravelerAvatar(
+                                          name: trip.travelers[i].name,
+                                          radius: 12,
+                                          fontSize: 9,
+                                        ),
+                                      ),
+                                    if (trip.travelers.length > 4)
+                                      Padding(
+                                        padding: const EdgeInsets.only(left: 6),
+                                        child: Text(
+                                          '+${trip.travelers.length - 4}',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: theme.colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              if (trip.destination != null && trip.destination!.trim().isNotEmpty) ...[
+                                const Spacer(),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primaryContainer.withValues(alpha: 0.6),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.location_on,
+                                        size: 12,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        trip.destination!.trim(),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: theme.colorScheme.onPrimaryContainer,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
