@@ -193,6 +193,9 @@ class DriftTripRepository implements TripRepository {
             );
       }
     });
+    _db.notifyUpdates(
+      {TableUpdate.onTable(_db.trips, kind: UpdateKind.update)},
+    );
   }
 
   @override
@@ -231,6 +234,9 @@ class DriftTripRepository implements TripRepository {
             ),
           ),
         );
+    _db.notifyUpdates(
+      {TableUpdate.onTable(_db.trips, kind: UpdateKind.update)},
+    );
     return travelerId;
   }
 
@@ -248,6 +254,9 @@ class DriftTripRepository implements TripRepository {
           effectiveVpa != null && effectiveVpa.isNotEmpty ? effectiveVpa : null,
         ),
       ),
+    );
+    _db.notifyUpdates(
+      {TableUpdate.onTable(_db.trips, kind: UpdateKind.update)},
     );
   }
 
@@ -279,6 +288,9 @@ class DriftTripRepository implements TripRepository {
       );
     }
     await (_db.delete(_db.travelers)..where((t) => t.id.equals(travelerId))).go();
+    _db.notifyUpdates(
+      {TableUpdate.onTable(_db.trips, kind: UpdateKind.update)},
+    );
   }
 
   Future<TripWithDetails> _loadTripDetails(Trip row) async {

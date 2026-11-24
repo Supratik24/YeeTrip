@@ -3,6 +3,7 @@ import 'package:yeetrip/data/local/app_database.dart';
 import 'package:yeetrip/data/repositories/trip_repository.dart';
 import 'package:yeetrip/data/repositories/expense_repository.dart';
 import 'package:yeetrip/features/expenses/domain/expense_model.dart';
+import 'package:yeetrip/features/trips/domain/trip_model.dart';
 import '../test_helper.dart';
 
 void main() async {
@@ -72,6 +73,37 @@ void main() async {
       expect(trip!.categoryAllocations['Stay'], 40);
       expect(trip.categoryAllocations['Food'], 30);
       expect(trip.categoryAllocations['Transport'], 10);
+
+      tearDown();
+    });
+
+    test('watchTripById emits new details when updateCategoryAllocations is called', () async {
+      setUp();
+
+      final tripId = await tripRepo.createTrip(
+        name: 'Jaipur',
+        totalBudgetPaise: 3000000,
+        days: 3,
+        travelerNames: ['Amit'],
+      );
+
+      final stream = tripRepo.watchTripById(tripId);
+      final queue = <TripWithDetails?>[];
+      final sub = stream.listen((t) => queue.add(t));
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      await tripRepo.updateCategoryAllocations(tripId, {
+        'Stay': 40,
+        'Food': 30,
+        'Transport': 10,
+        'Activities': 10,
+        'Shopping': 5,
+        'Buffer': 5,
+      });
+      await Future.delayed(const Duration(milliseconds: 100));
+      await sub.cancel();
+
+      expect(queue.last?.categoryAllocations['Stay'], 40);
 
       tearDown();
     });

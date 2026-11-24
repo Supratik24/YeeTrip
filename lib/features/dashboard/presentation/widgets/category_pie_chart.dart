@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/categories.dart';
 import '../../../../core/money.dart';
+import '../../../budget/domain/rebalance.dart';
 import '../../../trips/domain/trip_model.dart';
 
 /// Pie chart visualizing the planned budget allocation across categories.
@@ -35,9 +36,7 @@ class CategoryPieChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final allocations = trip.categoryAllocations.isNotEmpty
-        ? trip.categoryAllocations
-        : TripCategory.defaultPercentages;
+    final allocations = BudgetRebalancer.normalizeAllocations(trip.categoryAllocations);
 
     final sections = TripCategory.all
         .where((cat) => (allocations[cat.key] ?? 0) > 0)

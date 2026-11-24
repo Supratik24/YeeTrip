@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/categories.dart';
 import '../../../../core/money.dart';
+import '../../../budget/domain/rebalance.dart';
 import '../../../expenses/domain/expense_model.dart';
 import '../../../trips/domain/trip_model.dart';
 
@@ -49,9 +50,7 @@ class PlannedVsActualBars extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final spentMap = _calculateSpentPerCategory();
-    final allocations = trip.categoryAllocations.isNotEmpty
-        ? trip.categoryAllocations
-        : TripCategory.defaultPercentages;
+    final allocations = BudgetRebalancer.normalizeAllocations(trip.categoryAllocations);
 
     return Card(
       child: Padding(

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/ml/ml_providers.dart';
 import '../../../../core/ml/spending_velocity_predictor.dart';
 import '../../../../core/money.dart';
+import '../../../budget/domain/rebalance.dart';
 import '../../../expenses/domain/expense_model.dart';
 import '../../../trips/domain/trip_model.dart';
 
@@ -30,8 +31,10 @@ class SpendingVelocityCard extends ConsumerWidget {
     final elapsedDays = diffDays.clamp(1, trip.days);
 
     // Map allocated category budgets in paise
+    final effectiveAllocations =
+        BudgetRebalancer.normalizeAllocations(trip.categoryAllocations);
     final categoryBudgetsPaise = <String, int>{};
-    for (final entry in trip.categoryAllocations.entries) {
+    for (final entry in effectiveAllocations.entries) {
       categoryBudgetsPaise[entry.key] =
           (trip.totalBudgetPaise * entry.value) ~/ 100;
     }

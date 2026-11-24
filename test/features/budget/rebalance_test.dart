@@ -88,6 +88,53 @@ void main() async {
       expect(sum, 100);
       expect(result.values.every((v) => v >= 0), true);
     });
+
+    test('rebalances smoothly in 1% increments and all other parameters adjust', () {
+      var current = TripCategory.defaultPercentages; // Stay: 30, Food: 25, Transport: 20, Activities: 15, Shopping: 5, Buffer: 5
+
+      for (int stay = 31; stay <= 50; stay++) {
+        current = BudgetRebalancer.rebalance(
+          currentAllocations: current,
+          changedCategory: 'Stay',
+          newPercent: stay,
+        );
+        expect(current['Stay'], stay);
+        final sum = current.values.fold<int>(0, (s, v) => s + v);
+        expect(sum, 100);
+        expect(current.values.every((v) => v >= 0), true);
+      }
+
+      // At Stay 50%: Food, Transport, Activities should all have decreased from initial
+      expect(current['Stay'], 50);
+      expect(current['Food']! < 25, true, reason: 'Food should decrease when Stay increases');
+      expect(current['Transport']! < 20, true, reason: 'Transport should decrease when Stay increases');
+      expect(current['Activities']! < 15, true, reason: 'Activities should decrease when Stay increases');
+    });
+
+    test('handles case-insensitive category keys and normalizes to canonical keys', () {
+      final lowercase = {
+        'stay': 30,
+        'food': 25,
+        'transport': 20,
+        'activities': 15,
+        'shopping': 5,
+        'buffer': 5,
+      };
+
+      final result = BudgetRebalancer.rebalance(
+        currentAllocations: lowercase,
+        changedCategory: 'stay',
+        newPercent: 40,
+      );
+
+      expect(result['Stay'], 40);
+      final sum = result.values.fold<int>(0, (s, v) => s + v);
+      expect(sum, 100);
+      // All 6 canonical keys exist
+      for (final cat in TripCategory.all) {
+        expect(result.containsKey(cat.key), true, reason: 'Missing ${cat.key}');
+      }
+    });
   });
 
   group('BudgetRebalancer - Property Test (1,000 Random Changes)', () {

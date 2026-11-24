@@ -1,3 +1,5 @@
+import '../../../core/constants/categories.dart';
+
 /// Pure Dart budget allocation rebalancing logic.
 ///
 /// RULES:
@@ -6,8 +8,23 @@
 /// 3. If others were all 0, spread remainder equally.
 /// 4. Round to integers, then put any rounding difference on the largest other category.
 /// 5. Never make any value negative.
+/// 6. All categories are normalized to canonical [TripCategory.all] keys.
 class BudgetRebalancer {
   BudgetRebalancer._();
+
+  /// Normalizes any allocations map to strictly contain all 6 canonical
+  /// [TripCategory.key] keys with case-insensitive matching.
+  static Map<String, int> normalizeAllocations(Map<String, int> allocations) {
+    final normalized = <String, int>{};
+    for (final cat in TripCategory.all) {
+      normalized[cat.key] = cat.defaultPercent;
+    }
+    for (final entry in allocations.entries) {
+      final canonicalCat = TripCategory.fromKey(entry.key);
+      normalized[canonicalCat.key] = entry.value;
+    }
+    return normalized;
+  }
 
   /// Rebalances allocations when [changedCategory] changes to [newPercent].
   static Map<String, int> rebalance({
@@ -15,22 +32,27 @@ class BudgetRebalancer {
     required String changedCategory,
     required int newPercent,
   }) {
+    final canonicalChanged = TripCategory.fromKey(changedCategory).key;
+    final normalizedCurrent = normalizeAllocations(currentAllocations);
+
     // 1. Clamp newPercent between 0 and 100
     final targetPercent = newPercent.clamp(0, 100);
 
-    final otherKeys =
-        currentAllocations.keys.where((k) => k != changedCategory).toList();
+    final otherKeys = TripCategory.all
+        .map((c) => c.key)
+        .where((k) => k != canonicalChanged)
+        .toList();
 
     // If there are no other categories, the changed category takes 100%
     if (otherKeys.isEmpty) {
-      return {changedCategory: 100};
+      return {canonicalChanged: 100};
     }
 
     final remainder = 100 - targetPercent;
 
     // Edge case: target is 100 -> all others are 0
     if (remainder == 0) {
-      final result = <String, int>{changedCategory: 100};
+      final result = <String, int>{canonicalChanged: 100};
       for (final k in otherKeys) {
         result[k] = 0;
       }
@@ -39,13 +61,13 @@ class BudgetRebalancer {
 
     final oldOthersSum = otherKeys.fold<int>(
       0,
-      (sum, k) => sum + (currentAllocations[k] ?? 0),
+      (sum, k) => sum + (normalizedCurrent[k] ?? 0),
     );
 
     final newAllocations = <String, int>{};
 
     if (oldOthersSum == 0) {
-      // "If the others were all 0, spread the remainder equally."
+      // If the others were all 0, spread the remainder equally.
       final baseShare = remainder ~/ otherKeys.length;
       final diff = remainder - (baseShare * otherKeys.length);
 
@@ -57,7 +79,7 @@ class BudgetRebalancer {
     } else {
       // Scale others proportionally to fill the remainder
       for (final k in otherKeys) {
-        final oldVal = currentAllocations[k] ?? 0;
+        final oldVal = normalizedCurrent[k] ?? 0;
         final scaled = ((oldVal * remainder) / oldOthersSum).round();
         newAllocations[k] = scaled.clamp(0, 100);
       }
@@ -92,7 +114,7 @@ class BudgetRebalancer {
       }
     }
 
-    newAllocations[changedCategory] = targetPercent;
+    newAllocations[canonicalChanged] = targetPercent;
 
     // Safety assert: sum must be exactly 100 and no values negative
     assert(

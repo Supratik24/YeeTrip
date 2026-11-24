@@ -92,4 +92,88 @@ void main() {
     expect(find.text('Stay'), findsWidgets);
     expect(find.text('Food'), findsWidgets);
   });
+
+  testWidgets('DashboardScreen displays updated planned spending when allocations change',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final initialTrip = TripWithDetails(
+      id: 'trip-1',
+      name: 'Goa Weekend 🌴',
+      totalBudgetPaise: 10000000, // ₹1,00,000
+      days: 5,
+      currency: 'INR',
+      createdAt: DateTime.now(),
+      travelers: const [
+        Traveler(id: 't-1', tripId: 'trip-1', name: 'Aarav'),
+      ],
+      categoryAllocations: const {
+        'Stay': 30, // ₹30,000
+        'Food': 25,
+        'Transport': 20,
+        'Activities': 15,
+        'Shopping': 5,
+        'Buffer': 5,
+      },
+      totalSpentPaise: 0,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          tripExpensesProvider('trip-1').overrideWith(
+            (ref) => Stream.value(<ExpenseWithSplits>[]),
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: DashboardScreen(trip: initialTrip),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // In Planned vs actual bars: Stay is 30% of ₹1,00,000 = ₹30,000
+    expect(find.text('Planned: ₹30,000 (30%)'), findsOneWidget);
+
+    // Now update trip with new Stay allocation (50% = ₹50,000)
+    final updatedTrip = initialTrip.copyWith(
+      categoryAllocations: {
+        'Stay': 50,
+        'Food': 15,
+        'Transport': 15,
+        'Activities': 10,
+        'Shopping': 5,
+        'Buffer': 5,
+      },
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          tripExpensesProvider('trip-1').overrideWith(
+            (ref) => Stream.value(<ExpenseWithSplits>[]),
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: DashboardScreen(trip: updatedTrip),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Now Plan for Stay should be ₹50,000 (50%)
+    expect(find.text('Planned: ₹50,000 (50%)'), findsOneWidget);
+    expect(find.text('Planned: ₹30,000 (30%)'), findsNothing);
+  });
 }

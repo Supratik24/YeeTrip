@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -24,6 +25,7 @@ class BudgetSlidersScreen extends ConsumerStatefulWidget {
 
 class _BudgetSlidersScreenState extends ConsumerState<BudgetSlidersScreen> {
   late Map<String, int> _allocations;
+  Map<String, int>? _dragStartAllocations;
   bool _isSaving = false;
   bool _hasChanges = false;
 
@@ -36,24 +38,26 @@ class _BudgetSlidersScreenState extends ConsumerState<BudgetSlidersScreen> {
   @override
   void didUpdateWidget(covariant BudgetSlidersScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.trip.categoryAllocations !=
-            widget.trip.categoryAllocations &&
-        !_hasChanges) {
+    if (!mapEquals(oldWidget.trip.categoryAllocations,
+            widget.trip.categoryAllocations) &&
+        !_hasChanges &&
+        _dragStartAllocations == null) {
       _initAllocations();
     }
   }
 
   void _initAllocations() {
-    _allocations = Map<String, int>.from(
+    _allocations = BudgetRebalancer.normalizeAllocations(
       widget.trip.categoryAllocations.isNotEmpty
           ? widget.trip.categoryAllocations
           : TripCategory.defaultPercentages,
     );
-    // Ensure all 6 categories exist
-    for (final cat in TripCategory.all) {
-      _allocations.putIfAbsent(cat.key, () => cat.defaultPercent);
-    }
+    _dragStartAllocations = null;
     _hasChanges = false;
+  }
+
+  void _onSliderChangeStart(String category, double value) {
+    _dragStartAllocations = Map<String, int>.from(_allocations);
   }
 
   void _onSliderChanged(String category, double value) {
@@ -62,7 +66,7 @@ class _BudgetSlidersScreenState extends ConsumerState<BudgetSlidersScreen> {
 
     setState(() {
       _allocations = BudgetRebalancer.rebalance(
-        currentAllocations: _allocations,
+        currentAllocations: _dragStartAllocations ?? _allocations,
         changedCategory: category,
         newPercent: intValue,
       );
@@ -70,34 +74,53 @@ class _BudgetSlidersScreenState extends ConsumerState<BudgetSlidersScreen> {
     });
   }
 
+  void _onSliderChangeEnd(String category, double value) {
+    _dragStartAllocations = null;
+    if (_hasChanges) {
+      _saveAllocations(silent: true);
+    }
+  }
+
   void _resetToDefaults() {
     setState(() {
       _allocations = Map.from(TripCategory.defaultPercentages);
+      _dragStartAllocations = null;
       _hasChanges = true;
     });
+    _saveAllocations(silent: true);
   }
 
-  Future<void> _saveAllocations() async {
-    setState(() => _isSaving = true);
+  Future<void> _saveAllocations({bool silent = false}) async {
+    final snapshot = Map<String, int>.from(_allocations);
+    if (!silent) {
+      setState(() => _isSaving = true);
+    }
     try {
       await ref
           .read(tripRepositoryProvider)
-          .updateCategoryAllocations(widget.trip.id, _allocations);
-      _hasChanges = false;
+          .updateCategoryAllocations(widget.trip.id, snapshot);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Budget distribution saved')),
-        );
+        final stillMatches = mapEquals(_allocations, snapshot);
+        setState(() {
+          if (stillMatches) {
+            _hasChanges = false;
+          }
+          _isSaving = false;
+        });
+        if (!silent) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Budget distribution saved')),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
         setState(() => _isSaving = false);
+        if (!silent) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error saving: $e')),
+          );
+        }
       }
     }
   }
@@ -144,15 +167,16 @@ class _BudgetSlidersScreenState extends ConsumerState<BudgetSlidersScreen> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: FilledButton(
-            onPressed: _hasChanges && !_isSaving ? _saveAllocations : null,
-            child: _isSaving
+          child: FilledButton.icon(
+            onPressed: _hasChanges && !_isSaving ? () => _saveAllocations() : null,
+            icon: _isSaving
                 ? const SizedBox(
-                    height: 20,
-                    width: 20,
+                    height: 18,
+                    width: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Text(_hasChanges ? 'Save changes' : 'Saved'),
+                : Icon(_hasChanges ? Icons.save_outlined : Icons.check_circle_outline),
+            label: Text(_hasChanges ? 'Save changes' : 'All changes saved'),
           ),
         ),
       ),
@@ -276,7 +300,9 @@ class _BudgetSlidersScreenState extends ConsumerState<BudgetSlidersScreen> {
                         min: 0,
                         max: 100,
                         divisions: 100,
+                        onChangeStart: (v) => _onSliderChangeStart(cat.key, v),
                         onChanged: (v) => _onSliderChanged(cat.key, v),
+                        onChangeEnd: (v) => _onSliderChangeEnd(cat.key, v),
                       ),
                     ),
 
