@@ -94,6 +94,28 @@ void main() {
       expect(completed, isTrue);
     });
 
+    testWidgets('default delay holds splash screen visible after animation completes', (tester) async {
+      var completed = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AnimatedSplashScreen(
+            onComplete: () {
+              completed = true;
+            },
+          ),
+        ),
+      );
+
+      // Still visible after 1600ms animation + 1400ms hold (3000ms total)
+      await tester.pump(const Duration(milliseconds: 3000));
+      expect(completed, isFalse);
+
+      // Completes smoothly once default 3800ms delay elapses
+      await tester.pump(const Duration(milliseconds: 900));
+      expect(completed, isTrue);
+    });
+
     testWidgets('renders cleanly in dark mode without overflow', (tester) async {
       await tester.pumpWidget(
         MaterialApp(

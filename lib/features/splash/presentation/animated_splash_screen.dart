@@ -13,7 +13,7 @@ class AnimatedSplashScreen extends StatefulWidget {
 
   const AnimatedSplashScreen({
     super.key,
-    this.autoNavigateDelay = const Duration(milliseconds: 2200),
+    this.autoNavigateDelay = const Duration(milliseconds: 3800),
     this.onComplete,
   });
 
