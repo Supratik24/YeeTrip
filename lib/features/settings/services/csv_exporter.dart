@@ -1,22 +1,62 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:csv/csv.dart';
+import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
+import 'package:yeetrip/core/money.dart';
 import 'package:yeetrip/features/expenses/domain/expense_model.dart';
 import 'package:yeetrip/features/trips/domain/trip_model.dart';
-import 'csv_generator.dart';
 
-/// Service to export trip expenses as CSV and share via platform share sheet.
+/// Service to format and export trip expenses as RFC 4180 CSV strings and share via platform share sheet.
 class CsvExporter {
-  CsvExporter._();
+  const CsvExporter._();
 
-  /// Formats expenses as CSV using [CsvGenerator].
+  /// Converts expenses into CSV format with columns:
+  /// date, description, category, paid_by, amount_inr, split_among
   static String generateCsv({
     required TripWithDetails trip,
     required List<ExpenseWithSplits> expenses,
   }) {
-    return CsvGenerator.generateCsv(trip: trip, expenses: expenses);
+    final travelersMap = {
+      for (final t in trip.travelers) t.id: t.name,
+    };
+
+    final rows = <List<dynamic>>[];
+
+    // CSV Header row
+    rows.add([
+      'date',
+      'description',
+      'category',
+      'paid_by',
+      'amount_inr',
+      'split_among',
+    ]);
+
+    final dateFormat = DateFormat('yyyy-MM-dd');
+
+    for (final exp in expenses) {
+      final dateStr = dateFormat.format(exp.createdAt);
+      final payerName = travelersMap[exp.paidBy] ?? 'Unknown';
+      final amountInr = Money.paiseToDecimalString(exp.amountPaise);
+
+      final splitNames = exp.splits
+          .map((s) => travelersMap[s.travelerId] ?? 'Unknown')
+          .join(', ');
+
+      rows.add([
+        dateStr,
+        exp.description,
+        exp.category,
+        payerName,
+        amountInr,
+        splitNames,
+      ]);
+    }
+
+    return csv.encode(rows);
   }
 
   /// Exports the trip expenses and invokes the system share sheet.
@@ -24,7 +64,7 @@ class CsvExporter {
     required TripWithDetails trip,
     required List<ExpenseWithSplits> expenses,
   }) async {
-    final csvContent = CsvGenerator.generateCsv(trip: trip, expenses: expenses);
+    final csvContent = generateCsv(trip: trip, expenses: expenses);
     final sanitizedName = trip.name.replaceAll(RegExp(r'[^\w\s]+'), '_');
     final fileName = 'yeetrip_${sanitizedName}_expenses.csv';
     final bytes = Uint8List.fromList(utf8.encode(csvContent));
@@ -44,3 +84,6 @@ class CsvExporter {
     );
   }
 }
+
+/// Backwards compatibility alias for CsvGenerator
+typedef CsvGenerator = CsvExporter;

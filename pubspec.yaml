@@ -26,9 +26,8 @@ dependencies:
   path_provider: ^2.1.5
   path: ^1.9.1
 
-  # Annotations for code generation
-  freezed_annotation: ^3.1.0
-  json_annotation: ^4.9.0
+  # Persistence
+  shared_preferences: ^2.3.5
 
   # Charts
   fl_chart: ^1.3.0
@@ -55,8 +54,6 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   build_runner: ^2.4.15
   drift_dev: ^2.24.2
-  freezed: ^4.0.3
-  json_serializable: ^6.9.4
   mocktail: ^1.0.4
 
 flutter:

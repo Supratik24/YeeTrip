@@ -46,7 +46,7 @@ class DashboardScreen extends ConsumerWidget {
         error: (err, _) => Center(child: Text('Error loading expenses: $err')),
         data: (expenses) {
           final totalSpent = expenses
-              .where((e) => e.confirmed && e.source == 'manual')
+              .where((e) => e.confirmed && e.source != 'settlement')
               .fold<int>(
                 0,
                 (sum, e) => sum + e.amountPaise,

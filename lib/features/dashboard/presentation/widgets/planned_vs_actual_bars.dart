@@ -20,7 +20,7 @@ class PlannedVsActualBars extends StatelessWidget {
   Map<String, int> _calculateSpentPerCategory() {
     final map = <String, int>{};
     for (final exp in expenses) {
-      if (exp.confirmed && exp.source == 'manual') {
+      if (exp.confirmed && exp.source != 'settlement') {
         map[exp.category] = (map[exp.category] ?? 0) + exp.amountPaise;
       }
     }

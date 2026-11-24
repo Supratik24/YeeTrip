@@ -90,18 +90,15 @@ void main() {
       verify(() => mockBackupService.restoreTripFromJson(sampleJson)).called(1);
     });
 
-    testWidgets('TripListScreen has import backup action in AppBar',
+    testWidgets('TripListScreen keeps AppBar clean without duplicate backup action',
         (tester) async {
       when(() => mockTripRepo.watchTrips())
           .thenAnswer((_) => Stream.value([sampleTrip]));
-      when(() => mockBackupService.restoreTripFromJson(any()))
-          .thenAnswer((_) async => 'restored-trip-id');
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             tripRepositoryProvider.overrideWithValue(mockTripRepo),
-            tripBackupServiceProvider.overrideWithValue(mockBackupService),
             tripsStreamProvider.overrideWith((ref) => Stream.value([sampleTrip])),
           ],
           child: const MaterialApp(
@@ -111,26 +108,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Action button should exist in AppBar
+      // Duplicate import button in AppBar should be removed
       final importBtn = find.byKey(const Key('import_trip_backup_btn'));
-      expect(importBtn, findsOneWidget);
-
-      await tester.tap(importBtn);
-      await tester.pumpAndSettle();
-
-      // Dialog should appear
-      expect(find.text('Import trip backup'), findsOneWidget);
-      expect(find.byKey(const Key('restore_trip_json_field')), findsOneWidget);
-
-      const sampleJson = '{"version": 1, "trip": {"name": "Coorg Trip"}}';
-      await tester.enterText(
-          find.byKey(const Key('restore_trip_json_field')), sampleJson);
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const Key('confirm_restore_btn')));
-      await tester.pumpAndSettle();
-
-      verify(() => mockBackupService.restoreTripFromJson(sampleJson)).called(1);
+      expect(importBtn, findsNothing);
     });
   });
 }

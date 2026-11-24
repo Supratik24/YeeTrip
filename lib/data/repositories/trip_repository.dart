@@ -290,12 +290,12 @@ class DriftTripRepository implements TripRepository {
       for (final a in allocationRows) a.category: a.percent,
     };
 
-    // Calculate total spent from confirmed manual expenses (exclude settlements)
+    // Calculate total spent from confirmed expenses (exclude settlements)
     final expenseRows = await (_db.select(_db.expenses)
           ..where((e) =>
               e.tripId.equals(row.id) &
               e.confirmed.equals(true) &
-              e.source.equals('manual')))
+              e.source.equals('settlement').not()))
         .get();
 
     final totalSpentPaise = expenseRows.fold<int>(

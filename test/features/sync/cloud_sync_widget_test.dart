@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -118,11 +119,16 @@ void main() {
       await authService.signInWithGoogle(
         customEmail: 'tester@gmail.com',
         customName: 'Tester',
+        defaultUpiVpa: 'tester@okhdfcbank',
       );
+
+      final testDb = AppDatabase(NativeDatabase.memory());
+      addTearDown(() => testDb.close());
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            databaseProvider.overrideWithValue(testDb),
             syncEngineProvider.overrideWithValue(fakeEngine),
             authServiceProvider.overrideWithValue(authService),
           ],
@@ -167,9 +173,13 @@ void main() {
       final authStorage = InMemoryAuthStorage();
       final authService = AuthService(storage: authStorage); // Guest mode
 
+      final testDb = AppDatabase(NativeDatabase.memory());
+      addTearDown(() => testDb.close());
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            databaseProvider.overrideWithValue(testDb),
             syncEngineProvider.overrideWithValue(fakeEngine),
             authServiceProvider.overrideWithValue(authService),
           ],
@@ -238,9 +248,18 @@ void main() {
   group('TripListScreen & SettingsScreen Cloud Sync Integration Tests', () {
     testWidgets('TripListScreen renders join trip button in AppBar and opens dialog',
         (tester) async {
+      final authStorage = InMemoryAuthStorage();
+      final authService = AuthService(storage: authStorage);
+      await authService.signInWithGoogle(
+        customEmail: 'tester@gmail.com',
+        customName: 'Tester',
+        defaultUpiVpa: 'tester@okhdfcbank',
+      );
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            authServiceProvider.overrideWithValue(authService),
             tripsStreamProvider.overrideWith((ref) => Stream.value([trip])),
           ],
           child: const MaterialApp(

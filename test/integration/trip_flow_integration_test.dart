@@ -6,7 +6,7 @@ import 'package:yeetrip/data/repositories/expense_repository.dart';
 import 'package:yeetrip/data/repositories/trip_repository.dart';
 import 'package:yeetrip/features/expenses/domain/expense_model.dart';
 import 'package:yeetrip/features/expenses/domain/split_calculator.dart';
-import 'package:yeetrip/features/settings/services/csv_generator.dart';
+import 'package:yeetrip/features/settings/services/csv_exporter.dart';
 import 'package:yeetrip/features/settle/domain/settle_calculator.dart';
 import '../test_helper.dart';
 

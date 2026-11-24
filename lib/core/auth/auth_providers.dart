@@ -8,13 +8,14 @@ import 'profile_migration_service.dart';
 
 /// Provider for auth persistence. Can be overridden in tests.
 final authStorageProvider = Provider<AuthStorage>((ref) {
-  return InMemoryAuthStorage();
+  return SharedPrefsAuthStorage();
 });
 
 /// Provider for user authentication service.
 final authServiceProvider = Provider<AuthService>((ref) {
   final storage = ref.watch(authStorageProvider);
   final service = AuthService(storage: storage);
+  service.restoreSession();
   ref.onDispose(() => service.dispose());
   return service;
 });

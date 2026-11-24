@@ -124,7 +124,9 @@ class _JoinTripDialogState extends ConsumerState<JoinTripDialog> {
           ),
         );
         // Navigate to the joined trip
-        context.go('/trips/${trip.id}');
+        try {
+          context.go('/trips/${trip.id}');
+        } catch (_) {}
       }
     } catch (e) {
       if (mounted) {

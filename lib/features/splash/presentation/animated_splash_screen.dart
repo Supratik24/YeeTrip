@@ -301,7 +301,7 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
 
                           const SizedBox(height: 28),
 
-                          // 4. Feature Badges (100% Offline • Integer Paise ₹ • Split & Settle)
+                          // 4. Feature Badges (Works Offline • Instant Split • Easy UPI Settle)
                           FadeTransition(
                             opacity: _badgeFade,
                             child: Wrap(
@@ -311,17 +311,17 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
                               children: [
                                 _buildBadge(
                                   icon: Icons.offline_pin_rounded,
-                                  label: '100% Offline',
+                                  label: 'Works Offline',
                                   isDark: isDark,
                                 ),
                                 _buildBadge(
-                                  icon: Icons.currency_rupee,
-                                  label: 'Zero Float Errors',
+                                  icon: Icons.call_split_rounded,
+                                  label: 'Instant Split',
                                   isDark: isDark,
                                 ),
                                 _buildBadge(
-                                  icon: Icons.handshake_outlined,
-                                  label: 'Min Settlements',
+                                  icon: Icons.bolt_rounded,
+                                  label: 'Easy UPI Settle',
                                   isDark: isDark,
                                 ),
                               ],

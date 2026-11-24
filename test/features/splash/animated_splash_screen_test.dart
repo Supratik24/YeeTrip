@@ -17,9 +17,9 @@ void main() {
       expect(find.byKey(const Key('splash_logo_mark')), findsOneWidget);
       expect(find.byKey(const Key('splash_wordmark_image')), findsOneWidget);
       expect(find.text('Smart Group Travel & Expense Splitting'), findsOneWidget);
-      expect(find.text('100% Offline'), findsOneWidget);
-      expect(find.text('Zero Float Errors'), findsOneWidget);
-      expect(find.text('Min Settlements'), findsOneWidget);
+      expect(find.text('Works Offline'), findsOneWidget);
+      expect(find.text('Instant Split'), findsOneWidget);
+      expect(find.text('Easy UPI Settle'), findsOneWidget);
       expect(find.byKey(const Key('skip_splash_btn')), findsOneWidget);
 
       // Advance animation through completion

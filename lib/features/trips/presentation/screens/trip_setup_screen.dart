@@ -439,18 +439,16 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
                         ],
                       ),
                     ),
+                    const SizedBox(width: 4),
                     // Contact import button
-                    OutlinedButton.icon(
+                    IconButton.outlined(
                       key: const Key('import_contacts_button'),
                       onPressed: _importFromContacts,
-                      icon: const Icon(Icons.perm_contact_calendar_outlined, size: 16),
-                      label: const Text('Contacts'),
-                      style: OutlinedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                      ),
+                      icon: const Icon(Icons.perm_contact_calendar_outlined, size: 18),
+                      tooltip: 'Import from contacts',
+                      visualDensity: VisualDensity.compact,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                     // Add person button
                     TextButton.icon(
                       key: const Key('add_traveler_button'),
@@ -459,7 +457,7 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
                       label: const Text('Add person'),
                       style: TextButton.styleFrom(
                         visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
                       ),
                     ),
                   ],

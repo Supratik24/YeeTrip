@@ -1,5 +1,5 @@
 import 'package:yeetrip/features/expenses/domain/expense_model.dart';
-import 'package:yeetrip/features/settings/services/csv_generator.dart';
+import 'package:yeetrip/features/settings/services/csv_exporter.dart';
 import 'package:yeetrip/features/trips/domain/trip_model.dart';
 import '../../test_helper.dart';
 

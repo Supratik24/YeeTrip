@@ -55,85 +55,6 @@ class TripListScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _showImportBackupDialog(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
-    final textController = TextEditingController();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Import trip backup'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Paste the contents of a .yeetrip.json backup file below to restore the trip and its expenses:',
-              style: TextStyle(fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              key: const Key('restore_trip_json_field'),
-              controller: textController,
-              maxLines: 6,
-              decoration: const InputDecoration(
-                hintText: '{\n  "version": 1,\n  "trip": { ... }\n}',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            key: const Key('confirm_restore_btn'),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Import'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && textController.text.trim().isNotEmpty) {
-      try {
-        final backupService = ref.read(tripBackupServiceProvider);
-        final newTripId =
-            await backupService.restoreTripFromJson(textController.text);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Trip imported successfully!'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          context.push('/trips/$newTripId');
-        }
-      } catch (e) {
-        if (context.mounted) {
-          showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Import Failed'),
-              content: Text('Could not restore trip: $e'),
-              actions: [
-                FilledButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
-        }
-      }
-    }
-  }
-
   Future<void> _handlePlanTrip(BuildContext context, WidgetRef ref) async {
     final auth = ref.read(authServiceProvider);
     if (auth.currentState.isGuest) {
@@ -208,12 +129,6 @@ class TripListScreen extends ConsumerWidget {
             icon: const Icon(Icons.group_add_outlined),
             tooltip: 'Join trip with invite code',
             onPressed: () => _handleJoinTrip(context, ref),
-          ),
-          IconButton(
-            key: const Key('import_trip_backup_btn'),
-            icon: const Icon(Icons.file_upload_outlined),
-            tooltip: 'Import trip backup',
-            onPressed: () => _showImportBackupDialog(context, ref),
           ),
         ],
       ),

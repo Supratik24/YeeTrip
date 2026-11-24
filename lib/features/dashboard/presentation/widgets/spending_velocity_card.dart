@@ -36,9 +36,9 @@ class SpendingVelocityCard extends ConsumerWidget {
           (trip.totalBudgetPaise * entry.value) ~/ 100;
     }
 
-    // Map confirmed manual category spending
+    // Map confirmed non-settlement category spending
     final categorySpentPaise = <String, int>{};
-    for (final exp in expenses.where((e) => e.confirmed && e.source == 'manual')) {
+    for (final exp in expenses.where((e) => e.confirmed && e.source != 'settlement')) {
       categorySpentPaise[exp.category] =
           (categorySpentPaise[exp.category] ?? 0) + exp.amountPaise;
     }
