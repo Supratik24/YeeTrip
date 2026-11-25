@@ -67,7 +67,7 @@ void main() {
   });
 
   group('SettleScreen UPI Payment Tests', () {
-    testWidgets('renders UPI payment button when settlement exists and opens UPI fallback dialog',
+    testWidgets('renders UPI payment button, opens dedicated UPI app picker, and falls back when unlaunchable',
         (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 1.0;
@@ -97,8 +97,18 @@ void main() {
       final upiBtn = find.byKey(const Key('pay_upi_t-1_t-2'));
       expect(upiBtn, findsOneWidget);
 
-      // Tap UPI pay button (in test environment, no external UPI app exists so fallback dialog shows)
+      // Tap UPI pay button -> opens dedicated UPI App Picker sheet
       await tester.tap(upiBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('upi_app_picker_sheet')), findsOneWidget);
+      expect(find.text('Google Pay'), findsOneWidget);
+      expect(find.text('PhonePe'), findsOneWidget);
+      expect(find.text('Paytm'), findsOneWidget);
+      expect(find.text('BHIM / Other UPI'), findsOneWidget);
+
+      // Select Google Pay (unlaunchable in test environment -> fallback dialog shows)
+      await tester.tap(find.byKey(const Key('upi_app_googlePay')));
       await tester.pumpAndSettle();
 
       expect(find.text('UPI Payment'), findsOneWidget);

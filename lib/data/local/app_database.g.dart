@@ -725,8 +725,24 @@ class $TravelersTable extends Travelers
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _phoneMeta = const VerificationMeta('phone');
   @override
-  List<GeneratedColumn> get $columns => [id, tripId, name, upiVpa, avatarPath];
+  late final GeneratedColumn<String> phone = GeneratedColumn<String>(
+    'phone',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    tripId,
+    name,
+    upiVpa,
+    avatarPath,
+    phone,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -772,6 +788,12 @@ class $TravelersTable extends Travelers
         avatarPath.isAcceptableOrUnknown(data['avatar_path']!, _avatarPathMeta),
       );
     }
+    if (data.containsKey('phone')) {
+      context.handle(
+        _phoneMeta,
+        phone.isAcceptableOrUnknown(data['phone']!, _phoneMeta),
+      );
+    }
     return context;
   }
 
@@ -801,6 +823,10 @@ class $TravelersTable extends Travelers
         DriftSqlType.string,
         data['${effectivePrefix}avatar_path'],
       ),
+      phone: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}phone'],
+      ),
     );
   }
 
@@ -816,12 +842,14 @@ class Traveler extends DataClass implements Insertable<Traveler> {
   final String name;
   final String? upiVpa;
   final String? avatarPath;
+  final String? phone;
   const Traveler({
     required this.id,
     required this.tripId,
     required this.name,
     this.upiVpa,
     this.avatarPath,
+    this.phone,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -834,6 +862,9 @@ class Traveler extends DataClass implements Insertable<Traveler> {
     }
     if (!nullToAbsent || avatarPath != null) {
       map['avatar_path'] = Variable<String>(avatarPath);
+    }
+    if (!nullToAbsent || phone != null) {
+      map['phone'] = Variable<String>(phone);
     }
     return map;
   }
@@ -849,6 +880,9 @@ class Traveler extends DataClass implements Insertable<Traveler> {
       avatarPath: avatarPath == null && nullToAbsent
           ? const Value.absent()
           : Value(avatarPath),
+      phone: phone == null && nullToAbsent
+          ? const Value.absent()
+          : Value(phone),
     );
   }
 
@@ -863,6 +897,7 @@ class Traveler extends DataClass implements Insertable<Traveler> {
       name: serializer.fromJson<String>(json['name']),
       upiVpa: serializer.fromJson<String?>(json['upiVpa']),
       avatarPath: serializer.fromJson<String?>(json['avatarPath']),
+      phone: serializer.fromJson<String?>(json['phone']),
     );
   }
   @override
@@ -874,6 +909,7 @@ class Traveler extends DataClass implements Insertable<Traveler> {
       'name': serializer.toJson<String>(name),
       'upiVpa': serializer.toJson<String?>(upiVpa),
       'avatarPath': serializer.toJson<String?>(avatarPath),
+      'phone': serializer.toJson<String?>(phone),
     };
   }
 
@@ -883,12 +919,14 @@ class Traveler extends DataClass implements Insertable<Traveler> {
     String? name,
     Value<String?> upiVpa = const Value.absent(),
     Value<String?> avatarPath = const Value.absent(),
+    Value<String?> phone = const Value.absent(),
   }) => Traveler(
     id: id ?? this.id,
     tripId: tripId ?? this.tripId,
     name: name ?? this.name,
     upiVpa: upiVpa.present ? upiVpa.value : this.upiVpa,
     avatarPath: avatarPath.present ? avatarPath.value : this.avatarPath,
+    phone: phone.present ? phone.value : this.phone,
   );
   Traveler copyWithCompanion(TravelersCompanion data) {
     return Traveler(
@@ -899,6 +937,7 @@ class Traveler extends DataClass implements Insertable<Traveler> {
       avatarPath: data.avatarPath.present
           ? data.avatarPath.value
           : this.avatarPath,
+      phone: data.phone.present ? data.phone.value : this.phone,
     );
   }
 
@@ -909,13 +948,14 @@ class Traveler extends DataClass implements Insertable<Traveler> {
           ..write('tripId: $tripId, ')
           ..write('name: $name, ')
           ..write('upiVpa: $upiVpa, ')
-          ..write('avatarPath: $avatarPath')
+          ..write('avatarPath: $avatarPath, ')
+          ..write('phone: $phone')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, tripId, name, upiVpa, avatarPath);
+  int get hashCode => Object.hash(id, tripId, name, upiVpa, avatarPath, phone);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -924,7 +964,8 @@ class Traveler extends DataClass implements Insertable<Traveler> {
           other.tripId == this.tripId &&
           other.name == this.name &&
           other.upiVpa == this.upiVpa &&
-          other.avatarPath == this.avatarPath);
+          other.avatarPath == this.avatarPath &&
+          other.phone == this.phone);
 }
 
 class TravelersCompanion extends UpdateCompanion<Traveler> {
@@ -933,6 +974,7 @@ class TravelersCompanion extends UpdateCompanion<Traveler> {
   final Value<String> name;
   final Value<String?> upiVpa;
   final Value<String?> avatarPath;
+  final Value<String?> phone;
   final Value<int> rowid;
   const TravelersCompanion({
     this.id = const Value.absent(),
@@ -940,6 +982,7 @@ class TravelersCompanion extends UpdateCompanion<Traveler> {
     this.name = const Value.absent(),
     this.upiVpa = const Value.absent(),
     this.avatarPath = const Value.absent(),
+    this.phone = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TravelersCompanion.insert({
@@ -948,6 +991,7 @@ class TravelersCompanion extends UpdateCompanion<Traveler> {
     required String name,
     this.upiVpa = const Value.absent(),
     this.avatarPath = const Value.absent(),
+    this.phone = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        tripId = Value(tripId),
@@ -958,6 +1002,7 @@ class TravelersCompanion extends UpdateCompanion<Traveler> {
     Expression<String>? name,
     Expression<String>? upiVpa,
     Expression<String>? avatarPath,
+    Expression<String>? phone,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -966,6 +1011,7 @@ class TravelersCompanion extends UpdateCompanion<Traveler> {
       if (name != null) 'name': name,
       if (upiVpa != null) 'upi_vpa': upiVpa,
       if (avatarPath != null) 'avatar_path': avatarPath,
+      if (phone != null) 'phone': phone,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -976,6 +1022,7 @@ class TravelersCompanion extends UpdateCompanion<Traveler> {
     Value<String>? name,
     Value<String?>? upiVpa,
     Value<String?>? avatarPath,
+    Value<String?>? phone,
     Value<int>? rowid,
   }) {
     return TravelersCompanion(
@@ -984,6 +1031,7 @@ class TravelersCompanion extends UpdateCompanion<Traveler> {
       name: name ?? this.name,
       upiVpa: upiVpa ?? this.upiVpa,
       avatarPath: avatarPath ?? this.avatarPath,
+      phone: phone ?? this.phone,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1006,6 +1054,9 @@ class TravelersCompanion extends UpdateCompanion<Traveler> {
     if (avatarPath.present) {
       map['avatar_path'] = Variable<String>(avatarPath.value);
     }
+    if (phone.present) {
+      map['phone'] = Variable<String>(phone.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1020,6 +1071,7 @@ class TravelersCompanion extends UpdateCompanion<Traveler> {
           ..write('name: $name, ')
           ..write('upiVpa: $upiVpa, ')
           ..write('avatarPath: $avatarPath, ')
+          ..write('phone: $phone, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2942,6 +2994,7 @@ typedef $$TravelersTableCreateCompanionBuilder = TravelersCompanion Function({
   required String name,
   Value<String?> upiVpa,
   Value<String?> avatarPath,
+  Value<String?> phone,
   Value<int> rowid,
 });
 typedef $$TravelersTableUpdateCompanionBuilder = TravelersCompanion Function({
@@ -2950,6 +3003,7 @@ typedef $$TravelersTableUpdateCompanionBuilder = TravelersCompanion Function({
   Value<String> name,
   Value<String?> upiVpa,
   Value<String?> avatarPath,
+  Value<String?> phone,
   Value<int> rowid,
 });
 
@@ -3038,6 +3092,11 @@ class $$TravelersTableFilterComposer
 
   ColumnFilters<String> get avatarPath => $composableBuilder(
     column: $table.avatarPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get phone => $composableBuilder(
+    column: $table.phone,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3144,6 +3203,11 @@ class $$TravelersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get phone => $composableBuilder(
+    column: $table.phone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$TripsTableOrderingComposer get tripId {
     final $$TripsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -3190,6 +3254,9 @@ class $$TravelersTableAnnotationComposer
     column: $table.avatarPath,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get phone =>
+      $composableBuilder(column: $table.phone, builder: (column) => column);
 
   $$TripsTableAnnotationComposer get tripId {
     final $$TripsTableAnnotationComposer composer = $composerBuilder(
@@ -3302,6 +3369,7 @@ class $$TravelersTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<String?> upiVpa = const Value.absent(),
                 Value<String?> avatarPath = const Value.absent(),
+                Value<String?> phone = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TravelersCompanion(
                 id: id,
@@ -3309,6 +3377,7 @@ class $$TravelersTableTableManager
                 name: name,
                 upiVpa: upiVpa,
                 avatarPath: avatarPath,
+                phone: phone,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3318,6 +3387,7 @@ class $$TravelersTableTableManager
                 required String name,
                 Value<String?> upiVpa = const Value.absent(),
                 Value<String?> avatarPath = const Value.absent(),
+                Value<String?> phone = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TravelersCompanion.insert(
                 id: id,
@@ -3325,6 +3395,7 @@ class $$TravelersTableTableManager
                 name: name,
                 upiVpa: upiVpa,
                 avatarPath: avatarPath,
+                phone: phone,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

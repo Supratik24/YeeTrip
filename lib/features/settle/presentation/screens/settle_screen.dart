@@ -86,11 +86,99 @@ class SettleScreen extends ConsumerWidget {
     required String toName,
     required String toVpa,
   }) async {
+    final selectedApp = await showModalBottomSheet<UpiApp>(
+      context: context,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return SafeArea(
+          child: Padding(
+            key: const Key('upi_app_picker_sheet'),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Pay $toName',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '$toVpa • ${Money.formatRupees(payment.amountPaise)}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy, size: 18),
+                      tooltip: 'Copy UPI ID',
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: toVpa));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Copied "$toVpa" to clipboard'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Choose UPI app',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...UpiApp.values.map((app) => Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        key: Key('upi_app_${app.name}'),
+                        leading: CircleAvatar(
+                          backgroundColor:
+                              app.accentColor.withValues(alpha: 0.14),
+                          child: Icon(app.icon, color: app.accentColor),
+                        ),
+                        title: Text(
+                          app.label,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          app.subtitle,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.of(ctx).pop(app),
+                      ),
+                    )),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selectedApp == null || !context.mounted) return;
+
     final launched = await UpiPaymentLauncher.launchUpiPayment(
       payeeVpa: toVpa,
       payeeName: toName,
       amountPaise: payment.amountPaise,
       note: 'YeeTrip Settlement: $fromName to $toName',
+      app: selectedApp,
     );
 
     if (!launched && context.mounted) {
@@ -102,7 +190,7 @@ class SettleScreen extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Could not open a UPI app directly.'),
+              Text('Could not open ${selectedApp.label} directly.'),
               const SizedBox(height: 12),
               Text(
                 'Payee: $toName',
@@ -112,7 +200,7 @@ class SettleScreen extends ConsumerWidget {
               Text('Amount: ${Money.formatRupees(payment.amountPaise)}'),
               const SizedBox(height: 12),
               const Text(
-                'You can copy the UPI ID and complete the payment using any UPI app (Google Pay, PhonePe, Paytm, BHIM).',
+                'You can copy the UPI ID and complete the payment manually using Google Pay, PhonePe, Paytm, or BHIM.',
                 style: TextStyle(fontSize: 12),
               ),
             ],

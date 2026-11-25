@@ -1,17 +1,22 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/categories.dart';
 import '../../../../core/ml/ml_providers.dart';
 import '../../../../core/ml/smart_categorizer.dart';
 import '../../../../core/money.dart';
+import '../../../../core/services/local_image_store.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
 import '../../../trips/domain/trip_model.dart';
 import '../../domain/expense_model.dart';
 import '../../domain/split_calculator.dart';
+import '../widgets/receipt_preview_dialog.dart';
 import '../widgets/receipt_scanner_sheet.dart';
 
 /// Screen to add or edit an expense with 4 split modes.
@@ -46,6 +51,8 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   final Map<String, TextEditingController> _percentControllers = {};
   final Map<String, int> _sharesWeights = {};
 
+  String? _receiptImagePath;
+  bool _clearReceiptImage = false;
   String? _splitError;
   bool _isSaving = false;
   bool _initializedFromExisting = false;
@@ -107,6 +114,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
         _selectedCategory = existing.category;
         _selectedDate = existing.createdAt;
         _paidByTravelerId = existing.paidBy;
+        _receiptImagePath = existing.receiptImagePath;
 
         // Populate splits
         for (final split in existing.splits) {
@@ -266,6 +274,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
           paidBy: _paidByTravelerId!,
           createdAt: _selectedDate,
           splits: splits,
+          receiptImagePath: _receiptImagePath,
         );
       } else {
         await expenseRepo.updateExpense(
@@ -276,6 +285,8 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
           paidBy: _paidByTravelerId!,
           createdAt: _selectedDate,
           splits: splits,
+          receiptImagePath: _receiptImagePath,
+          clearReceiptImage: _clearReceiptImage && _receiptImagePath == null,
         );
       }
 
@@ -327,6 +338,148 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     }
   }
 
+  Future<void> _attachBillPhoto(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final file = await picker.pickImage(
+        source: source,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 88,
+      );
+      if (file == null) return;
+      final saved = await LocalImageStore.persistImage(
+        file.path,
+        folder: 'receipts',
+      );
+      if (mounted) {
+        setState(() {
+          _receiptImagePath = saved;
+          _clearReceiptImage = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not attach photo: $e')),
+        );
+      }
+    }
+  }
+
+  Widget _buildReceiptAttachmentCard(ThemeData theme) {
+    final hasFile = _receiptImagePath != null &&
+        _receiptImagePath!.isNotEmpty &&
+        File(_receiptImagePath!).existsSync();
+
+    return Container(
+      key: const Key('receipt_attachment_card'),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant,
+        ),
+      ),
+      child: Row(
+        children: [
+          if (hasFile)
+            GestureDetector(
+              onTap: () => ReceiptPreviewDialog.show(
+                context,
+                imagePath: _receiptImagePath!,
+                title: _descriptionController.text.trim().isNotEmpty
+                    ? _descriptionController.text.trim()
+                    : 'Attached Bill',
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  File(_receiptImagePath!),
+                  width: 52,
+                  height: 52,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            )
+          else
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.receipt_outlined,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  hasFile ? 'Bill photo attached' : 'Attach bill proof (optional)',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  hasFile
+                      ? 'Tap thumbnail to zoom & inspect'
+                      : 'Keep a photo with this expense',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (hasFile) ...[
+            IconButton(
+              key: const Key('view_attached_receipt_btn'),
+              icon: const Icon(Icons.visibility_outlined),
+              tooltip: 'View bill photo',
+              onPressed: () => ReceiptPreviewDialog.show(
+                context,
+                imagePath: _receiptImagePath!,
+                title: _descriptionController.text.trim().isNotEmpty
+                    ? _descriptionController.text.trim()
+                    : 'Attached Bill',
+              ),
+            ),
+            IconButton(
+              key: const Key('remove_attached_receipt_btn'),
+              icon: const Icon(Icons.close),
+              tooltip: 'Remove bill photo',
+              onPressed: () => setState(() {
+                _receiptImagePath = null;
+                _clearReceiptImage = true;
+              }),
+            ),
+          ] else ...[
+            IconButton(
+              key: const Key('attach_receipt_camera_btn'),
+              icon: const Icon(Icons.camera_alt_outlined),
+              tooltip: 'Take bill photo',
+              onPressed: () => _attachBillPhoto(ImageSource.camera),
+            ),
+            IconButton(
+              key: const Key('attach_receipt_gallery_btn'),
+              icon: const Icon(Icons.photo_library_outlined),
+              tooltip: 'Pick bill from gallery',
+              onPressed: () => _attachBillPhoto(ImageSource.gallery),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   void _openReceiptScanner(BuildContext context) {
     ReceiptScannerSheet.show(
       context,
@@ -343,6 +496,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
           }
           if (receipt.suggestedCategory.isNotEmpty) {
             _selectedCategory = receipt.suggestedCategory;
+          }
+          if (receipt.imagePath != null && receipt.imagePath!.isNotEmpty) {
+            _receiptImagePath = receipt.imagePath;
+            _clearReceiptImage = false;
           }
         });
 
@@ -610,6 +767,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                     }
                   },
                 ),
+                const SizedBox(height: 16),
+
+                // Receipt photo attachment
+                _buildReceiptAttachmentCard(theme),
                 const SizedBox(height: 24),
 
                 // Split Mode Tabs

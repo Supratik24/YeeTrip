@@ -72,9 +72,10 @@ void main() {
       await tester.tap(find.byKey(const Key('restore_trip_from_settings_btn')));
       await tester.pumpAndSettle();
 
-      // Dialog should appear
+      // Dialog should appear with both file picker and paste fallback
       expect(find.widgetWithText(AlertDialog, 'Restore trip from backup'),
           findsOneWidget);
+      expect(find.byKey(const Key('pick_backup_file_btn')), findsOneWidget);
       expect(find.byKey(const Key('restore_trip_json_field')), findsOneWidget);
 
       // Enter sample JSON

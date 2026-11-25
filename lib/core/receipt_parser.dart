@@ -30,6 +30,9 @@ class ReceiptData {
   /// Optional parser notes or status explanations.
   final String? notes;
 
+  /// Optional local path to the scanned/attached receipt image.
+  final String? imagePath;
+
   const ReceiptData({
     this.amountPaise,
     this.merchantName,
@@ -40,6 +43,7 @@ class ReceiptData {
     this.candidateAmountsPaise = const [],
     this.items = const [],
     this.notes,
+    this.imagePath,
   });
 
   ReceiptData copyWith({
@@ -52,6 +56,7 @@ class ReceiptData {
     List<int>? candidateAmountsPaise,
     List<String>? items,
     String? notes,
+    String? imagePath,
   }) {
     return ReceiptData(
       amountPaise: amountPaise ?? this.amountPaise,
@@ -63,6 +68,7 @@ class ReceiptData {
       candidateAmountsPaise: candidateAmountsPaise ?? this.candidateAmountsPaise,
       items: items ?? this.items,
       notes: notes ?? this.notes,
+      imagePath: imagePath ?? this.imagePath,
     );
   }
 
@@ -77,7 +83,8 @@ class ReceiptData {
           suggestedCategory == other.suggestedCategory &&
           confidence == other.confidence &&
           rawText == other.rawText &&
-          notes == other.notes;
+          notes == other.notes &&
+          imagePath == other.imagePath;
 
   @override
   int get hashCode => Object.hash(
@@ -88,6 +95,7 @@ class ReceiptData {
         confidence,
         rawText,
         notes,
+        imagePath,
       );
 
   @override

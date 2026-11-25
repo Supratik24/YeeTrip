@@ -1,13 +1,18 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/money.dart';
+import '../../../../core/services/local_image_store.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../core/widgets/traveler_avatar.dart';
 import '../../../../data/providers.dart';
 import '../../domain/trip_model.dart';
 import '../widgets/contact_picker_sheet.dart';
+import '../widgets/trip_cover_picker.dart';
 
 class _EditableTraveler {
   final String? id; // null if newly added
@@ -15,12 +20,18 @@ class _EditableTraveler {
   final TextEditingController vpaController;
   final FocusNode nameFocusNode;
   final FocusNode vpaFocusNode;
+  String? avatarPath;
+  bool clearAvatar;
+  String? phone;
 
   _EditableTraveler({
     this.id,
     required String name,
     String? upiVpa,
-  })  : nameController = TextEditingController(text: name),
+    this.avatarPath,
+    this.phone,
+  })  : clearAvatar = false,
+        nameController = TextEditingController(text: name),
         vpaController = TextEditingController(text: upiVpa ?? ''),
         nameFocusNode = FocusNode(),
         vpaFocusNode = FocusNode();
@@ -51,16 +62,28 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
   final _scrollController = ScrollController();
 
   final _nameController = TextEditingController();
+  final _destinationController = TextEditingController();
   final _budgetController = TextEditingController();
   final _daysController = TextEditingController();
 
   final _nameFocusNode = FocusNode();
+  final _destinationFocusNode = FocusNode();
   final _budgetFocusNode = FocusNode();
   final _daysFocusNode = FocusNode();
 
   final List<_EditableTraveler> _travelers = [];
   final List<String> _deletedTravelerIds = [];
 
+  String? _initialDestination;
+  String? _initialCoverPhotoPath;
+  String _initialStatus = 'active';
+  DateTime? _initialStartDate;
+  DateTime? _initialEndDate;
+
+  String? _coverPhotoPath;
+  String _status = 'active';
+  DateTime? _startDate;
+  DateTime? _endDate;
   bool _initialized = false;
   bool _isSubmitting = false;
   String? _travelersError;
@@ -69,9 +92,11 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
   void dispose() {
     _scrollController.dispose();
     _nameController.dispose();
+    _destinationController.dispose();
     _budgetController.dispose();
     _daysController.dispose();
     _nameFocusNode.dispose();
+    _destinationFocusNode.dispose();
     _budgetFocusNode.dispose();
     _daysFocusNode.dispose();
     for (final t in _travelers) {
@@ -84,6 +109,16 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
     if (_initialized) return;
 
     _nameController.text = trip.name;
+    _initialDestination = trip.destination;
+    _destinationController.text = trip.destination ?? '';
+    _initialCoverPhotoPath = trip.coverPhotoPath;
+    _coverPhotoPath = trip.coverPhotoPath;
+    _initialStatus = trip.status;
+    _status = trip.status;
+    _initialStartDate = trip.startDate;
+    _initialEndDate = trip.endDate;
+    _startDate = trip.startDate;
+    _endDate = trip.endDate;
     _budgetController.text = (trip.totalBudgetPaise % 100 == 0)
         ? (trip.totalBudgetPaise ~/ 100).toString()
         : Money.paiseToDecimalString(trip.totalBudgetPaise);
@@ -95,14 +130,21 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
           id: t.id,
           name: t.name,
           upiVpa: t.upiVpa,
+          avatarPath: t.avatarPath,
+          phone: t.phone,
         ),
       );
     }
     _initialized = true;
   }
 
-  void _addTraveler({bool requestFocus = true, String name = '', String? upiVpa}) {
-    final traveler = _EditableTraveler(name: name, upiVpa: upiVpa);
+  void _addTraveler({
+    bool requestFocus = true,
+    String name = '',
+    String? upiVpa,
+    String? phone,
+  }) {
+    final traveler = _EditableTraveler(name: name, upiVpa: upiVpa, phone: phone);
     setState(() {
       _travelers.add(traveler);
       _travelersError = null;
@@ -146,7 +188,9 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
           (t) => t.nameController.text.trim().toLowerCase() == name.toLowerCase(),
         );
         if (!alreadyExists) {
-          _travelers.add(_EditableTraveler(name: name));
+          _travelers.add(
+            _EditableTraveler(name: name, phone: contact.phoneNumber),
+          );
           addedCount++;
         }
       }
@@ -271,6 +315,76 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
     return true;
   }
 
+  Future<void> _pickTravelerAvatar(int index) async {
+    final t = _travelers[index];
+    final hasPhoto = t.avatarPath != null &&
+        t.avatarPath!.isNotEmpty &&
+        File(t.avatarPath!).existsSync();
+
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose photo from gallery'),
+              onTap: () => Navigator.of(ctx).pop('gallery'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Take photo with camera'),
+              onTap: () => Navigator.of(ctx).pop('camera'),
+            ),
+            if (hasPhoto)
+              ListTile(
+                leading: const Icon(Icons.person_outline),
+                title: const Text('Reset to initials avatar'),
+                onTap: () => Navigator.of(ctx).pop('clear'),
+              ),
+          ],
+        ),
+      ),
+    );
+
+    if (choice == null || !mounted) return;
+    if (choice == 'clear') {
+      setState(() {
+        t.avatarPath = null;
+        t.clearAvatar = true;
+      });
+      return;
+    }
+
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: choice == 'camera' ? ImageSource.camera : ImageSource.gallery,
+        maxWidth: 600,
+        maxHeight: 600,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+      final saved = await LocalImageStore.persistImage(
+        picked.path,
+        folder: 'avatars',
+      );
+      if (mounted) {
+        setState(() {
+          t.avatarPath = saved;
+          t.clearAvatar = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not pick photo: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _submit() async {
     final isFormValid = _formKey.currentState?.validate() ?? false;
     final areTravelersValid = _validateTravelers();
@@ -283,14 +397,37 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
       final tripRepo = ref.read(tripRepositoryProvider);
       final totalBudgetPaise = Money.decimalStringToPaise(_budgetController.text);
       final days = int.parse(_daysController.text.trim());
+      final destText = _destinationController.text.trim();
+      final destChanged = destText != (_initialDestination ?? '');
+      final coverChanged = _coverPhotoPath != _initialCoverPhotoPath;
+      final statusChanged = _status != _initialStatus;
+      final datesChanged =
+          _startDate != _initialStartDate || _endDate != _initialEndDate;
 
-      // 1. Update Trip Details
-      await tripRepo.updateTripDetails(
-        tripId: widget.tripId,
-        name: _nameController.text.trim(),
-        totalBudgetPaise: totalBudgetPaise,
-        days: days,
-      );
+      // 1. Update Trip Details (only include metadata flags if modified)
+      if (!destChanged && !coverChanged && !statusChanged && !datesChanged) {
+        await tripRepo.updateTripDetails(
+          tripId: widget.tripId,
+          name: _nameController.text.trim(),
+          totalBudgetPaise: totalBudgetPaise,
+          days: days,
+        );
+      } else {
+        await tripRepo.updateTripDetails(
+          tripId: widget.tripId,
+          name: _nameController.text.trim(),
+          totalBudgetPaise: totalBudgetPaise,
+          days: days,
+          destination: destChanged && destText.isNotEmpty ? destText : null,
+          clearDestination: destChanged && destText.isEmpty,
+          coverPhotoPath: coverChanged ? _coverPhotoPath : null,
+          clearCoverPhoto: coverChanged && _coverPhotoPath == null,
+          status: statusChanged ? _status : null,
+          startDate: datesChanged ? _startDate : null,
+          endDate: datesChanged ? _endDate : null,
+          clearDates: datesChanged && (_startDate == null || _endDate == null),
+        );
+      }
 
       // 2. Process Deleted Travelers
       for (final deletedId in _deletedTravelerIds) {
@@ -303,19 +440,38 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
         final vpa = t.vpaController.text.trim();
 
         if (t.id != null) {
-          // Update existing traveler
-          await tripRepo.updateTraveler(
-            travelerId: t.id!,
-            name: name,
-            upiVpa: vpa.isNotEmpty ? vpa : null,
-          );
+          if (t.clearAvatar || t.avatarPath != null || t.phone != null) {
+            await tripRepo.updateTraveler(
+              travelerId: t.id!,
+              name: name,
+              upiVpa: vpa.isNotEmpty ? vpa : null,
+              avatarPath: t.avatarPath,
+              clearAvatarPath: t.clearAvatar,
+              phone: t.phone,
+            );
+          } else {
+            await tripRepo.updateTraveler(
+              travelerId: t.id!,
+              name: name,
+              upiVpa: vpa.isNotEmpty ? vpa : null,
+            );
+          }
         } else {
-          // Insert newly added traveler
-          await tripRepo.addTraveler(
-            tripId: widget.tripId,
-            name: name,
-            upiVpa: vpa.isNotEmpty ? vpa : null,
-          );
+          if (t.avatarPath != null || t.phone != null) {
+            await tripRepo.addTraveler(
+              tripId: widget.tripId,
+              name: name,
+              upiVpa: vpa.isNotEmpty ? vpa : null,
+              avatarPath: t.avatarPath,
+              phone: t.phone,
+            );
+          } else {
+            await tripRepo.addTraveler(
+              tripId: widget.tripId,
+              name: name,
+              upiVpa: vpa.isNotEmpty ? vpa : null,
+            );
+          }
         }
       }
 
@@ -379,7 +535,7 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
                       controller: _nameController,
                       focusNode: _nameFocusNode,
                       textInputAction: TextInputAction.next,
-                      onFieldSubmitted: (_) => _budgetFocusNode.requestFocus(),
+                      onFieldSubmitted: (_) => _destinationFocusNode.requestFocus(),
                       decoration: const InputDecoration(
                         labelText: 'Trip name',
                         hintText: 'e.g. Goa with friends',
@@ -391,6 +547,49 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
                         }
                         return null;
                       },
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Destination
+                    TextFormField(
+                      key: const Key('edit_trip_destination_field'),
+                      controller: _destinationController,
+                      focusNode: _destinationFocusNode,
+                      textInputAction: TextInputAction.next,
+                      onFieldSubmitted: (_) => _budgetFocusNode.requestFocus(),
+                      decoration: const InputDecoration(
+                        labelText: 'Destination (optional)',
+                        hintText: 'e.g. Goa, Manali, Kerala',
+                        prefixIcon: Icon(Icons.location_on_outlined, size: 20),
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Cover Photo, Dates & Active/Completed Status
+                    TripCoverAndDatesPicker(
+                      coverPhotoPath: _coverPhotoPath,
+                      destinationPreview: _destinationController.text,
+                      startDate: _startDate,
+                      endDate: _endDate,
+                      status: _status,
+                      onCoverChanged: (path) =>
+                          setState(() => _coverPhotoPath = path),
+                      onDatesChanged: (start, end) {
+                        setState(() {
+                          _startDate = start;
+                          _endDate = end;
+                          if (start != null && end != null) {
+                            final computed = end.difference(start).inDays + 1;
+                            if (computed >= 1) {
+                              _daysController.text = computed.toString();
+                            }
+                          }
+                        });
+                      },
+                      onStatusChanged: (newStatus) =>
+                          setState(() => _status = newStatus),
                     ),
                     const SizedBox(height: 16),
 
@@ -538,12 +737,39 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              TravelerAvatar(
-                                name: t.nameController.text.trim().isNotEmpty
-                                    ? t.nameController.text.trim()
-                                    : '${index + 1}',
-                                radius: 16,
-                                fontSize: 11,
+                              InkWell(
+                                key: Key('edit_traveler_avatar_$index'),
+                                onTap: () => _pickTravelerAvatar(index),
+                                borderRadius: BorderRadius.circular(20),
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    TravelerAvatar(
+                                      name: t.nameController.text.trim().isNotEmpty
+                                          ? t.nameController.text.trim()
+                                          : '${index + 1}',
+                                      avatarPath: t.avatarPath,
+                                      radius: 18,
+                                      fontSize: 11,
+                                    ),
+                                    Positioned(
+                                      right: -2,
+                                      bottom: -2,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: BoxDecoration(
+                                          color: theme.colorScheme.primary,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.camera_alt,
+                                          size: 9,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(

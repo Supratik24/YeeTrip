@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +14,7 @@ import '../../../auth/presentation/widgets/auth_modal.dart';
 import '../../../sync/presentation/widgets/join_trip_dialog.dart';
 import '../../domain/trip_model.dart';
 import '../../services/demo_data_seeder.dart';
+import '../widgets/trip_cover_picker.dart';
 
 /// Home screen showing the list of trips.
 class TripListScreen extends ConsumerWidget {
@@ -270,54 +273,147 @@ class TripListScreen extends ConsumerWidget {
                   : isWarning
                       ? Colors.amber.shade700
                       : const Color(0xFF10B981); // Emerald Green
+              final hasCover = trip.coverPhotoPath != null &&
+                  trip.coverPhotoPath!.isNotEmpty &&
+                  File(trip.coverPhotoPath!).existsSync();
+              final dateSpan =
+                  formatTripDateSpan(trip.startDate, trip.endDate);
 
               return Card(
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   onTap: () => context.go('/trips/${trip.id}'),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (hasCover)
+                        SizedBox(
+                          key: Key('trip_cover_banner_${trip.id}'),
+                          height: 118,
+                          width: double.infinity,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.file(
+                                File(trip.coverPhotoPath!),
+                                fit: BoxFit.cover,
+                              ),
+                              DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.black.withValues(alpha: 0.1),
+                                      Colors.black.withValues(alpha: 0.6),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                left: 12,
+                                bottom: 10,
+                                right: 12,
+                                child: Wrap(
+                                  spacing: 6,
+                                  runSpacing: 4,
+                                  children: [
+                                    if (trip.destination != null &&
+                                        trip.destination!.trim().isNotEmpty)
+                                      _CoverOverlayChip(
+                                        icon: Icons.location_on,
+                                        label: trip.destination!.trim(),
+                                      ),
+                                    if (dateSpan != null)
+                                      _CoverOverlayChip(
+                                        icon: Icons.date_range,
+                                        label: dateSpan,
+                                      ),
+                                    if (trip.isCompleted)
+                                      const _CoverOverlayChip(
+                                        icon: Icons.check_circle,
+                                        label: 'Completed',
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    trip.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              trip.name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: theme.textTheme.titleMedium
+                                                  ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                          if (trip.isCompleted && !hasCover) ...[
+                                            const SizedBox(width: 8),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 2,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF10B981)
+                                                    .withValues(alpha: 0.14),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                              child: const Text(
+                                                'Completed',
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF059669),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${trip.days} ${trip.days == 1 ? "day" : "days"} • ${trip.travelers.length} ${trip.travelers.length == 1 ? "traveler" : "travelers"}${!hasCover && dateSpan != null ? " • $dateSpan" : ""}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${trip.days} ${trip.days == 1 ? "day" : "days"} • ${trip.travelers.length} ${trip.travelers.length == 1 ? "traveler" : "travelers"}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, size: 20),
+                                  color: Colors.grey.shade500,
+                                  onPressed: () =>
+                                      _confirmDelete(context, ref, trip),
+                                  tooltip: 'Delete trip',
+                                ),
+                              ],
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, size: 20),
-                              color: Colors.grey.shade500,
-                              onPressed: () =>
-                                  _confirmDelete(context, ref, trip),
-                              tooltip: 'Delete trip',
-                            ),
-                          ],
-                        ),
                         const SizedBox(height: 16),
                         Row(
                           children: [
@@ -433,6 +529,8 @@ class TripListScreen extends ConsumerWidget {
                                         widthFactor: 0.75,
                                         child: TravelerAvatar(
                                           name: trip.travelers[i].name,
+                                          avatarPath:
+                                              trip.travelers[i].avatarPath,
                                           radius: 12,
                                           fontSize: 9,
                                         ),
@@ -452,7 +550,9 @@ class TripListScreen extends ConsumerWidget {
                                   ],
                                 ),
                               ),
-                              if (trip.destination != null && trip.destination!.trim().isNotEmpty) ...[
+                              if (!hasCover &&
+                                  trip.destination != null &&
+                                  trip.destination!.trim().isNotEmpty) ...[
                                 const Spacer(),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -487,14 +587,52 @@ class TripListScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
-                ),
-              );
-            },
-          ),
-        ),
-      );
-    },
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     ),
   );
+  },
+  ),
+  );
+  }
+}
+
+class _CoverOverlayChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _CoverOverlayChip({
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

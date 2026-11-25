@@ -21,7 +21,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -46,6 +46,9 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(trips, trips.endDate);
             await m.addColumn(travelers, travelers.avatarPath);
             await m.addColumn(expenses, expenses.receiptImagePath);
+          }
+          if (from < 3) {
+            await m.addColumn(travelers, travelers.phone);
           }
         },
       );

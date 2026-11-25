@@ -6,6 +6,7 @@ import '../../../../core/gemini_receipt_scanner_service.dart';
 import '../../../../core/money.dart';
 import '../../../../core/receipt_parser.dart';
 import '../../../../core/receipt_scanner_service.dart';
+import '../../../../core/services/local_image_store.dart';
 
 /// Supported OCR engines for bill scanning.
 enum OcrEngine {
@@ -45,6 +46,7 @@ class _ReceiptScannerSheetState extends ConsumerState<ReceiptScannerSheet> {
 
   OcrEngine _selectedEngine = OcrEngine.onDevice;
   ReceiptData? _parsedReceipt;
+  String? _scannedImagePath;
   bool _isProcessing = false;
   String? _statusMessage;
 
@@ -54,7 +56,10 @@ class _ReceiptScannerSheetState extends ConsumerState<ReceiptScannerSheet> {
     super.dispose();
   }
 
-  void _parseCurrentText(String text) {
+  void _parseCurrentText(String text, {bool clearImage = true}) {
+    if (clearImage) {
+      _scannedImagePath = null;
+    }
     if (text.trim().isEmpty) {
       setState(() {
         _parsedReceipt = null;
@@ -64,7 +69,9 @@ class _ReceiptScannerSheetState extends ConsumerState<ReceiptScannerSheet> {
     }
 
     final service = ref.read(receiptScannerServiceProvider);
-    final parsed = service.parseText(text);
+    final parsed = service.parseText(text).copyWith(
+      imagePath: _scannedImagePath,
+    );
 
     setState(() {
       _parsedReceipt = parsed;
@@ -117,13 +124,20 @@ class _ReceiptScannerSheetState extends ConsumerState<ReceiptScannerSheet> {
         return;
       }
 
+      final persistedPath = await LocalImageStore.persistImage(
+        file.path,
+        folder: 'receipts',
+      );
+      _scannedImagePath = persistedPath;
+
       if (_selectedEngine == OcrEngine.geminiVision) {
         setState(() {
           _statusMessage = 'Analyzing bill with Gemini Vision AI model...';
         });
 
         final geminiService = ref.read(geminiReceiptScannerServiceProvider);
-        final receiptData = await geminiService.scanReceiptImage(file.path);
+        final receiptData = (await geminiService.scanReceiptImage(persistedPath))
+            .copyWith(imagePath: persistedPath);
 
         setState(() {
           _parsedReceipt = receiptData;
@@ -140,11 +154,11 @@ class _ReceiptScannerSheetState extends ConsumerState<ReceiptScannerSheet> {
         });
 
         final service = ref.read(receiptScannerServiceProvider);
-        final recognizedText = await service.recognizeTextFromImage(file.path);
+        final recognizedText = await service.recognizeTextFromImage(persistedPath);
 
         if (recognizedText.trim().isNotEmpty) {
           _textController.text = recognizedText.trim();
-          _parseCurrentText(recognizedText.trim());
+          _parseCurrentText(recognizedText.trim(), clearImage: false);
         } else {
           setState(() {
             _statusMessage =
@@ -240,7 +254,11 @@ class _ReceiptScannerSheetState extends ConsumerState<ReceiptScannerSheet> {
       return;
     }
 
-    widget.onReceiptApplied(_parsedReceipt!);
+    widget.onReceiptApplied(
+      _scannedImagePath != null
+          ? _parsedReceipt!.copyWith(imagePath: _scannedImagePath)
+          : _parsedReceipt!,
+    );
     Navigator.of(context).pop();
   }
 

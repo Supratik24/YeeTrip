@@ -62,6 +62,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Edit trip details'), findsOneWidget);
+      expect(find.byKey(const Key('edit_trip_destination_field')), findsOneWidget);
+      expect(find.byKey(const Key('trip_cover_picker_card')), findsOneWidget);
+      expect(find.byKey(const Key('trip_status_segmented')), findsOneWidget);
       expect(find.text('Goa Weekend 🌴'), findsOneWidget);
       expect(find.text('60000'), findsOneWidget);
       expect(find.text('4'), findsOneWidget);
@@ -154,6 +157,62 @@ void main() {
 
       // Aarav should still be present
       expect(find.text('Aarav'), findsOneWidget);
+    });
+
+    testWidgets('updates destination and marks trip status Completed', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      when(() => mockTripRepo.updateTripDetails(
+            tripId: any(named: 'tripId'),
+            name: any(named: 'name'),
+            totalBudgetPaise: any(named: 'totalBudgetPaise'),
+            days: any(named: 'days'),
+            destination: any(named: 'destination'),
+            clearDestination: any(named: 'clearDestination'),
+            coverPhotoPath: any(named: 'coverPhotoPath'),
+            clearCoverPhoto: any(named: 'clearCoverPhoto'),
+            status: any(named: 'status'),
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+            clearDates: any(named: 'clearDates'),
+          )).thenAnswer((_) async {});
+
+      when(() => mockTripRepo.updateTraveler(
+            travelerId: any(named: 'travelerId'),
+            name: any(named: 'name'),
+            upiVpa: any(named: 'upiVpa'),
+          )).thenAnswer((_) async {});
+
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+          find.byKey(const Key('edit_trip_destination_field')), 'North Goa');
+      await tester.tap(find.text('Completed'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('save_trip_changes_btn')));
+      await tester.pumpAndSettle();
+
+      verify(() => mockTripRepo.updateTripDetails(
+            tripId: 'trip-1',
+            name: 'Goa Weekend 🌴',
+            totalBudgetPaise: 6000000,
+            days: 4,
+            destination: 'North Goa',
+            clearDestination: false,
+            coverPhotoPath: null,
+            clearCoverPhoto: false,
+            status: 'completed',
+            startDate: null,
+            endDate: null,
+            clearDates: false,
+          )).called(1);
     });
   });
 }

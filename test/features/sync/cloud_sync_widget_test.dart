@@ -16,6 +16,7 @@ import 'package:yeetrip/data/local/app_database.dart' hide Traveler;
 import 'package:yeetrip/data/providers.dart';
 import 'package:yeetrip/features/sync/presentation/widgets/cloud_sync_sheet.dart';
 import 'package:yeetrip/features/sync/presentation/widgets/join_trip_dialog.dart';
+import 'package:yeetrip/features/sync/presentation/widgets/qr_scanner_dialog.dart';
 import 'package:yeetrip/features/trips/domain/trip_model.dart';
 import 'package:yeetrip/features/settings/presentation/screens/settings_screen.dart';
 import 'package:yeetrip/features/trips/presentation/screens/trip_list_screen.dart';
@@ -143,6 +144,10 @@ void main() {
 
       expect(find.text('Join Trip'), findsWidgets);
       expect(find.byKey(const Key('invite_code_input')), findsOneWidget);
+      expect(find.byKey(const Key('scan_invite_qr_btn')), findsOneWidget);
+
+      expect(QrScannerDialog.extractInviteCode('yeetrip://join?code=GOA-782'), 'GOA-782');
+      expect(QrScannerDialog.extractInviteCode('goa782'), 'GOA-782');
 
       // 1. Submit with empty code -> shows validation error
       await tester.tap(find.byKey(const Key('submit_join_trip_btn')));
@@ -231,8 +236,9 @@ void main() {
       await tester.tap(find.byKey(const Key('enable_cloud_sync_btn')));
       await tester.pumpAndSettle();
 
-      // Should now display invite code 'GOA-782' and Sync Now button
+      // Should now display invite code 'GOA-782', QR code, and Sync Now button
       expect(find.text('GOA-782'), findsOneWidget);
+      expect(find.byKey(const Key('trip_share_qr_code')), findsOneWidget);
       expect(find.byKey(const Key('copy_invite_code_btn')), findsOneWidget);
       expect(find.byKey(const Key('share_invite_code_btn')), findsOneWidget);
       expect(find.byKey(const Key('sync_now_btn')), findsOneWidget);

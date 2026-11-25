@@ -105,7 +105,7 @@ Important Rules:
         throw const GeminiReceiptException('Gemini did not return any response for this image.');
       }
 
-      return parseGeminiJsonResponse(responseText);
+      return parseGeminiJsonResponse(responseText).copyWith(imagePath: imagePath);
     } on GeminiReceiptException {
       rethrow;
     } catch (e) {

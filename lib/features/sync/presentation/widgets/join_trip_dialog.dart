@@ -8,6 +8,7 @@ import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/sync/sync_providers.dart';
 import '../../../auth/presentation/widgets/auth_modal.dart';
 import '../../../trips/domain/trip_model.dart';
+import 'qr_scanner_dialog.dart';
 
 /// Modal dialog allowing users to enter a 6-7 character Trip Invite Code
 /// and join a collaborative cloud trip.
@@ -138,6 +139,16 @@ class _JoinTripDialogState extends ConsumerState<JoinTripDialog> {
     }
   }
 
+  Future<void> _scanQrCode() async {
+    final code = await QrScannerDialog.show(context);
+    if (code != null && mounted) {
+      setState(() {
+        _controller.text = code;
+        _errorMessage = null;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -150,12 +161,13 @@ class _JoinTripDialogState extends ConsumerState<JoinTripDialog> {
           const Text('Join Trip'),
         ],
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Text(
-            'Enter the 6-character invite code shared by your friend to sync and collaborate on the trip.',
+            'Enter the 6-character invite code or scan your friend\'s QR code to join and collaborate.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -175,6 +187,12 @@ class _JoinTripDialogState extends ConsumerState<JoinTripDialog> {
               hintText: 'e.g. GOA-782',
               errorText: _errorMessage,
               prefixIcon: const Icon(Icons.key),
+              suffixIcon: IconButton(
+                key: const Key('scan_invite_qr_btn'),
+                icon: const Icon(Icons.qr_code_scanner),
+                tooltip: 'Scan Invite QR Code',
+                onPressed: _isLoading ? null : _scanQrCode,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -198,7 +216,8 @@ class _JoinTripDialogState extends ConsumerState<JoinTripDialog> {
             ),
             onSubmitted: (_) => _handleJoin(),
           ),
-        ],
+          ],
+        ),
       ),
       actions: [
         TextButton(

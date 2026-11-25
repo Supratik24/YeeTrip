@@ -30,6 +30,7 @@ class Travelers extends Table {
   TextColumn get name => text()();
   TextColumn get upiVpa => text().nullable()();
   TextColumn get avatarPath => text().nullable()();
+  TextColumn get phone => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

@@ -30,6 +30,8 @@ abstract class ExpenseRepository {
     required String paidBy,
     required DateTime createdAt,
     required List<ExpenseSplitModel> splits,
+    String? receiptImagePath,
+    bool clearReceiptImage = false,
   });
   Future<void> deleteExpense(String expenseId);
 }
@@ -137,6 +139,8 @@ class DriftExpenseRepository implements ExpenseRepository {
     required String paidBy,
     required DateTime createdAt,
     required List<ExpenseSplitModel> splits,
+    String? receiptImagePath,
+    bool clearReceiptImage = false,
   }) async {
     final totalSplitPaise =
         splits.fold<int>(0, (sum, s) => sum + s.sharePaise);
@@ -155,6 +159,11 @@ class DriftExpenseRepository implements ExpenseRepository {
           category: Value(category),
           paidBy: Value(paidBy),
           createdAt: Value(createdAt),
+          receiptImagePath: clearReceiptImage
+              ? const Value(null)
+              : (receiptImagePath != null
+                  ? Value(receiptImagePath)
+                  : const Value.absent()),
         ),
       );
 

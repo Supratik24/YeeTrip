@@ -23,6 +23,7 @@ abstract class TripRepository {
     String? status,
     DateTime? startDate,
     DateTime? endDate,
+    Map<String, String>? travelerPhones,
   });
   Future<void> deleteTrip(String tripId);
   Future<void> updateCategoryAllocations(
@@ -34,16 +35,29 @@ abstract class TripRepository {
     required String name,
     required int totalBudgetPaise,
     required int days,
+    String? destination,
+    bool clearDestination = false,
+    String? coverPhotoPath,
+    bool clearCoverPhoto = false,
+    String? status,
+    DateTime? startDate,
+    DateTime? endDate,
+    bool clearDates = false,
   });
   Future<String> addTraveler({
     required String tripId,
     required String name,
     String? upiVpa,
+    String? avatarPath,
+    String? phone,
   });
   Future<void> updateTraveler({
     required String travelerId,
     required String name,
     String? upiVpa,
+    String? avatarPath,
+    bool clearAvatarPath = false,
+    String? phone,
   });
   Future<bool> canDeleteTraveler(String travelerId);
   Future<void> deleteTraveler(String travelerId);
@@ -117,6 +131,7 @@ class DriftTripRepository implements TripRepository {
     String? status,
     DateTime? startDate,
     DateTime? endDate,
+    Map<String, String>? travelerPhones,
   }) async {
     final tripId = _uuid.v4();
     final now = DateTime.now();
@@ -140,12 +155,15 @@ class DriftTripRepository implements TripRepository {
 
       // 2. Insert Travelers
       for (final travelerName in travelerNames) {
+        final trimmedName = travelerName.trim();
         final travelerId = _uuid.v4();
+        final phone = travelerPhones?[trimmedName]?.trim();
         await _db.into(_db.travelers).insert(
               TravelersCompanion.insert(
                 id: travelerId,
                 tripId: tripId,
-                name: travelerName.trim(),
+                name: trimmedName,
+                phone: Value(phone != null && phone.isNotEmpty ? phone : null),
               ),
             );
       }
@@ -204,12 +222,33 @@ class DriftTripRepository implements TripRepository {
     required String name,
     required int totalBudgetPaise,
     required int days,
+    String? destination,
+    bool clearDestination = false,
+    String? coverPhotoPath,
+    bool clearCoverPhoto = false,
+    String? status,
+    DateTime? startDate,
+    DateTime? endDate,
+    bool clearDates = false,
   }) async {
     await (_db.update(_db.trips)..where((t) => t.id.equals(tripId))).write(
       TripsCompanion(
         name: Value(name.trim()),
         totalBudgetPaise: Value(totalBudgetPaise),
         days: Value(days),
+        destination: clearDestination
+            ? const Value(null)
+            : (destination != null ? Value(destination.trim()) : const Value.absent()),
+        coverPhotoPath: clearCoverPhoto
+            ? const Value(null)
+            : (coverPhotoPath != null ? Value(coverPhotoPath) : const Value.absent()),
+        status: status != null ? Value(status) : const Value.absent(),
+        startDate: clearDates
+            ? const Value(null)
+            : (startDate != null ? Value(startDate) : const Value.absent()),
+        endDate: clearDates
+            ? const Value(null)
+            : (endDate != null ? Value(endDate) : const Value.absent()),
       ),
     );
   }
@@ -219,9 +258,12 @@ class DriftTripRepository implements TripRepository {
     required String tripId,
     required String name,
     String? upiVpa,
+    String? avatarPath,
+    String? phone,
   }) async {
     final travelerId = _uuid.v4();
     final effectiveVpa = upiVpa?.trim();
+    final effectivePhone = phone?.trim();
     await _db.into(_db.travelers).insert(
           TravelersCompanion.insert(
             id: travelerId,
@@ -230,6 +272,12 @@ class DriftTripRepository implements TripRepository {
             upiVpa: Value(
               effectiveVpa != null && effectiveVpa.isNotEmpty
                   ? effectiveVpa
+                  : null,
+            ),
+            avatarPath: Value(avatarPath),
+            phone: Value(
+              effectivePhone != null && effectivePhone.isNotEmpty
+                  ? effectivePhone
                   : null,
             ),
           ),
@@ -245,14 +293,24 @@ class DriftTripRepository implements TripRepository {
     required String travelerId,
     required String name,
     String? upiVpa,
+    String? avatarPath,
+    bool clearAvatarPath = false,
+    String? phone,
   }) async {
     final effectiveVpa = upiVpa?.trim();
+    final effectivePhone = phone?.trim();
     await (_db.update(_db.travelers)..where((t) => t.id.equals(travelerId))).write(
       TravelersCompanion(
         name: Value(name.trim()),
         upiVpa: Value(
           effectiveVpa != null && effectiveVpa.isNotEmpty ? effectiveVpa : null,
         ),
+        avatarPath: clearAvatarPath
+            ? const Value(null)
+            : (avatarPath != null ? Value(avatarPath) : const Value.absent()),
+        phone: effectivePhone != null
+            ? Value(effectivePhone.isNotEmpty ? effectivePhone : null)
+            : const Value.absent(),
       ),
     );
     _db.notifyUpdates(
@@ -306,6 +364,7 @@ class DriftTripRepository implements TripRepository {
               name: t.name,
               upiVpa: t.upiVpa,
               avatarPath: t.avatarPath,
+              phone: t.phone,
             ))
         .toList();
 

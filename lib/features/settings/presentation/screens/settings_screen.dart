@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -103,27 +104,61 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Restore trip from backup'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Paste the contents of a .yeetrip.json backup file below to restore the trip and its expenses:',
-              style: TextStyle(fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              key: const Key('restore_trip_json_field'),
-              controller: textController,
-              maxLines: 6,
-              decoration: const InputDecoration(
-                hintText: '{\n  "version": 1,\n  "trip": { ... }\n}',
-                border: OutlineInputBorder(),
-                isDense: true,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonalIcon(
+                  key: const Key('pick_backup_file_btn'),
+                  icon: const Icon(Icons.folder_open),
+                  label: const Text('Choose .json backup file'),
+                  onPressed: () async {
+                    try {
+                      final picked = await FilePicker.pickFiles(
+                        type: FileType.custom,
+                        allowedExtensions: const ['json'],
+                      );
+                      if (picked.isEmpty) return;
+                      final file = picked.first;
+                      final jsonContent = await file.xFile.readAsString();
+                      if (jsonContent.trim().isNotEmpty) {
+                        textController.text = jsonContent;
+                        if (ctx.mounted) {
+                          Navigator.of(ctx).pop(true);
+                        }
+                      }
+                    } catch (e) {
+                      if (ctx.mounted) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          SnackBar(content: Text('Could not read file: $e')),
+                        );
+                      }
+                    }
+                  },
+                ),
               ),
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-            ),
-          ],
+              const SizedBox(height: 12),
+              const Text(
+                'Or paste the contents of a .yeetrip.json backup below:',
+                style: TextStyle(fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                key: const Key('restore_trip_json_field'),
+                controller: textController,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                  hintText: '{\n  "version": 1,\n  "trip": { ... }\n}',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(

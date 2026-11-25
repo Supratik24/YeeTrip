@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +12,7 @@ import '../../../../data/providers.dart';
 import '../../../trips/domain/trip_model.dart';
 import '../../domain/expense_filter.dart';
 import '../../domain/expense_model.dart';
+import '../widgets/receipt_preview_dialog.dart';
 
 /// Screen listing all trip expenses with search, sort, and category/payer filters.
 class ExpenseListScreen extends ConsumerStatefulWidget {
@@ -322,6 +325,9 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                     final exp = filtered[index];
                     final payerName = travelersMap[exp.paidBy] ?? 'Unknown';
                     final color = _categoryColor(exp.category);
+                    final hasReceiptPhoto = exp.receiptImagePath != null &&
+                        exp.receiptImagePath!.isNotEmpty &&
+                        File(exp.receiptImagePath!).existsSync();
 
                     return Dismissible(
                       key: Key('expense_${exp.id}'),
@@ -362,6 +368,53 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 12),
+
+                                if (hasReceiptPhoto) ...[
+                                  InkWell(
+                                    key: Key('receipt_thumb_${exp.id}'),
+                                    borderRadius: BorderRadius.circular(8),
+                                    onTap: () => ReceiptPreviewDialog.show(
+                                      context,
+                                      imagePath: exp.receiptImagePath!,
+                                      title: exp.description,
+                                      subtitle:
+                                          '${Money.formatRupees(exp.amountPaise)} • ${exp.category}',
+                                    ),
+                                    child: Stack(
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          child: Image.file(
+                                            File(exp.receiptImagePath!),
+                                            width: 44,
+                                            height: 44,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                        Positioned(
+                                          right: 2,
+                                          bottom: 2,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black
+                                                  .withValues(alpha: 0.65),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: const Icon(
+                                              Icons.receipt_long,
+                                              size: 11,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                ],
 
                                 // Details
                                 Expanded(

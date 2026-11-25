@@ -32,6 +32,13 @@ class TripBackupService {
         'days': trip.days,
         'currency': trip.currency,
         'createdAt': trip.createdAt.toUtc().toIso8601String(),
+        if (trip.destination != null && trip.destination!.isNotEmpty)
+          'destination': trip.destination,
+        'status': trip.status,
+        if (trip.startDate != null)
+          'startDate': trip.startDate!.toUtc().toIso8601String(),
+        if (trip.endDate != null)
+          'endDate': trip.endDate!.toUtc().toIso8601String(),
         'categoryAllocations': trip.categoryAllocations,
         'travelers': trip.travelers
             .map((t) => {
@@ -39,6 +46,7 @@ class TripBackupService {
                   'name': t.name,
                   if (t.upiVpa != null && t.upiVpa!.isNotEmpty)
                     'upiVpa': t.upiVpa,
+                  if (t.phone != null && t.phone!.isNotEmpty) 'phone': t.phone,
                 })
             .toList(),
       },
@@ -155,6 +163,7 @@ class TripBackupService {
       final oldId = raw['id'] as String?;
       final name = (raw['name'] as String?)?.trim();
       final upiVpa = (raw['upiVpa'] as String?)?.trim();
+      final phone = (raw['phone'] as String?)?.trim();
 
       if (name == null || name.isEmpty) {
         throw const FormatException('Traveler name cannot be blank');
@@ -171,6 +180,7 @@ class TripBackupService {
           tripId: '', // Will be set to newTripId
           name: name,
           upiVpa: (upiVpa != null && upiVpa.isNotEmpty) ? upiVpa : null,
+          phone: (phone != null && phone.isNotEmpty) ? phone : null,
         ),
       );
     }
@@ -282,6 +292,12 @@ class TripBackupService {
     // 5. Atomic SQLite Transaction
     final newTripId = _uuid.v4();
     final now = DateTime.now();
+    final destination = (tripData['destination'] as String?)?.trim();
+    final status = (tripData['status'] as String?)?.trim();
+    final startDateStr = tripData['startDate'] as String?;
+    final endDateStr = tripData['endDate'] as String?;
+    final startDate = startDateStr != null ? DateTime.tryParse(startDateStr)?.toLocal() : null;
+    final endDate = endDateStr != null ? DateTime.tryParse(endDateStr)?.toLocal() : null;
 
     await _db.transaction(() async {
       // 5.1 Insert Trip
@@ -292,6 +308,12 @@ class TripBackupService {
               totalBudgetPaise: totalBudgetPaise,
               days: days,
               createdAt: now,
+              destination: Value(
+                destination != null && destination.isNotEmpty ? destination : null,
+              ),
+              status: Value(status == 'completed' ? 'completed' : 'active'),
+              startDate: Value(startDate),
+              endDate: Value(endDate),
             ),
           );
 
@@ -303,6 +325,7 @@ class TripBackupService {
                 tripId: newTripId,
                 name: t.name,
                 upiVpa: Value(t.upiVpa),
+                phone: Value(t.phone),
               ),
             );
       }

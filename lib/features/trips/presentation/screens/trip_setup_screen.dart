@@ -10,6 +10,7 @@ import '../../../../core/widgets/traveler_avatar.dart';
 import '../../../../data/providers.dart';
 import '../../../auth/presentation/widgets/auth_modal.dart';
 import '../widgets/contact_picker_sheet.dart';
+import '../widgets/trip_cover_picker.dart';
 
 /// Helper to manage controller and focus node for a traveler field.
 class _TravelerField {
@@ -49,7 +50,11 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
   final _daysFocusNode = FocusNode();
 
   final List<_TravelerField> _travelers = [];
+  final Map<String, String> _travelerPhones = {};
 
+  String? _coverPhotoPath;
+  DateTime? _startDate;
+  DateTime? _endDate;
   String? _travelersError;
   bool _isSubmitting = false;
 
@@ -120,6 +125,10 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
       for (final contact in results) {
         final name = contact.name.trim();
         if (name.isEmpty) continue;
+        final phone = contact.phoneNumber?.trim();
+        if (phone != null && phone.isNotEmpty) {
+          _travelerPhones[name] = phone;
+        }
 
         // If the first traveler is still default 'You' and not modified, replace it
         if (_travelers.length == 1 && _travelers[0].controller.text.trim() == 'You') {
@@ -249,6 +258,11 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
         days: days,
         travelerNames: travelerNames,
         destination: destination.isNotEmpty ? destination : null,
+        coverPhotoPath: _coverPhotoPath,
+        startDate: _startDate,
+        endDate: _endDate,
+        travelerPhones:
+            _travelerPhones.isNotEmpty ? _travelerPhones : null,
       );
 
       // Auto-link traveler profile and default UPI to the new trip
@@ -288,10 +302,12 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
         child: ResponsiveCenter(
           child: Form(
             key: _formKey,
-            child: ListView(
+            child: SingleChildScrollView(
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              children: [
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                 if (isGuest) ...[
                   Container(
                     margin: const EdgeInsets.only(bottom: 16),
@@ -364,6 +380,30 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
                     prefixIcon: Icon(Icons.location_on_outlined, size: 20),
                   ),
                   textCapitalization: TextCapitalization.words,
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 14),
+
+                // Cover Photo & Travel Dates (optional)
+                TripCoverAndDatesPicker(
+                  coverPhotoPath: _coverPhotoPath,
+                  destinationPreview: _destinationController.text,
+                  startDate: _startDate,
+                  endDate: _endDate,
+                  onCoverChanged: (path) =>
+                      setState(() => _coverPhotoPath = path),
+                  onDatesChanged: (start, end) {
+                    setState(() {
+                      _startDate = start;
+                      _endDate = end;
+                      if (start != null && end != null) {
+                        final computed = end.difference(start).inDays + 1;
+                        if (computed >= 1) {
+                          _daysController.text = computed.toString();
+                        }
+                      }
+                    });
+                  },
                 ),
                 const SizedBox(height: 16),
 
@@ -573,7 +613,8 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
                         )
                       : const Text('Create trip'),
                 ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

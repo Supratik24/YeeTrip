@@ -51,6 +51,7 @@ void main() {
     expect(find.text('Amount (₹)'), findsOneWidget);
     expect(find.text('Category'), findsOneWidget);
     expect(find.text('Paid by'), findsOneWidget);
+    expect(find.byKey(const Key('receipt_attachment_card')), findsOneWidget);
     expect(find.text('Split method'), findsOneWidget);
 
     // Verify split mode options exist

@@ -5,6 +5,7 @@ class Traveler {
   final String name;
   final String? upiVpa;
   final String? avatarPath;
+  final String? phone;
 
   const Traveler({
     required this.id,
@@ -12,6 +13,7 @@ class Traveler {
     required this.name,
     this.upiVpa,
     this.avatarPath,
+    this.phone,
   });
 
   Traveler copyWith({
@@ -20,6 +22,7 @@ class Traveler {
     String? name,
     String? upiVpa,
     String? avatarPath,
+    String? phone,
   }) {
     return Traveler(
       id: id ?? this.id,
@@ -27,6 +30,7 @@ class Traveler {
       name: name ?? this.name,
       upiVpa: upiVpa ?? this.upiVpa,
       avatarPath: avatarPath ?? this.avatarPath,
+      phone: phone ?? this.phone,
     );
   }
 
@@ -39,10 +43,12 @@ class Traveler {
           tripId == other.tripId &&
           name == other.name &&
           upiVpa == other.upiVpa &&
-          avatarPath == other.avatarPath;
+          avatarPath == other.avatarPath &&
+          phone == other.phone;
 
   @override
-  int get hashCode => Object.hash(id, tripId, name, upiVpa, avatarPath);
+  int get hashCode =>
+      Object.hash(id, tripId, name, upiVpa, avatarPath, phone);
 }
 
 /// Domain model for a Trip with its travelers, allocations, and spent summary.

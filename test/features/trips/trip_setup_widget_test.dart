@@ -20,15 +20,20 @@ void main() {
     expect(find.text('Plan new trip'), findsOneWidget);
     expect(find.textContaining('Sign-in required'), findsOneWidget);
     expect(find.byKey(const Key('trip_name_field')), findsOneWidget);
+    expect(find.byKey(const Key('trip_cover_picker_card')), findsOneWidget);
+    expect(find.byKey(const Key('trip_date_range_btn')), findsOneWidget);
     expect(find.byKey(const Key('total_budget_field')), findsOneWidget);
     expect(find.byKey(const Key('days_field')), findsOneWidget);
     expect(find.byKey(const Key('create_trip_button')), findsOneWidget);
 
     // Tap "Create trip" button without entering required name and budget
-    await tester.tap(find.byKey(const Key('create_trip_button')));
+    final createBtn = find.byKey(const Key('create_trip_button'));
+    await tester.ensureVisible(createBtn);
+    await tester.tap(createBtn);
     await tester.pumpAndSettle();
 
     // Verify inline validation error messages
+    await tester.ensureVisible(find.byKey(const Key('trip_name_field')));
     expect(find.text('Trip name is required'), findsOneWidget);
     expect(find.text('Budget is required'), findsOneWidget);
 
@@ -36,7 +41,8 @@ void main() {
     await tester.enterText(find.byKey(const Key('trip_name_field')), 'Goa Trip');
     // Enter invalid budget
     await tester.enterText(find.byKey(const Key('total_budget_field')), '-500');
-    await tester.tap(find.byKey(const Key('create_trip_button')));
+    await tester.ensureVisible(createBtn);
+    await tester.tap(createBtn);
     await tester.pumpAndSettle();
 
     // Verify name error cleared, budget error updated
@@ -45,6 +51,7 @@ void main() {
 
     // Add another traveler
     final addPersonButton = find.widgetWithText(TextButton, 'Add person');
+    await tester.ensureVisible(addPersonButton);
     expect(addPersonButton, findsOneWidget);
     await tester.tap(addPersonButton);
     await tester.pumpAndSettle();
