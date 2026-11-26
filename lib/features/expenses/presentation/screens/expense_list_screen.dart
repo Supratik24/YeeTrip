@@ -12,6 +12,7 @@ import '../../../../data/providers.dart';
 import '../../../trips/domain/trip_model.dart';
 import '../../domain/expense_filter.dart';
 import '../../domain/expense_model.dart';
+import '../widgets/expense_comments_sheet.dart';
 import '../widgets/receipt_preview_dialog.dart';
 
 /// Screen listing all trip expenses with search, sort, and category/payer filters.
@@ -104,7 +105,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                 controller: _searchController,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: 'Search description, category...',
+                  hintText: 'Search description, #tags, notes...',
                   border: InputBorder.none,
                   hintStyle: TextStyle(color: Colors.grey.shade400),
                 ),
@@ -224,6 +225,28 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                     selected: _criteria.paidByTravelerId != 'All',
                     onSelected: (_) {
                       _showPayerFilterSheet(travelersMap);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Tag Filter
+                  FilterChip(
+                    key: const Key('tag_filter_chip'),
+                    label: Text(
+                      _criteria.tag == 'All'
+                          ? 'Tag: All'
+                          : 'Tag: #${_criteria.tag}',
+                    ),
+                    selected: _criteria.tag != 'All',
+                    onSelected: (_) {
+                      final allTags = <String>{
+                        for (final e
+                            in expensesAsync.asData?.value ??
+                                const <ExpenseWithSplits>[])
+                          ...e.tags,
+                      }.toList()
+                        ..sort();
+                      _showTagFilterSheet(allTags);
                     },
                   ),
 
@@ -378,7 +401,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                                       imagePath: exp.receiptImagePath!,
                                       title: exp.description,
                                       subtitle:
-                                          '${Money.formatRupees(exp.amountPaise)} • ${exp.category}',
+                                          '${Money.formatAmount(exp.amountPaise, currencyCode: widget.trip.currency)} • ${exp.category}',
                                     ),
                                     child: Stack(
                                       children: [
@@ -487,6 +510,154 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                                           ),
                                         ],
                                       ),
+                                      if (exp.notes != null &&
+                                          exp.notes!.trim().isNotEmpty) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          exp.notes!.trim(),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontStyle: FontStyle.italic,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                      const SizedBox(height: 5),
+                                      Wrap(
+                                        spacing: 5,
+                                        runSpacing: 4,
+                                        crossAxisAlignment:
+                                            WrapCrossAlignment.center,
+                                        children: [
+                                          if (exp.originalCurrency != null &&
+                                              exp.originalAmountPaise != null)
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 6,
+                                                vertical: 2,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: theme.colorScheme
+                                                    .secondaryContainer,
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                Money.formatAmount(
+                                                  exp.originalAmountPaise!,
+                                                  currencyCode:
+                                                      exp.originalCurrency!,
+                                                ),
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: theme.colorScheme
+                                                      .onSecondaryContainer,
+                                                ),
+                                              ),
+                                            ),
+                                          ...exp.tags.take(3).map(
+                                                (tag) => Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 6,
+                                                    vertical: 2,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: theme.colorScheme
+                                                        .surfaceContainerHighest,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                      6,
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    '#$tag',
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      color: theme.colorScheme
+                                                          .onSurfaceVariant,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                          InkWell(
+                                            key: Key(
+                                              'expense_comments_btn_${exp.id}',
+                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                            onTap: () =>
+                                                ExpenseCommentsSheet.show(
+                                              context,
+                                              trip: widget.trip,
+                                              expense: exp,
+                                            ),
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 6,
+                                                vertical: 2,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: exp.openDisputeCount > 0
+                                                    ? theme.colorScheme
+                                                        .errorContainer
+                                                    : theme.colorScheme
+                                                        .primaryContainer
+                                                        .withValues(
+                                                        alpha: 0.4,
+                                                      ),
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    exp.openDisputeCount > 0
+                                                        ? Icons.flag
+                                                        : Icons
+                                                            .chat_bubble_outline,
+                                                    size: 11,
+                                                    color:
+                                                        exp.openDisputeCount > 0
+                                                            ? theme.colorScheme
+                                                                .error
+                                                            : theme.colorScheme
+                                                                .primary,
+                                                  ),
+                                                  const SizedBox(width: 3),
+                                                  Text(
+                                                    exp.openDisputeCount > 0
+                                                        ? '${exp.openDisputeCount} dispute'
+                                                        : (exp.commentCount > 0
+                                                            ? '${exp.commentCount}'
+                                                            : 'Comment'),
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color:
+                                                          exp.openDisputeCount >
+                                                                  0
+                                                              ? theme
+                                                                  .colorScheme
+                                                                  .error
+                                                              : theme
+                                                                  .colorScheme
+                                                                  .primary,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -498,7 +669,10 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text(
-                                      Money.formatRupees(exp.amountPaise),
+                                      Money.formatAmount(
+                                        exp.amountPaise,
+                                        currencyCode: widget.trip.currency,
+                                      ),
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 15,
@@ -596,6 +770,51 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                       Navigator.of(ctx).pop();
                     },
                   )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showTagFilterSheet(List<String> availableTags) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('All tags'),
+                selected: _criteria.tag == 'All',
+                onTap: () {
+                  setState(() {
+                    _criteria = _criteria.copyWith(tag: 'All');
+                  });
+                  Navigator.of(ctx).pop();
+                },
+              ),
+              if (availableTags.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('No tags logged in this trip yet.'),
+                )
+              else
+                ...availableTags.map(
+                  (tag) => ListTile(
+                    leading: const Icon(Icons.tag, size: 18),
+                    title: Text('#$tag'),
+                    selected: _criteria.tag.toLowerCase() == tag.toLowerCase(),
+                    onTap: () {
+                      setState(() {
+                        _criteria = _criteria.copyWith(tag: tag);
+                      });
+                      Navigator.of(ctx).pop();
+                    },
+                  ),
+                ),
             ],
           ),
         ),
