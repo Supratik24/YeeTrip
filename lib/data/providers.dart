@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/expenses/domain/expense_comment_model.dart';
 import '../features/expenses/domain/expense_model.dart';
+import '../features/gallery/domain/trip_photo_model.dart';
 import '../features/itinerary/domain/itinerary_model.dart';
 import '../features/trips/domain/trip_model.dart';
 import '../features/trips/services/trip_backup_service.dart';
@@ -10,6 +11,7 @@ import 'local/connection/connection.dart';
 import 'repositories/expense_comment_repository.dart';
 import 'repositories/expense_repository.dart';
 import 'repositories/itinerary_repository.dart';
+import 'repositories/trip_photo_repository.dart';
 import 'repositories/trip_repository.dart';
 
 /// Database provider. Can be overridden in tests.
@@ -42,6 +44,12 @@ final expenseCommentRepositoryProvider =
     Provider<ExpenseCommentRepository>((ref) {
   final db = ref.watch(databaseProvider);
   return DriftExpenseCommentRepository(db);
+});
+
+/// TripPhotoRepository provider.
+final tripPhotoRepositoryProvider = Provider<TripPhotoRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return DriftTripPhotoRepository(db);
 });
 
 /// TripBackupService provider.
@@ -82,4 +90,11 @@ final expenseCommentsProvider =
     StreamProvider.family<List<ExpenseCommentModel>, String>((ref, expenseId) {
   final repo = ref.watch(expenseCommentRepositoryProvider);
   return repo.watchCommentsForExpense(expenseId);
+});
+
+/// Stream of shared gallery photos for a specific trip.
+final tripPhotosProvider =
+    StreamProvider.family<List<TripPhotoModel>, String>((ref, tripId) {
+  final repo = ref.watch(tripPhotoRepositoryProvider);
+  return repo.watchPhotos(tripId);
 });
