@@ -613,14 +613,40 @@ class _ReceiptScannerSheetState extends ConsumerState<ReceiptScannerSheet> {
                               ),
                               if (_parsedReceipt!.items.isNotEmpty) ...[
                                 const Divider(height: 16),
-                                Text(
-                                  'Items Detected:',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'Items Detected:',
+                                        style: theme.textTheme.labelSmall?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    if (_parsedReceipt!.lineItems
+                                        .where((i) => !i.isTaxOrFee)
+                                        .isNotEmpty)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: theme.colorScheme.secondaryContainer,
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Text(
+                                          '${_parsedReceipt!.lineItems.where((i) => !i.isTaxOrFee).length} splittable items',
+                                          style: theme.textTheme.labelSmall?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: theme.colorScheme.onSecondaryContainer,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                                 const SizedBox(height: 4),
-                                ..._parsedReceipt!.items.take(4).map(
+                                ..._parsedReceipt!.items.take(6).map(
                                       (it) => Padding(
                                         padding: const EdgeInsets.only(left: 4, bottom: 2),
                                         child: Text(
