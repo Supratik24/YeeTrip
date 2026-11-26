@@ -7,11 +7,13 @@ import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/locale_provider.dart';
 import '../../../../core/money.dart';
 import '../../../../core/notifications/notification_providers.dart';
+import '../../../../core/theme_provider.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/widgets/auth_modal.dart';
 import '../../../auth/presentation/widgets/edit_profile_dialog.dart';
+import '../../../dashboard/presentation/widgets/trip_share_card_sheet.dart';
 import '../../../sync/presentation/widgets/cloud_sync_sheet.dart';
 import '../../../trips/domain/trip_model.dart';
 import '../../../trips/services/trip_backup_service.dart';
@@ -81,10 +83,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final itinerary = await ref
           .read(itineraryRepositoryProvider)
           .getItinerary(widget.trip.id);
+      final photos = await ref
+          .read(tripPhotoRepositoryProvider)
+          .getPhotos(widget.trip.id);
       await TripBackupService.exportAndShareBackup(
         trip: widget.trip,
         expenses: expenses,
         itinerary: itinerary,
+        photos: photos,
       );
     } catch (e) {
       if (mounted) {
@@ -434,6 +440,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 16),
 
+          // Appearance / Dark Mode Toggle Card
+          _buildAppearanceCard(context, ref),
+          const SizedBox(height: 16),
+
           // Data Export Card
           Card(
             elevation: 0,
@@ -501,6 +511,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       label: Text(
                         _isBackingUp ? 'Creating backup...' : 'Backup trip (.json)',
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.tonalIcon(
+                      key: const Key('settings_share_card_btn'),
+                      onPressed: () => TripShareCardSheet.show(
+                        context,
+                        trip: widget.trip,
+                        expenses: expensesAsync.value ?? const [],
+                      ),
+                      icon: const Icon(Icons.ios_share_rounded),
+                      label: const Text('Share Trip Summary Card'),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -939,6 +963,81 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 },
                 icon: const Icon(Icons.notifications_outlined, size: 18),
                 label: const Text('Send test notification'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppearanceCard(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final themeMode = ref.watch(appThemeModeProvider);
+
+    return Card(
+      key: const Key('appearance_settings_card'),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.dark_mode_outlined, color: colorScheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Appearance',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Choose System, Light, or Dark mode independently of your phone settings.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<ThemeMode>(
+                key: const Key('theme_mode_segmented_button'),
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment<ThemeMode>(
+                    value: ThemeMode.system,
+                    icon: Icon(Icons.brightness_auto_outlined, size: 16),
+                    label: Text('System'),
+                  ),
+                  ButtonSegment<ThemeMode>(
+                    value: ThemeMode.light,
+                    icon: Icon(Icons.light_mode_outlined, size: 16),
+                    label: Text('Light'),
+                  ),
+                  ButtonSegment<ThemeMode>(
+                    value: ThemeMode.dark,
+                    icon: Icon(Icons.dark_mode_outlined, size: 16),
+                    label: Text('Dark'),
+                  ),
+                ],
+                selected: {themeMode},
+                onSelectionChanged: (selectedSet) {
+                  ref
+                      .read(appThemeModeProvider.notifier)
+                      .setThemeMode(selectedSet.first);
+                },
               ),
             ),
           ],
