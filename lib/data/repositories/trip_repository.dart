@@ -24,6 +24,7 @@ abstract class TripRepository {
     DateTime? startDate,
     DateTime? endDate,
     Map<String, String>? travelerPhones,
+    String currency = 'INR',
   });
   Future<void> deleteTrip(String tripId);
   Future<void> updateCategoryAllocations(
@@ -43,6 +44,7 @@ abstract class TripRepository {
     DateTime? startDate,
     DateTime? endDate,
     bool clearDates = false,
+    String? currency,
   });
   Future<String> addTraveler({
     required String tripId,
@@ -132,6 +134,7 @@ class DriftTripRepository implements TripRepository {
     DateTime? startDate,
     DateTime? endDate,
     Map<String, String>? travelerPhones,
+    String currency = 'INR',
   }) async {
     final tripId = _uuid.v4();
     final now = DateTime.now();
@@ -144,6 +147,7 @@ class DriftTripRepository implements TripRepository {
               name: name.trim(),
               totalBudgetPaise: totalBudgetPaise,
               days: days,
+              currency: Value(currency.toUpperCase()),
               createdAt: now,
               destination: Value(destination),
               coverPhotoPath: Value(coverPhotoPath),
@@ -187,7 +191,7 @@ class DriftTripRepository implements TripRepository {
   @override
   Future<void> deleteTrip(String tripId) async {
     // Foreign keys with cascade delete are configured, so deleting the trip
-    // deletes its travelers, category allocations, expenses, and splits.
+    // deletes its travelers, category allocations, expenses, splits, itinerary, and comments.
     await (_db.delete(_db.trips)..where((t) => t.id.equals(tripId))).go();
   }
 
@@ -230,12 +234,16 @@ class DriftTripRepository implements TripRepository {
     DateTime? startDate,
     DateTime? endDate,
     bool clearDates = false,
+    String? currency,
   }) async {
     await (_db.update(_db.trips)..where((t) => t.id.equals(tripId))).write(
       TripsCompanion(
         name: Value(name.trim()),
         totalBudgetPaise: Value(totalBudgetPaise),
         days: Value(days),
+        currency: currency != null
+            ? Value(currency.trim().toUpperCase())
+            : const Value.absent(),
         destination: clearDestination
             ? const Value(null)
             : (destination != null ? Value(destination.trim()) : const Value.absent()),
@@ -390,6 +398,27 @@ class DriftTripRepository implements TripRepository {
       (sum, e) => sum + e.amountPaise,
     );
 
+    // Load itinerary summary
+    final itineraryRows = await (_db.select(_db.itineraryItems)
+          ..where((i) => i.tripId.equals(row.id))
+          ..orderBy([
+            (i) => OrderingTerm.asc(i.dayNumber),
+            (i) => OrderingTerm.asc(i.startTimeMinutes),
+            (i) => OrderingTerm.asc(i.sortOrder),
+          ]))
+        .get();
+
+    final itineraryTotalCount = itineraryRows.length;
+    final itineraryCompletedCount =
+        itineraryRows.where((i) => i.isCompleted).length;
+    String? nextItineraryTitle;
+    for (final item in itineraryRows) {
+      if (!item.isCompleted) {
+        nextItineraryTitle = 'Day ${item.dayNumber}: ${item.title}';
+        break;
+      }
+    }
+
     return TripWithDetails(
       id: row.id,
       name: row.name,
@@ -405,6 +434,9 @@ class DriftTripRepository implements TripRepository {
       status: row.status,
       startDate: row.startDate,
       endDate: row.endDate,
+      itineraryTotalCount: itineraryTotalCount,
+      itineraryCompletedCount: itineraryCompletedCount,
+      nextItineraryTitle: nextItineraryTitle,
     );
   }
 }
