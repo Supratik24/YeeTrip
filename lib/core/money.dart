@@ -1,12 +1,20 @@
+import 'constants/currencies.dart';
+
 /// Pure Dart money utilities for YeeTrip.
 ///
 /// NON-NEGOTIABLE RULES:
-/// 1. All money is stored and calculated as integer paise. Never use double.
-/// 2. Display amounts in Indian numbering grouping (e.g. ₹1,25,000 and ₹2,400.50).
+/// 1. All money is stored and calculated as integer minor units (e.g. paise/cents). Never use double for accounting sums.
+/// 2. Display INR amounts in Indian numbering grouping (e.g. ₹1,25,000 and ₹2,400.50),
+///    and foreign currencies in standard international 3-digit grouping (e.g. $125,000).
 class Money {
   Money._();
 
-  /// Converts integer paise to a standard decimal string (e.g., 240050 -> "2400.50", 5 -> "0.05").
+  /// Returns the symbol for a currency code (defaults to ₹ for INR).
+  static String symbolFor(String currencyCode) {
+    return TripCurrency.fromCode(currencyCode).symbol;
+  }
+
+  /// Converts integer minor units (paise/cents) to a standard decimal string (e.g., 240050 -> "2400.50", 5 -> "0.05").
   static String paiseToDecimalString(int paise) {
     final isNegative = paise < 0;
     final absPaise = paise.abs();
@@ -17,7 +25,7 @@ class Money {
     return '$sign$rupees.$paiseStr';
   }
 
-  /// Parses a decimal string (in rupees) into integer paise.
+  /// Parses a decimal string into integer minor units (1 unit = 100 minor units).
   ///
   /// Accepts:
   /// - "2400" -> 240000
@@ -70,11 +78,46 @@ class Money {
             ? int.parse(decimalPart) * 10
             : int.parse(decimalPart));
 
-    // Guard against integer overflow
     return rupees * 100 + paise;
   }
 
-  /// Formats integer paise in the Indian numbering system with ₹ symbol.
+  /// Converts an amount in [sourceMinorUnits] using [exchangeRate] into integer target minor units.
+  static int convertAmount(int sourceMinorUnits, {required double exchangeRate}) {
+    if (exchangeRate <= 0) {
+      throw ArgumentError('Exchange rate must be greater than zero');
+    }
+    return (sourceMinorUnits * exchangeRate).round();
+  }
+
+  /// Formats integer minor units according to [currencyCode] (default `INR`).
+  static String formatAmount(
+    int minorUnits, {
+    String currencyCode = 'INR',
+    bool alwaysShowDecimals = false,
+    bool includeSymbol = true,
+  }) {
+    final currency = TripCurrency.fromCode(currencyCode);
+    final isNegative = minorUnits < 0;
+    final absUnits = minorUnits.abs();
+    final major = absUnits ~/ 100;
+    final minor = absUnits % 100;
+
+    final formattedMajor = currency.usesIndianGrouping
+        ? _formatIndianGrouping(major)
+        : _formatWesternGrouping(major);
+
+    final sign = isNegative ? '-' : '';
+    final sym = includeSymbol ? currency.symbol : '';
+
+    if (alwaysShowDecimals || minor != 0) {
+      final minorStr = minor.toString().padLeft(2, '0');
+      return '$sign$sym$formattedMajor.$minorStr';
+    } else {
+      return '$sign$sym$formattedMajor';
+    }
+  }
+
+  /// Formats integer paise in the Indian numbering system with ₹ symbol (or custom [currencyCode]).
   ///
   /// Examples:
   /// - 12500000 paise -> "₹1,25,000"
@@ -85,22 +128,14 @@ class Money {
     int paise, {
     bool alwaysShowPaise = false,
     bool includeSymbol = true,
+    String currencyCode = 'INR',
   }) {
-    final isNegative = paise < 0;
-    final absPaise = paise.abs();
-    final rupees = absPaise ~/ 100;
-    final p = absPaise % 100;
-
-    final formattedRupees = _formatIndianGrouping(rupees);
-    final sign = isNegative ? '-' : '';
-    final sym = includeSymbol ? '₹' : '';
-
-    if (alwaysShowPaise || p != 0) {
-      final paiseStr = p.toString().padLeft(2, '0');
-      return '$sign$sym$formattedRupees.$paiseStr';
-    } else {
-      return '$sign$sym$formattedRupees';
-    }
+    return formatAmount(
+      paise,
+      currencyCode: currencyCode,
+      alwaysShowDecimals: alwaysShowPaise,
+      includeSymbol: includeSymbol,
+    );
   }
 
   /// Formats an integer using Indian numbering grouping:
@@ -128,5 +163,24 @@ class Money {
     }
 
     return '${parts.join(',')},$last3';
+  }
+
+  /// Formats an integer using standard 3-digit Western grouping: e.g. 1000000 -> "1,000,000".
+  static String _formatWesternGrouping(int number) {
+    final str = number.toString();
+    if (str.length <= 3) {
+      return str;
+    }
+
+    final parts = <String>[];
+    var current = str;
+    while (current.length > 3) {
+      parts.insert(0, current.substring(current.length - 3));
+      current = current.substring(0, current.length - 3);
+    }
+    if (current.isNotEmpty) {
+      parts.insert(0, current);
+    }
+    return parts.join(',');
   }
 }
