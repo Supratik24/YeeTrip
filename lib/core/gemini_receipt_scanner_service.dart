@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'constants/categories.dart';
 import 'money.dart';
@@ -83,6 +84,10 @@ Extract and return a single valid JSON object strictly matching this schema:
   "category": "Food" | "Transport" | "Stay" | "Activities" | "Shopping" | "Buffer",
   "candidateAmounts": [1845.50, 1450.00, 72.50, 36.25],
   "items": ["Item name and price"],
+  "lineItems": [
+    {"name": "King Fish Rava Fry", "qty": 1, "amount": 450.00, "isTaxOrFee": false},
+    {"name": "CGST 2.5%", "qty": 1, "amount": 36.25, "isTaxOrFee": true}
+  ],
   "rawTextSummary": "Plain text summary of the receipt lines"
 }
 
@@ -180,7 +185,7 @@ Important Rules:
       }
       candidateAmounts.sort((a, b) => b.compareTo(a));
 
-      // Items
+      // Items & structured line items
       final items = <String>[];
       final rawItems = map['items'];
       if (rawItems is List) {
@@ -188,6 +193,37 @@ Important Rules:
           final str = item.toString().trim();
           if (str.isNotEmpty) items.add(str);
         }
+      }
+
+      final lineItems = <ReceiptLineItem>[];
+      final rawLineItems = map['lineItems'];
+      if (rawLineItems is List) {
+        var idx = 0;
+        for (final rawLi in rawLineItems) {
+          if (rawLi is! Map) continue;
+          final name = (rawLi['name'] ?? '').toString().trim();
+          final rawAmt = rawLi['amount'];
+          if (name.isEmpty || rawAmt == null) continue;
+          try {
+            final paise = Money.decimalStringToPaise(rawAmt.toString());
+            if (paise <= 0) continue;
+            final qtyVal = rawLi['qty'];
+            final qty = qtyVal is num ? qtyVal.round().clamp(1, 999) : 1;
+            final isFee = rawLi['isTaxOrFee'] == true;
+            idx++;
+            lineItems.add(
+              ReceiptLineItem(
+                id: 'gemini_item_$idx',
+                name: name,
+                quantity: qty,
+                amountPaise: paise,
+                isTaxOrFee: isFee,
+              ),
+            );
+          } catch (_) {}
+        }
+      } else if (items.isNotEmpty) {
+        lineItems.addAll(ReceiptParser.extractLineItems(items));
       }
 
       final summary = (map['rawTextSummary'] as String?) ?? cleaned;
@@ -201,6 +237,7 @@ Important Rules:
         rawText: summary,
         candidateAmountsPaise: candidateAmounts,
         items: items,
+        lineItems: lineItems,
         notes: 'Scanned with Gemini Vision AI model',
       );
     } catch (e) {
@@ -240,15 +277,42 @@ Important Rules:
 
 /// Notifier for persistent user-configured Gemini API key.
 class GeminiApiKeyNotifier extends Notifier<String?> {
+  static const String prefsKey = 'yeetrip_gemini_api_key';
+  bool _loaded = false;
+
   @override
   String? build() {
     const envKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
     if (envKey.isNotEmpty) return envKey;
+    if (!_loaded) {
+      _loaded = true;
+      _loadAsync();
+    }
     return null;
   }
 
-  void setKey(String? key) {
-    state = key;
+  Future<void> _loadAsync() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(prefsKey);
+      if (!ref.mounted) return;
+      if (saved != null && saved.trim().isNotEmpty && (state == null || state!.isEmpty)) {
+        state = saved.trim();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> setKey(String? key) async {
+    final normalized = key?.trim();
+    state = (normalized != null && normalized.isNotEmpty) ? normalized : null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (state == null) {
+        await prefs.remove(prefsKey);
+      } else {
+        await prefs.setString(prefsKey, state!);
+      }
+    } catch (_) {}
   }
 }
 
