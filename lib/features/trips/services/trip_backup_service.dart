@@ -6,7 +6,9 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/constants/categories.dart';
 import '../../../data/local/app_database.dart' hide Traveler;
+import '../../../data/repositories/expense_repository.dart';
 import '../../expenses/domain/expense_model.dart';
+import '../../itinerary/domain/itinerary_model.dart';
 import '../domain/trip_model.dart';
 
 /// Service to handle JSON export, sharing, validation, and restoration for YeeTrip.
@@ -16,10 +18,11 @@ class TripBackupService {
 
   TripBackupService(this._db, [Uuid? uuid]) : _uuid = uuid ?? const Uuid();
 
-  /// Serializes a [trip] and its [expenses] to an offline portable JSON string.
+  /// Serializes a [trip], its [expenses], and optional [itinerary] to an offline portable JSON string.
   static String exportTripToJson({
     required TripWithDetails trip,
     required List<ExpenseWithSplits> expenses,
+    List<ItineraryItemModel> itinerary = const [],
   }) {
     final Map<String, dynamic> backupMap = {
       'version': 1,
@@ -60,6 +63,13 @@ class TripBackupService {
                 'source': e.source,
                 'confirmed': e.confirmed,
                 if (e.upiTxnId != null) 'upiTxnId': e.upiTxnId,
+                if (e.notes != null && e.notes!.isNotEmpty) 'notes': e.notes,
+                if (e.tags.isNotEmpty) 'tags': e.tags,
+                if (e.originalCurrency != null)
+                  'originalCurrency': e.originalCurrency,
+                if (e.originalAmountPaise != null)
+                  'originalAmountPaise': e.originalAmountPaise,
+                if (e.exchangeRate != null) 'exchangeRate': e.exchangeRate,
                 'createdAt': e.createdAt.toUtc().toIso8601String(),
                 'splits': e.splits
                     .map((s) => {
@@ -69,6 +79,22 @@ class TripBackupService {
                     .toList(),
               })
           .toList(),
+      if (itinerary.isNotEmpty)
+        'itinerary': itinerary
+            .map((item) => {
+                  'dayNumber': item.dayNumber,
+                  'title': item.title,
+                  if (item.location != null) 'location': item.location,
+                  if (item.timeSlot != null) 'timeSlot': item.timeSlot,
+                  if (item.startTimeMinutes != null)
+                    'startTimeMinutes': item.startTimeMinutes,
+                  'category': item.category,
+                  'estimatedCostPaise': item.estimatedCostPaise,
+                  if (item.notes != null) 'notes': item.notes,
+                  'isCompleted': item.isCompleted,
+                  'sortOrder': item.sortOrder,
+                })
+            .toList(),
     };
 
     const encoder = JsonEncoder.withIndent('  ');
@@ -79,8 +105,13 @@ class TripBackupService {
   static Future<void> exportAndShareBackup({
     required TripWithDetails trip,
     required List<ExpenseWithSplits> expenses,
+    List<ItineraryItemModel> itinerary = const [],
   }) async {
-    final jsonContent = exportTripToJson(trip: trip, expenses: expenses);
+    final jsonContent = exportTripToJson(
+      trip: trip,
+      expenses: expenses,
+      itinerary: itinerary,
+    );
     final sanitizedName = trip.name.replaceAll(RegExp(r'[^\w\s]+'), '_').trim();
     final fileName = 'yeetrip_${sanitizedName}_backup.json';
     final bytes = Uint8List.fromList(utf8.encode(jsonContent));
@@ -274,6 +305,21 @@ class TripBackupService {
             ? DateTime.tryParse(createdAtStr)?.toLocal() ?? DateTime.now()
             : DateTime.now();
 
+        final rawNotes = (raw['notes'] as String?)?.trim();
+        final rawTags = raw['tags'];
+        final tags = rawTags is List
+            ? DriftExpenseRepository.normalizeTags(
+                rawTags.map((e) => e.toString()),
+              )
+            : const <String>[];
+        final origCurr = (raw['originalCurrency'] as String?)?.trim();
+        final origAmt = raw['originalAmountPaise'] is int
+            ? raw['originalAmountPaise'] as int
+            : null;
+        final exRate = raw['exchangeRate'] is num
+            ? (raw['exchangeRate'] as num).toDouble()
+            : null;
+
         parsedExpenses.add({
           'id': newExpenseId,
           'description': desc,
@@ -283,8 +329,43 @@ class TripBackupService {
           'source': (raw['source'] as String?) ?? 'backup',
           'confirmed': (raw['confirmed'] as bool?) ?? true,
           'upiTxnId': raw['upiTxnId'] as String?,
+          'notes': rawNotes != null && rawNotes.isNotEmpty ? rawNotes : null,
+          'tagsJson': DriftExpenseRepository.encodeTags(tags),
+          'originalCurrency':
+              origCurr != null && origCurr.isNotEmpty ? origCurr : null,
+          'originalAmountPaise': origAmt,
+          'exchangeRate': exRate,
           'createdAt': createdAt,
           'splits': splits,
+        });
+      }
+    }
+
+    // 4b. Parse optional itinerary items
+    final rawItinerary = decoded['itinerary'];
+    final List<Map<String, dynamic>> parsedItinerary = [];
+    if (rawItinerary is List) {
+      for (final raw in rawItinerary) {
+        if (raw is! Map<String, dynamic>) continue;
+        final title = (raw['title'] as String?)?.trim();
+        if (title == null || title.isEmpty) continue;
+        final dayNum = raw['dayNumber'] is int ? raw['dayNumber'] as int : 1;
+        parsedItinerary.add({
+          'id': _uuid.v4(),
+          'dayNumber': dayNum < 1 ? 1 : dayNum,
+          'title': title,
+          'location': (raw['location'] as String?)?.trim(),
+          'timeSlot': (raw['timeSlot'] as String?)?.trim(),
+          'startTimeMinutes': raw['startTimeMinutes'] is int
+              ? raw['startTimeMinutes'] as int
+              : null,
+          'category': (raw['category'] as String?) ?? 'Activities',
+          'estimatedCostPaise': raw['estimatedCostPaise'] is int
+              ? raw['estimatedCostPaise'] as int
+              : 0,
+          'notes': (raw['notes'] as String?)?.trim(),
+          'isCompleted': (raw['isCompleted'] as bool?) ?? false,
+          'sortOrder': raw['sortOrder'] is int ? raw['sortOrder'] as int : 0,
         });
       }
     }
@@ -292,6 +373,7 @@ class TripBackupService {
     // 5. Atomic SQLite Transaction
     final newTripId = _uuid.v4();
     final now = DateTime.now();
+    final currency = (tripData['currency'] as String?)?.trim().toUpperCase();
     final destination = (tripData['destination'] as String?)?.trim();
     final status = (tripData['status'] as String?)?.trim();
     final startDateStr = tripData['startDate'] as String?;
@@ -307,6 +389,9 @@ class TripBackupService {
               name: tripName,
               totalBudgetPaise: totalBudgetPaise,
               days: days,
+              currency: Value(
+                currency != null && currency.isNotEmpty ? currency : 'INR',
+              ),
               createdAt: now,
               destination: Value(
                 destination != null && destination.isNotEmpty ? destination : null,
@@ -355,6 +440,11 @@ class TripBackupService {
                 source: Value(exp['source'] as String),
                 confirmed: Value(exp['confirmed'] as bool),
                 upiTxnId: Value(exp['upiTxnId'] as String?),
+                notes: Value(exp['notes'] as String?),
+                tagsJson: Value(exp['tagsJson'] as String),
+                originalCurrency: Value(exp['originalCurrency'] as String?),
+                originalAmountPaise: Value(exp['originalAmountPaise'] as int?),
+                exchangeRate: Value(exp['exchangeRate'] as double?),
                 createdAt: exp['createdAt'] as DateTime,
               ),
             );
@@ -369,6 +459,27 @@ class TripBackupService {
                 ),
               );
         }
+      }
+
+      // 5.5 Insert Itinerary Items
+      for (final item in parsedItinerary) {
+        await _db.into(_db.itineraryItems).insert(
+              ItineraryItemsCompanion.insert(
+                id: item['id'] as String,
+                tripId: newTripId,
+                dayNumber: item['dayNumber'] as int,
+                title: item['title'] as String,
+                location: Value(item['location'] as String?),
+                timeSlot: Value(item['timeSlot'] as String?),
+                startTimeMinutes: Value(item['startTimeMinutes'] as int?),
+                category: Value(item['category'] as String),
+                estimatedCostPaise: Value(item['estimatedCostPaise'] as int),
+                notes: Value(item['notes'] as String?),
+                isCompleted: Value(item['isCompleted'] as bool),
+                sortOrder: Value(item['sortOrder'] as int),
+                createdAt: now,
+              ),
+            );
       }
     });
 
