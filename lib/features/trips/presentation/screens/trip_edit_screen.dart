@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/constants/currencies.dart';
 import '../../../../core/money.dart';
+import '../../../../core/notifications/notification_providers.dart';
 import '../../../../core/services/local_image_store.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../core/widgets/traveler_avatar.dart';
@@ -77,11 +79,13 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
   String? _initialDestination;
   String? _initialCoverPhotoPath;
   String _initialStatus = 'active';
+  String _initialCurrency = 'INR';
   DateTime? _initialStartDate;
   DateTime? _initialEndDate;
 
   String? _coverPhotoPath;
   String _status = 'active';
+  String _currency = 'INR';
   DateTime? _startDate;
   DateTime? _endDate;
   bool _initialized = false;
@@ -115,6 +119,8 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
     _coverPhotoPath = trip.coverPhotoPath;
     _initialStatus = trip.status;
     _status = trip.status;
+    _initialCurrency = trip.currency;
+    _currency = TripCurrency.fromCode(trip.currency).code;
     _initialStartDate = trip.startDate;
     _initialEndDate = trip.endDate;
     _startDate = trip.startDate;
@@ -401,11 +407,16 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
       final destChanged = destText != (_initialDestination ?? '');
       final coverChanged = _coverPhotoPath != _initialCoverPhotoPath;
       final statusChanged = _status != _initialStatus;
+      final currencyChanged = _currency != _initialCurrency;
       final datesChanged =
           _startDate != _initialStartDate || _endDate != _initialEndDate;
 
       // 1. Update Trip Details (only include metadata flags if modified)
-      if (!destChanged && !coverChanged && !statusChanged && !datesChanged) {
+      if (!destChanged &&
+          !coverChanged &&
+          !statusChanged &&
+          !datesChanged &&
+          !currencyChanged) {
         await tripRepo.updateTripDetails(
           tripId: widget.tripId,
           name: _nameController.text.trim(),
@@ -426,7 +437,17 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
           startDate: datesChanged ? _startDate : null,
           endDate: datesChanged ? _endDate : null,
           clearDates: datesChanged && (_startDate == null || _endDate == null),
+          currency: currencyChanged ? _currency : null,
         );
+      }
+
+      if (datesChanged && _startDate != null) {
+        final updated = await tripRepo.getTripById(widget.tripId);
+        if (updated != null) {
+          await ref
+              .read(tripNotificationServiceProvider)
+              .scheduleTripStartReminder(updated);
+        }
       }
 
       // 2. Process Deleted Travelers
@@ -593,6 +614,34 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
                     ),
                     const SizedBox(height: 16),
 
+                    // Trip currency selector
+                    DropdownButtonFormField<String>(
+                      key: const Key('edit_trip_currency_dropdown'),
+                      initialValue: _currency,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Trip currency',
+                        prefixIcon: Icon(Icons.currency_exchange, size: 20),
+                      ),
+                      items: TripCurrency.all
+                          .map(
+                            (c) => DropdownMenuItem<String>(
+                              value: c.code,
+                              child: Text(
+                                '${c.flag} ${c.code} (${c.symbol.trim()}) — ${c.name}',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() => _currency = val);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 14),
+
                     // Total Budget & Duration
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -605,9 +654,10 @@ class _TripEditScreenState extends ConsumerState<TripEditScreen> {
                             focusNode: _budgetFocusNode,
                             textInputAction: TextInputAction.next,
                             onFieldSubmitted: (_) => _daysFocusNode.requestFocus(),
-                            decoration: const InputDecoration(
-                              labelText: 'Total budget (₹)',
-                              prefixText: '₹ ',
+                            decoration: InputDecoration(
+                              labelText:
+                                  'Total budget (${Money.symbolFor(_currency).trim()})',
+                              prefixText: '${Money.symbolFor(_currency).trim()} ',
                             ),
                             keyboardType: const TextInputType.numberWithOptions(
                               decimal: true,
