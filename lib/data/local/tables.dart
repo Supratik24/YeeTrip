@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 
 /// Trips table
-/// All budget numbers are in integer paise.
+/// All budget numbers are in integer minor units (e.g. paise/cents).
 class Trips extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
@@ -65,6 +65,13 @@ class Expenses extends Table {
   DateTimeColumn get createdAt => dateTime()();
   TextColumn get receiptImagePath => text().nullable()();
 
+  // P0 enhancements: tags, notes, and foreign currency origin
+  TextColumn get notes => text().nullable()();
+  TextColumn get tagsJson => text().withDefault(const Constant('[]'))();
+  TextColumn get originalCurrency => text().nullable()();
+  IntColumn get originalAmountPaise => integer().nullable()();
+  RealColumn get exchangeRate => real().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -80,4 +87,49 @@ class ExpenseSplits extends Table {
 
   @override
   Set<Column> get primaryKey => {expenseId, travelerId};
+}
+
+/// ItineraryItems table
+/// Day-by-day trip planner activities and reservations.
+class ItineraryItems extends Table {
+  TextColumn get id => text()();
+  TextColumn get tripId =>
+      text().references(Trips, #id, onDelete: KeyAction.cascade)();
+  IntColumn get dayNumber => integer()();
+  TextColumn get title => text()();
+  TextColumn get location => text().nullable()();
+  TextColumn get timeSlot => text().nullable()();
+  IntColumn get startTimeMinutes => integer().nullable()();
+  TextColumn get category =>
+      text().withDefault(const Constant('Activities'))();
+  IntColumn get estimatedCostPaise =>
+      integer().withDefault(const Constant(0))();
+  TextColumn get notes => text().nullable()();
+  BoolColumn get isCompleted =>
+      boolean().withDefault(const Constant(false))();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// ExpenseComments table
+/// Group discussion and dispute flags attached to an expense.
+class ExpenseComments extends Table {
+  TextColumn get id => text()();
+  TextColumn get expenseId =>
+      text().references(Expenses, #id, onDelete: KeyAction.cascade)();
+  TextColumn get tripId =>
+      text().references(Trips, #id, onDelete: KeyAction.cascade)();
+  TextColumn get authorTravelerId => text().nullable()();
+  TextColumn get authorName => text()();
+  TextColumn get body => text()();
+  BoolColumn get isDispute => boolean().withDefault(const Constant(false))();
+  BoolColumn get isResolved =>
+      boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
