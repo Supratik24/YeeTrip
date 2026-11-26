@@ -2,7 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/notifications/notification_providers.dart';
+import '../../../../core/notifications/notifications_sheet.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
 import '../../../sync/presentation/widgets/cloud_sync_sheet.dart';
@@ -26,11 +29,32 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final expensesAsync = ref.watch(tripExpensesProvider(trip.id));
+    final tripNotifications = ref.watch(tripNotificationsProvider(trip));
 
     return Scaffold(
       appBar: AppBar(
         title: Text(trip.name),
         actions: [
+          IconButton(
+            key: const Key('dashboard_itinerary_btn'),
+            icon: const Icon(Icons.event_note_outlined),
+            tooltip: 'Day-by-Day Itinerary',
+            onPressed: () => context.push('/trips/${trip.id}/itinerary'),
+          ),
+          IconButton(
+            key: const Key('dashboard_notifications_btn'),
+            tooltip: 'Trip Reminders',
+            icon: Badge.count(
+              count: tripNotifications.length,
+              isLabelVisible: tripNotifications.isNotEmpty,
+              child: const Icon(Icons.notifications_outlined),
+            ),
+            onPressed: () => NotificationsSheet.show(
+              context,
+              notifications: tripNotifications,
+              activeTripId: trip.id,
+            ),
+          ),
           IconButton(
             key: const Key('dashboard_cloud_sync_btn'),
             icon: const Icon(Icons.cloud_sync_outlined),
@@ -80,10 +104,15 @@ class DashboardScreen extends ConsumerWidget {
                 DashboardMetricCards(trip: effectiveTrip),
                 const SizedBox(height: 16),
 
+                // 1b. Day-by-Day Itinerary Planner Card
+                _DashboardItineraryCard(trip: effectiveTrip),
+                const SizedBox(height: 16),
+
                 // 2. Cooked Meter
                 CookedMeterWidget(
                   totalSpentPaise: totalSpent,
                   totalBudgetPaise: effectiveTrip.totalBudgetPaise,
+                  currencyCode: effectiveTrip.currency,
                 ),
                 const SizedBox(height: 16),
 
@@ -107,6 +136,78 @@ class DashboardScreen extends ConsumerWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _DashboardItineraryCard extends StatelessWidget {
+  final TripWithDetails trip;
+
+  const _DashboardItineraryCard({required this.trip});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final total = trip.itineraryTotalCount;
+    final done = trip.itineraryCompletedCount;
+    final subtitle = total == 0
+        ? 'Plan Day 1–${trip.days} spots, stays & reservations'
+        : (trip.nextItineraryTitle != null
+            ? '$done of $total done • Next: ${trip.nextItineraryTitle}'
+            : 'All $total planned activities completed!');
+
+    return Card(
+      key: const Key('dashboard_itinerary_card'),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => context.push('/trips/${trip.id}/itinerary'),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: theme.colorScheme.primaryContainer,
+                child: Icon(
+                  Icons.event_note_rounded,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Day-by-Day Itinerary',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.tonal(
+                onPressed: () => context.push('/trips/${trip.id}/itinerary'),
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: const Text('Plan'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
