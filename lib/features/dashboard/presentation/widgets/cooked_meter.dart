@@ -13,11 +13,13 @@ enum CookedStatus {
 class CookedMeterWidget extends StatelessWidget {
   final int totalSpentPaise;
   final int totalBudgetPaise;
+  final String currencyCode;
 
   const CookedMeterWidget({
     super.key,
     required this.totalSpentPaise,
     required this.totalBudgetPaise,
+    this.currencyCode = 'INR',
   });
 
   CookedStatus get status {
@@ -174,7 +176,7 @@ class CookedMeterWidget extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '${Money.formatRupees(totalSpentPaise)} of ${Money.formatRupees(totalBudgetPaise)}',
+              '${Money.formatAmount(totalSpentPaise, currencyCode: currencyCode)} of ${Money.formatAmount(totalBudgetPaise, currencyCode: currencyCode)}',
               style: TextStyle(
                 fontSize: 11,
                 color: Colors.grey.shade500,
