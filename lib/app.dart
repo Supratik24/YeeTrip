@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/locale_provider.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
+import 'core/theme_provider.dart';
 import 'l10n/app_localizations.dart';
 
 /// Root application widget.
@@ -15,6 +16,7 @@ class YeeTripApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeLocale = ref.watch(appLocaleProvider);
+    final activeThemeMode = ref.watch(appThemeModeProvider);
 
     return DynamicColorBuilder(
       builder: (lightDynamic, darkDynamic) {
@@ -22,6 +24,7 @@ class YeeTripApp extends ConsumerWidget {
           title: 'YeeTrip',
           debugShowCheckedModeBanner: false,
           locale: activeLocale,
+          themeMode: activeThemeMode,
           theme: AppTheme.lightTheme(dynamicColorScheme: lightDynamic),
           darkTheme: AppTheme.darkTheme(dynamicColorScheme: darkDynamic),
           routerConfig: appRouter,
