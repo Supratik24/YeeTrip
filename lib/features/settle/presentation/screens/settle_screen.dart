@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/categories.dart';
 import '../../../../core/money.dart';
+import '../../../../core/notifications/notification_providers.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../core/widgets/traveler_avatar.dart';
 import '../../../../data/providers.dart';
@@ -33,7 +34,7 @@ class SettleScreen extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Mark as settled?'),
         content: Text(
-          'Confirm that $fromName has paid ${Money.formatRupees(payment.amountPaise)} to $toName?',
+          'Confirm that $fromName has paid ${Money.formatAmount(payment.amountPaise, currencyCode: trip.currency)} to $toName?',
         ),
         actions: [
           TextButton(
@@ -71,7 +72,7 @@ class SettleScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Recorded settlement: $fromName paid ${Money.formatRupees(payment.amountPaise)} to $toName',
+              'Recorded settlement: $fromName paid ${Money.formatAmount(payment.amountPaise, currencyCode: trip.currency)} to $toName',
             ),
           ),
         );
@@ -111,7 +112,7 @@ class SettleScreen extends ConsumerWidget {
                             ),
                           ),
                           Text(
-                            '$toVpa • ${Money.formatRupees(payment.amountPaise)}',
+                            '$toVpa • ${Money.formatAmount(payment.amountPaise, currencyCode: trip.currency)}',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -197,7 +198,9 @@ class SettleScreen extends ConsumerWidget {
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               Text('UPI ID: $toVpa'),
-              Text('Amount: ${Money.formatRupees(payment.amountPaise)}'),
+              Text(
+                'Amount: ${Money.formatAmount(payment.amountPaise, currencyCode: trip.currency)}',
+              ),
               const SizedBox(height: 12),
               const Text(
                 'You can copy the UPI ID and complete the payment manually using Google Pay, PhonePe, Paytm, or BHIM.',
@@ -373,7 +376,7 @@ class SettleScreen extends ConsumerWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Paid ${Money.formatRupees(person.paidPaise)} • Share ${Money.formatRupees(person.sharePaise)}',
+                                'Paid ${Money.formatAmount(person.paidPaise, currencyCode: trip.currency)} • Share ${Money.formatAmount(person.sharePaise, currencyCode: trip.currency)}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -390,10 +393,10 @@ class SettleScreen extends ConsumerWidget {
                           children: [
                             Text(
                               isCreditor
-                                  ? '+${Money.formatRupees(net)}'
+                                  ? '+${Money.formatAmount(net, currencyCode: trip.currency)}'
                                   : (isDebtor
-                                      ? '-${Money.formatRupees(net.abs())}'
-                                      : '₹0'),
+                                      ? '-${Money.formatAmount(net.abs(), currencyCode: trip.currency)}'
+                                      : Money.formatAmount(0, currencyCode: trip.currency)),
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
@@ -508,110 +511,183 @@ class SettleScreen extends ConsumerWidget {
                     margin: const EdgeInsets.only(bottom: 10),
                     child: Padding(
                       padding: const EdgeInsets.all(14),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Row(
-                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              TravelerAvatar(name: fromName, radius: 14, fontSize: 9),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
-                                child: Icon(
-                                  Icons.arrow_forward_rounded,
-                                  size: 14,
-                                  color: theme.colorScheme.primary,
-                                ),
-                              ),
-                              TravelerAvatar(name: toName, radius: 14, fontSize: 9),
-                            ],
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text.rich(
-                              TextSpan(
-                                style: theme.textTheme.bodyMedium,
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  TextSpan(
-                                    text: fromName,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
+                                  TravelerAvatar(
+                                    name: fromName,
+                                    radius: 14,
+                                    fontSize: 9,
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                    ),
+                                    child: Icon(
+                                      Icons.arrow_forward_rounded,
+                                      size: 14,
+                                      color: theme.colorScheme.primary,
                                     ),
                                   ),
-                                  const TextSpan(text: ' pays '),
-                                  TextSpan(
-                                    text: toName,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                  TravelerAvatar(
+                                    name: toName,
+                                    radius: 14,
+                                    fontSize: 9,
                                   ),
                                 ],
                               ),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              Money.formatRupees(payment.amountPaise),
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.onPrimaryContainer,
-                                fontSize: 14,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text.rich(
+                                  TextSpan(
+                                    style: theme.textTheme.bodyMedium,
+                                    children: [
+                                      TextSpan(
+                                        text: fromName,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const TextSpan(text: ' pays '),
+                                      TextSpan(
+                                        text: toName,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primaryContainer,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  Money.formatAmount(
+                                    payment.amountPaise,
+                                    currencyCode: trip.currency,
+                                  ),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.onPrimaryContainer,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 4),
-                          IconButton(
-                            key: Key(
-                              'pay_upi_${payment.fromTravelerId}_${payment.toTravelerId}',
-                            ),
-                            icon: Icon(
-                              Icons.payment,
-                              color: theme.colorScheme.primary,
-                            ),
-                            tooltip: hasVpa
-                                ? 'Pay ${toTraveler.upiVpa} via UPI'
-                                : 'Add UPI ID to pay',
-                            onPressed: () {
-                              if (hasVpa) {
-                                _handleUpiPayment(
-                                  context: context,
-                                  payment: payment,
-                                  fromName: fromName,
-                                  toName: toName,
-                                  toVpa: toTraveler.upiVpa!.trim(),
-                                );
-                              } else {
-                                _promptAddUpiAndPay(
-                                  context: context,
-                                  ref: ref,
-                                  toTraveler: toTraveler,
-                                  payment: payment,
-                                  fromName: fromName,
-                                );
-                              }
-                            },
-                          ),
-                          IconButton(
-                            key: Key(
-                              'mark_settled_${payment.fromTravelerId}_${payment.toTravelerId}',
-                            ),
-                            icon: const Icon(Icons.check_circle_outline),
-                            color: const Color(0xFF10B981),
-                            tooltip: 'Mark settled',
-                            onPressed: () => _confirmMarkSettled(
-                              context,
-                              ref,
-                              payment,
-                              fromName,
-                              toName,
-                            ),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              IconButton(
+                                key: Key(
+                                  'remind_${payment.fromTravelerId}_${payment.toTravelerId}',
+                                ),
+                                icon: Icon(
+                                  Icons.notifications_active_outlined,
+                                  color: Colors.amber.shade700,
+                                  size: 20,
+                                ),
+                                tooltip: 'Send settlement reminder',
+                                onPressed: () async {
+                                  final amountStr = Money.formatAmount(
+                                    payment.amountPaise,
+                                    currencyCode: trip.currency,
+                                  );
+                                  await ref
+                                      .read(tripNotificationServiceProvider)
+                                      .sendInstantAlert(
+                                        title:
+                                            'Settlement Reminder • ${trip.name}',
+                                        body:
+                                            '$fromName owes $toName $amountStr',
+                                        payload: '/trips/${trip.id}',
+                                      );
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Reminder sent: $fromName owes $toName $amountStr',
+                                        ),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                              IconButton(
+                                key: Key(
+                                  'pay_upi_${payment.fromTravelerId}_${payment.toTravelerId}',
+                                ),
+                                icon: Icon(
+                                  Icons.payment,
+                                  color: theme.colorScheme.primary,
+                                ),
+                                tooltip: trip.currency != 'INR'
+                                    ? 'UPI supports INR payments only'
+                                    : (hasVpa
+                                        ? 'Pay ${toTraveler.upiVpa} via UPI'
+                                        : 'Add UPI ID to pay'),
+                                onPressed: () {
+                                  if (trip.currency != 'INR') {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'UPI deep-links support INR only (trip is in ${trip.currency}). Use Mark settled after transferring.',
+                                        ),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  if (hasVpa) {
+                                    _handleUpiPayment(
+                                      context: context,
+                                      payment: payment,
+                                      fromName: fromName,
+                                      toName: toName,
+                                      toVpa: toTraveler.upiVpa!.trim(),
+                                    );
+                                  } else {
+                                    _promptAddUpiAndPay(
+                                      context: context,
+                                      ref: ref,
+                                      toTraveler: toTraveler,
+                                      payment: payment,
+                                      fromName: fromName,
+                                    );
+                                  }
+                                },
+                              ),
+                              IconButton(
+                                key: Key(
+                                  'mark_settled_${payment.fromTravelerId}_${payment.toTravelerId}',
+                                ),
+                                icon: const Icon(Icons.check_circle_outline),
+                                color: const Color(0xFF10B981),
+                                tooltip: 'Mark settled',
+                                onPressed: () => _confirmMarkSettled(
+                                  context,
+                                  ref,
+                                  payment,
+                                  fromName,
+                                  toName,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
