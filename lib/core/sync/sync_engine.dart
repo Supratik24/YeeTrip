@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:drift/drift.dart';
 
 import '../../data/local/app_database.dart' hide Traveler;
+import '../../data/repositories/expense_repository.dart';
 import '../../features/trips/domain/trip_model.dart';
 import 'conflict_resolver.dart';
 import 'remote_sync_repository.dart';
@@ -141,6 +142,13 @@ class SyncEngine {
             'source': exp.source,
             'confirmed': exp.confirmed,
             'upiTxnId': exp.upiTxnId,
+            if (exp.notes != null) 'notes': exp.notes,
+            'tags': DriftExpenseRepository.decodeTags(exp.tagsJson),
+            if (exp.originalCurrency != null)
+              'originalCurrency': exp.originalCurrency,
+            if (exp.originalAmountPaise != null)
+              'originalAmountPaise': exp.originalAmountPaise,
+            if (exp.exchangeRate != null) 'exchangeRate': exp.exchangeRate,
             'createdAt': exp.createdAt.toUtc().toIso8601String(),
             'splits': splits
                 .map((s) => {
@@ -243,6 +251,18 @@ class SyncEngine {
                   source: Value(expData['source'] as String? ?? 'manual'),
                   confirmed: Value(expData['confirmed'] as bool? ?? true),
                   upiTxnId: Value(expData['upiTxnId'] as String?),
+                  notes: Value(expData['notes'] as String?),
+                  tagsJson: Value(
+                    DriftExpenseRepository.encodeTags(
+                      (expData['tags'] as List? ?? const [])
+                          .map((e) => e.toString()),
+                    ),
+                  ),
+                  originalCurrency: Value(expData['originalCurrency'] as String?),
+                  originalAmountPaise: Value(expData['originalAmountPaise'] as int?),
+                  exchangeRate: Value(
+                    (expData['exchangeRate'] as num?)?.toDouble(),
+                  ),
                   createdAt: Value(
                     DateTime.parse(expData['createdAt'] as String),
                   ),
@@ -385,6 +405,20 @@ class SyncEngine {
                       source: Value(expData['source'] as String? ?? 'manual'),
                       confirmed: Value(expData['confirmed'] as bool? ?? true),
                       upiTxnId: Value(expData['upiTxnId'] as String?),
+                      notes: Value(expData['notes'] as String?),
+                      tagsJson: Value(
+                        DriftExpenseRepository.encodeTags(
+                          (expData['tags'] as List? ?? const [])
+                              .map((e) => e.toString()),
+                        ),
+                      ),
+                      originalCurrency:
+                          Value(expData['originalCurrency'] as String?),
+                      originalAmountPaise:
+                          Value(expData['originalAmountPaise'] as int?),
+                      exchangeRate: Value(
+                        (expData['exchangeRate'] as num?)?.toDouble(),
+                      ),
                       createdAt: Value(
                         DateTime.parse(expData['createdAt'] as String),
                       ),
@@ -428,6 +462,20 @@ class SyncEngine {
                     amountPaise: Value(expData['amountPaise'] as int),
                     category: Value(expData['category'] as String),
                     paidBy: Value(expData['paidBy'] as String),
+                    notes: Value(expData['notes'] as String?),
+                    tagsJson: expData['tags'] is List
+                        ? Value(
+                            DriftExpenseRepository.encodeTags(
+                              (expData['tags'] as List)
+                                  .map((e) => e.toString()),
+                            ),
+                          )
+                        : const Value.absent(),
+                    originalCurrency: Value(expData['originalCurrency'] as String?),
+                    originalAmountPaise: Value(expData['originalAmountPaise'] as int?),
+                    exchangeRate: Value(
+                      (expData['exchangeRate'] as num?)?.toDouble(),
+                    ),
                   ),
                 );
 
