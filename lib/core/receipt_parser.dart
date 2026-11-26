@@ -1,6 +1,39 @@
 import 'constants/categories.dart';
 import 'money.dart';
 
+/// A single structured line item parsed from a physical receipt or tax invoice.
+class ReceiptLineItem {
+  final String id;
+  final String name;
+  final int quantity;
+  final int amountPaise;
+  final bool isTaxOrFee;
+
+  const ReceiptLineItem({
+    required this.id,
+    required this.name,
+    this.quantity = 1,
+    required this.amountPaise,
+    this.isTaxOrFee = false,
+  });
+
+  ReceiptLineItem copyWith({
+    String? id,
+    String? name,
+    int? quantity,
+    int? amountPaise,
+    bool? isTaxOrFee,
+  }) {
+    return ReceiptLineItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      quantity: quantity ?? this.quantity,
+      amountPaise: amountPaise ?? this.amountPaise,
+      isTaxOrFee: isTaxOrFee ?? this.isTaxOrFee,
+    );
+  }
+}
+
 /// Structured information extracted from a scanned or photographed receipt.
 class ReceiptData {
   /// Extracted total amount in paise (never double).
@@ -24,8 +57,11 @@ class ReceiptData {
   /// All distinct valid currency amounts detected on the receipt (in paise), sorted descending.
   final List<int> candidateAmountsPaise;
 
-  /// Detected item lines or description.
+  /// Detected item lines or description summaries.
   final List<String> items;
+
+  /// Structured line items with per-item prices for item-level splitting.
+  final List<ReceiptLineItem> lineItems;
 
   /// Optional parser notes or status explanations.
   final String? notes;
@@ -42,6 +78,7 @@ class ReceiptData {
     required this.rawText,
     this.candidateAmountsPaise = const [],
     this.items = const [],
+    this.lineItems = const [],
     this.notes,
     this.imagePath,
   });
@@ -55,6 +92,7 @@ class ReceiptData {
     String? rawText,
     List<int>? candidateAmountsPaise,
     List<String>? items,
+    List<ReceiptLineItem>? lineItems,
     String? notes,
     String? imagePath,
   }) {
@@ -67,6 +105,7 @@ class ReceiptData {
       rawText: rawText ?? this.rawText,
       candidateAmountsPaise: candidateAmountsPaise ?? this.candidateAmountsPaise,
       items: items ?? this.items,
+      lineItems: lineItems ?? this.lineItems,
       notes: notes ?? this.notes,
       imagePath: imagePath ?? this.imagePath,
     );
@@ -222,6 +261,14 @@ class ReceiptParser {
     }
     final date = _extractDate(lines);
     final category = _inferCategory(lines, merchantName);
+    final lineItems = extractLineItems(lines);
+    final itemStrings = lineItems
+        .map(
+          (it) => it.quantity > 1
+              ? '${it.quantity}x ${it.name} — ${Money.formatRupees(it.amountPaise)}'
+              : '${it.name} — ${Money.formatRupees(it.amountPaise)}',
+        )
+        .toList();
 
     // Compute confidence
     double confidence = 0.0;
@@ -246,7 +293,135 @@ class ReceiptParser {
       confidence: confidence.clamp(0.0, 1.0),
       rawText: rawText,
       candidateAmountsPaise: candidateAmounts,
+      items: itemStrings,
+      lineItems: lineItems,
     );
+  }
+
+  /// Extracts individual priced line items (and taxes/charges) from raw receipt lines.
+  static List<ReceiptLineItem> extractLineItems(List<String> lines) {
+    final items = <ReceiptLineItem>[];
+    final trailingPricePattern = RegExp(
+      r'^(.*?)\s+(?:₹|Rs\.?|INR|€|\$|£)?\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)\s*(?:/-)?$',
+      caseSensitive: false,
+    );
+
+    const summarySkips = [
+      'grand total',
+      'net payable',
+      'amount payable',
+      'net amount',
+      'final total',
+      'bill total',
+      'total due',
+      'total paid',
+      'total sale',
+      'amount paid',
+      'paid amount',
+      'net total',
+      'invoice total',
+      'total amount',
+      'total bill',
+      'balance due',
+      'subtotal',
+      'sub total',
+      'sub-total',
+      'total inr',
+      'total rs',
+      'paid via',
+    ];
+
+    const feeKeywords = [
+      'cgst',
+      'sgst',
+      'igst',
+      'gst',
+      'vat',
+      'tax',
+      'service charge',
+      'service tax',
+      'round off',
+      'tip',
+      'gratuity',
+      'delivery fee',
+      'packaging',
+      'surcharge',
+    ];
+
+    var index = 0;
+    for (final rawLine in lines) {
+      final line = rawLine.trim();
+      final lower = line.toLowerCase();
+      if (line.length < 4) continue;
+      if (RegExp(r'^[-=*_\.]+$').hasMatch(line)) continue;
+      if (_headerSkipKeywords.any((kw) => lower.contains(kw))) continue;
+      if (_isItemCountLine(lower)) continue;
+      if (lower.contains('date:') ||
+          lower.contains('time:') ||
+          lower.contains('table:') ||
+          lower.contains('pump:') ||
+          lower.contains('volume:') ||
+          lower.contains('rate:') ||
+          lower.contains('pin:') ||
+          RegExp(r'^items?\s+qty', caseSensitive: false).hasMatch(lower)) {
+        continue;
+      }
+
+      // Skip total/subtotal summary rows
+      final isExplicitTotal = summarySkips.any((kw) => lower.contains(kw)) ||
+          RegExp(r'^total\b[:\s]').hasMatch(lower);
+      if (isExplicitTotal) continue;
+
+      final match = trailingPricePattern.firstMatch(line);
+      if (match == null) continue;
+
+      var rawName = match.group(1)?.trim() ?? '';
+      final rawPrice = match.group(2)?.trim() ?? '';
+      if (rawName.isEmpty || rawPrice.isEmpty) continue;
+
+      // Require at least some letters in item name so dates/numbers don't become items
+      if (!RegExp(r'[a-zA-Z]{2,}').hasMatch(rawName)) continue;
+
+      int amountPaise;
+      try {
+        amountPaise = Money.decimalStringToPaise(rawPrice);
+      } catch (_) {
+        continue;
+      }
+      if (amountPaise <= 0 || amountPaise > 500000000) continue;
+
+      // Detect leading "2x Item" or trailing qty column "Item   2"
+      int qty = 1;
+      final leadingQty = RegExp(r'^(\d+)\s*[xX]\s+(.+)$').firstMatch(rawName);
+      if (leadingQty != null) {
+        qty = int.tryParse(leadingQty.group(1)!) ?? 1;
+        rawName = leadingQty.group(2)!.trim();
+      } else {
+        final trailingQty =
+            RegExp(r'^(.+?)\s{2,}(\d{1,2})$').firstMatch(rawName);
+        if (trailingQty != null) {
+          qty = int.tryParse(trailingQty.group(2)!) ?? 1;
+          rawName = trailingQty.group(1)!.trim();
+        }
+      }
+
+      rawName = rawName.replaceAll(RegExp(r'[:\-\s]+$'), '').trim();
+      if (rawName.length < 2) continue;
+
+      final isFee = feeKeywords.any((kw) => lower.contains(kw));
+      index++;
+      items.add(
+        ReceiptLineItem(
+          id: 'item_$index',
+          name: rawName,
+          quantity: qty < 1 ? 1 : qty,
+          amountPaise: amountPaise,
+          isTaxOrFee: isFee,
+        ),
+      );
+    }
+
+    return items;
   }
 
   /// Extracts the most likely business or merchant name from header lines.
