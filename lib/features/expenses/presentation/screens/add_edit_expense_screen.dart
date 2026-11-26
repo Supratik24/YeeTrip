@@ -12,6 +12,7 @@ import '../../../../core/ml/ml_providers.dart';
 import '../../../../core/ml/smart_categorizer.dart';
 import '../../../../core/money.dart';
 import '../../../../core/notifications/notification_providers.dart';
+import '../../../../core/receipt_parser.dart';
 import '../../../../core/services/local_image_store.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
@@ -81,6 +82,9 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   final Map<String, TextEditingController> _exactControllers = {};
   final Map<String, TextEditingController> _percentControllers = {};
   final Map<String, int> _sharesWeights = {};
+  final List<ReceiptLineItem> _lineItems = [];
+  final Map<String, Set<String>> _itemAssignees = {};
+  int _customItemCounter = 0;
 
   String? _receiptImagePath;
   bool _clearReceiptImage = false;
@@ -283,6 +287,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
 
   List<ExpenseSplitModel> _calculateSplits(
     int totalPaise, {
+    required List<Traveler> travelers,
     String currencyCode = 'INR',
   }) {
     switch (_splitMode) {
@@ -363,6 +368,22 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                   sharePaise: e.value,
                 ))
             .toList();
+
+      case SplitMode.itemized:
+        final splitMap = SplitCalculator.calculateItemizedSplit(
+          totalPaise: totalPaise,
+          items: _lineItems,
+          itemAssignees: _itemAssignees,
+          allTravelerIds: travelers.map((t) => t.id).toList(),
+        );
+        return splitMap.entries
+            .where((e) => e.value > 0)
+            .map((e) => ExpenseSplitModel(
+                  expenseId: widget.expenseId ?? '',
+                  travelerId: e.key,
+                  sharePaise: e.value,
+                ))
+            .toList();
     }
   }
 
@@ -377,7 +398,11 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
 
     try {
       final amountPaise = Money.decimalStringToPaise(_amountController.text);
-      final splits = _calculateSplits(amountPaise, currencyCode: trip.currency);
+      final splits = _calculateSplits(
+        amountPaise,
+        travelers: trip.travelers,
+        currencyCode: trip.currency,
+      );
 
       String? origCurr;
       int? origAmt;
@@ -647,10 +672,12 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     );
   }
 
-  void _openReceiptScanner(BuildContext context) {
+  void _openReceiptScanner(BuildContext context, TripWithDetails trip) {
     ReceiptScannerSheet.show(
       context,
       onReceiptApplied: (receipt) {
+        final nonTaxItems =
+            receipt.lineItems.where((i) => !i.isTaxOrFee).toList();
         setState(() {
           if (receipt.merchantName != null && receipt.merchantName!.isNotEmpty) {
             _descriptionController.text = receipt.merchantName!;
@@ -668,18 +695,68 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
             _receiptImagePath = receipt.imagePath;
             _clearReceiptImage = false;
           }
+          if (receipt.lineItems.isNotEmpty) {
+            _lineItems
+              ..clear()
+              ..addAll(receipt.lineItems);
+            _itemAssignees.clear();
+            final defaultIds = trip.travelers.map((t) => t.id).toSet();
+            for (final item in nonTaxItems) {
+              _itemAssignees[item.id] = Set<String>.from(defaultIds);
+            }
+            if (nonTaxItems.isNotEmpty) {
+              _splitMode = SplitMode.itemized;
+              _splitError = null;
+            }
+          }
         });
 
+        final itemMsg = nonTaxItems.isNotEmpty
+            ? ' • ${nonTaxItems.length} items ready to split'
+            : '';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Applied receipt: ${receipt.merchantName ?? "Bill"} (${receipt.amountPaise != null ? Money.formatRupees(receipt.amountPaise!) : ""})',
+              'Applied receipt: ${receipt.merchantName ?? "Bill"} (${receipt.amountPaise != null ? Money.formatAmount(receipt.amountPaise!, currencyCode: trip.currency) : ""})$itemMsg',
             ),
             duration: const Duration(seconds: 3),
           ),
         );
       },
     );
+  }
+
+  Future<void> _showAddLineItemDialog(
+    BuildContext context,
+    TripWithDetails trip,
+  ) async {
+    final added = await showDialog<ReceiptLineItem>(
+      context: context,
+      builder: (_) => _AddLineItemDialog(
+        currencySymbol: Money.symbolFor(trip.currency).trim(),
+        nextId: () {
+          _customItemCounter++;
+          return 'custom_$_customItemCounter';
+        },
+      ),
+    );
+
+    if (added != null && mounted) {
+      setState(() {
+        _lineItems.add(added);
+        if (!added.isTaxOrFee) {
+          _itemAssignees[added.id] =
+              trip.travelers.map((t) => t.id).toSet();
+        }
+        // If overall amount field is empty, auto-sum items cleanly
+        if (_amountController.text.trim().isEmpty) {
+          final sum = _lineItems.fold<int>(0, (s, i) => s + i.amountPaise);
+          if (sum > 0) {
+            _amountController.text = Money.paiseToDecimalString(sum);
+          }
+        }
+      });
+    }
   }
 
   @override
@@ -731,7 +808,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
               IconButton(
                 key: const Key('appbar_scan_receipt_button'),
                 icon: const Icon(Icons.document_scanner_outlined),
-                onPressed: () => _openReceiptScanner(context),
+                onPressed: () => _openReceiptScanner(context, trip),
                 tooltip: 'Scan Receipt / Bill',
               ),
               if (widget.expenseId != null)
@@ -784,7 +861,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                       ),
                       FilledButton.tonalIcon(
                         key: const Key('scan_bill_banner_button'),
-                        onPressed: () => _openReceiptScanner(context),
+                        onPressed: () => _openReceiptScanner(context, trip),
                         icon: const Icon(Icons.document_scanner, size: 16),
                         label: const Text('Scan Bill'),
                         style: FilledButton.styleFrom(
@@ -1180,22 +1257,34 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                 ),
                 const SizedBox(height: 8),
                 SegmentedButton<SplitMode>(
+                  key: const Key('split_mode_segmented_button'),
+                  showSelectedIcon: false,
+                  style: const ButtonStyle(
+                    visualDensity: VisualDensity.compact,
+                    padding: WidgetStatePropertyAll(
+                      EdgeInsets.symmetric(horizontal: 6),
+                    ),
+                  ),
                   segments: const [
                     ButtonSegment(
                       value: SplitMode.equal,
-                      label: Text('Equal'),
+                      label: FittedBox(fit: BoxFit.scaleDown, child: Text('Equal')),
                     ),
                     ButtonSegment(
                       value: SplitMode.exact,
-                      label: Text('Exact'),
+                      label: FittedBox(fit: BoxFit.scaleDown, child: Text('Exact')),
                     ),
                     ButtonSegment(
                       value: SplitMode.percentage,
-                      label: Text('%'),
+                      label: FittedBox(fit: BoxFit.scaleDown, child: Text('%')),
                     ),
                     ButtonSegment(
                       value: SplitMode.shares,
-                      label: Text('Shares'),
+                      label: FittedBox(fit: BoxFit.scaleDown, child: Text('Shares')),
+                    ),
+                    ButtonSegment(
+                      value: SplitMode.itemized,
+                      label: FittedBox(fit: BoxFit.scaleDown, child: Text('Items')),
                     ),
                   ],
                   selected: {_splitMode},
@@ -1238,7 +1327,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                   ),
 
                 // Split mode specific inputs
-                _buildSplitSection(travelers, sym),
+                _buildSplitSection(trip, travelers, sym),
 
                 const SizedBox(height: 24),
 
@@ -1262,7 +1351,11 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     );
   }
 
-  Widget _buildSplitSection(List<Traveler> travelers, String currencySymbol) {
+  Widget _buildSplitSection(
+    TripWithDetails trip,
+    List<Traveler> travelers,
+    String currencySymbol,
+  ) {
     switch (_splitMode) {
       case SplitMode.equal:
         return Column(
@@ -1393,6 +1486,382 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
             );
           }).toList(),
         );
+
+      case SplitMode.itemized:
+        return _buildItemizedSplitSection(trip, travelers);
     }
+  }
+
+  Widget _buildItemizedSplitSection(
+    TripWithDetails trip,
+    List<Traveler> travelers,
+  ) {
+    final theme = Theme.of(context);
+    final nonTaxItems = _lineItems.where((i) => !i.isTaxOrFee).toList();
+    final taxItems = _lineItems.where((i) => i.isTaxOrFee).toList();
+
+    int totalPaise = 0;
+    try {
+      if (_amountController.text.trim().isNotEmpty) {
+        totalPaise = Money.decimalStringToPaise(_amountController.text);
+      }
+    } catch (_) {}
+    if (totalPaise <= 0) {
+      totalPaise = _lineItems.fold<int>(0, (s, i) => s + i.amountPaise);
+    }
+
+    Map<String, int>? previewShares;
+    if (nonTaxItems.isNotEmpty && totalPaise > 0) {
+      try {
+        previewShares = SplitCalculator.calculateItemizedSplit(
+          totalPaise: totalPaise,
+          items: _lineItems,
+          itemAssignees: _itemAssignees,
+          allTravelerIds: travelers.map((t) => t.id).toList(),
+        );
+      } catch (_) {}
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Assign each bill item to who shared it. Taxes/fees split proportionally.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilledButton.tonalIcon(
+              key: const Key('add_line_item_btn'),
+              onPressed: () => _showAddLineItemDialog(context, trip),
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Add item'),
+              style: FilledButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (nonTaxItems.isEmpty)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                children: [
+                  Text(
+                    'No bill items yet. Scan a receipt or tap "Add item" to split dish-by-dish.',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => _openReceiptScanner(context, trip),
+                    icon: const Icon(Icons.document_scanner_outlined, size: 18),
+                    label: const Text('Scan Receipt to Extract Items'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ...nonTaxItems.map((item) {
+          final assigned = _itemAssignees[item.id] ?? <String>{};
+          final allSelected = travelers.every((t) => assigned.contains(t.id));
+
+          return Card(
+            key: Key('item_split_card_${item.id}'),
+            margin: const EdgeInsets.only(bottom: 10),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.quantity > 1
+                              ? '${item.quantity}x ${item.name}'
+                              : item.name,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          Money.formatAmount(
+                            item.amountPaise,
+                            currencyCode: trip.currency,
+                          ),
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          allSelected
+                              ? Icons.select_all
+                              : Icons.group_outlined,
+                          size: 18,
+                        ),
+                        tooltip: allSelected ? 'Clear selection' : 'Assign all',
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () {
+                          setState(() {
+                            if (allSelected) {
+                              _itemAssignees[item.id] = <String>{};
+                            } else {
+                              _itemAssignees[item.id] =
+                                  travelers.map((t) => t.id).toSet();
+                            }
+                          });
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 18),
+                        tooltip: 'Remove item',
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () {
+                          setState(() {
+                            _lineItems.removeWhere((i) => i.id == item.id);
+                            _itemAssignees.remove(item.id);
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: travelers.map((t) {
+                      final selected = assigned.contains(t.id);
+                      return FilterChip(
+                        key: Key('item_chip_${item.id}_${t.id}'),
+                        label: Text(t.name),
+                        selected: selected,
+                        visualDensity: VisualDensity.compact,
+                        onSelected: (v) {
+                          setState(() {
+                            final next = Set<String>.from(assigned);
+                            if (v) {
+                              next.add(t.id);
+                            } else {
+                              next.remove(t.id);
+                            }
+                            _itemAssignees[item.id] = next;
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+        if (taxItems.isNotEmpty) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Taxes & Fees (auto-distributed proportionally)',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                ...taxItems.map(
+                  (tax) => Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          tax.name,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                      Text(
+                        Money.formatAmount(
+                          tax.amountPaise,
+                          currencyCode: trip.currency,
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (previewShares != null) ...[
+          Container(
+            key: const Key('itemized_preview_totals'),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Calculated Split Preview',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: travelers.map((t) {
+                    final amt = previewShares![t.id] ?? 0;
+                    return Chip(
+                      visualDensity: VisualDensity.compact,
+                      label: Text(
+                        '${t.name}: ${Money.formatAmount(amt, currencyCode: trip.currency)}',
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _AddLineItemDialog extends StatefulWidget {
+  final String currencySymbol;
+  final String Function() nextId;
+
+  const _AddLineItemDialog({
+    required this.currencySymbol,
+    required this.nextId,
+  });
+
+  @override
+  State<_AddLineItemDialog> createState() => _AddLineItemDialogState();
+}
+
+class _AddLineItemDialogState extends State<_AddLineItemDialog> {
+  final _nameController = TextEditingController();
+  final _priceController = TextEditingController();
+  bool _isFee = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _priceController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add bill item'),
+      content: SizedBox(
+        width: 340,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                key: const Key('line_item_name_field'),
+                controller: _nameController,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  labelText: 'Item name',
+                  hintText: 'e.g. Prawn Curry',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: const Key('line_item_price_field'),
+                controller: _priceController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: 'Item price (${widget.currencySymbol})',
+                  hintText: 'e.g. 450.00',
+                ),
+              ),
+              const SizedBox(height: 8),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                title: const Text(
+                  'Tax / service charge (split proportionally)',
+                  style: TextStyle(fontSize: 13),
+                ),
+                value: _isFee,
+                onChanged: (v) => setState(() => _isFee = v),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: const Key('confirm_add_line_item_btn'),
+          onPressed: () {
+            final itemName = _nameController.text.trim();
+            int? paise;
+            try {
+              paise = Money.decimalStringToPaise(_priceController.text);
+            } catch (_) {}
+            if (itemName.isEmpty || paise == null || paise <= 0) {
+              return;
+            }
+            Navigator.of(context).pop(
+              ReceiptLineItem(
+                id: widget.nextId(),
+                name: itemName,
+                amountPaise: paise,
+                isTaxOrFee: _isFee,
+              ),
+            );
+          },
+          child: const Text('Add item'),
+        ),
+      ],
+    );
   }
 }
