@@ -7,27 +7,38 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/categories.dart';
+import '../../../../core/constants/currencies.dart';
 import '../../../../core/ml/ml_providers.dart';
 import '../../../../core/ml/smart_categorizer.dart';
 import '../../../../core/money.dart';
+import '../../../../core/notifications/notification_providers.dart';
 import '../../../../core/services/local_image_store.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
 import '../../../trips/domain/trip_model.dart';
 import '../../domain/expense_model.dart';
 import '../../domain/split_calculator.dart';
+import '../widgets/expense_comments_sheet.dart';
 import '../widgets/receipt_preview_dialog.dart';
 import '../widgets/receipt_scanner_sheet.dart';
 
-/// Screen to add or edit an expense with 4 split modes.
+/// Screen to add or edit an expense with 4 split modes, tags, notes, multi-currency conversion, and comments.
 class AddEditExpenseScreen extends ConsumerStatefulWidget {
   final String tripId;
   final String? expenseId;
+  final String? initialDescription;
+  final String? initialCategory;
+  final String? initialAmountDecimal;
+  final String? initialNotes;
 
   const AddEditExpenseScreen({
     super.key,
     required this.tripId,
     this.expenseId,
+    this.initialDescription,
+    this.initialCategory,
+    this.initialAmountDecimal,
+    this.initialNotes,
   });
 
   @override
@@ -39,11 +50,31 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
+  final _notesController = TextEditingController();
+  final _customTagController = TextEditingController();
+  final _foreignAmountController = TextEditingController();
+  final _exchangeRateController = TextEditingController();
+
+  static const List<String> _presetTags = [
+    'lunch',
+    'dinner',
+    'breakfast',
+    'optional',
+    'reimbursable',
+    'shared',
+    'cash',
+    'ticket',
+  ];
 
   String _selectedCategory = TripCategory.stay.key;
   String? _paidByTravelerId;
   DateTime _selectedDate = DateTime.now();
   SplitMode _splitMode = SplitMode.equal;
+  final List<String> _selectedTags = [];
+
+  // Optional foreign currency conversion state
+  bool _useForeignCurrency = false;
+  String _foreignCurrencyCode = 'USD';
 
   // Split state per traveler
   final Set<String> _equalIncludedTravelers = {};
@@ -63,6 +94,24 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   void initState() {
     super.initState();
     _descriptionController.addListener(_onDescriptionChanged);
+    if (widget.expenseId == null) {
+      if (widget.initialDescription != null &&
+          widget.initialDescription!.isNotEmpty) {
+        _descriptionController.text = widget.initialDescription!;
+      }
+      if (widget.initialCategory != null &&
+          TripCategory.all.any((c) => c.key == widget.initialCategory)) {
+        _selectedCategory = widget.initialCategory!;
+        _hasManuallyChangedCategory = true;
+      }
+      if (widget.initialAmountDecimal != null &&
+          widget.initialAmountDecimal!.isNotEmpty) {
+        _amountController.text = widget.initialAmountDecimal!;
+      }
+      if (widget.initialNotes != null && widget.initialNotes!.isNotEmpty) {
+        _notesController.text = widget.initialNotes!;
+      }
+    }
   }
 
   void _onDescriptionChanged() {
@@ -92,6 +141,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     _descriptionController.removeListener(_onDescriptionChanged);
     _descriptionController.dispose();
     _amountController.dispose();
+    _notesController.dispose();
+    _customTagController.dispose();
+    _foreignAmountController.dispose();
+    _exchangeRateController.dispose();
     for (final c in _exactControllers.values) {
       c.dispose();
     }
@@ -101,7 +154,11 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     super.dispose();
   }
 
-  void _initTravelers(List<Traveler> travelers, [ExpenseWithSplits? existing]) {
+  void _initTravelers(
+    TripWithDetails trip,
+    List<Traveler> travelers, [
+    ExpenseWithSplits? existing,
+  ]) {
     if (travelers.isEmpty) return;
 
     _paidByTravelerId ??= existing?.paidBy ?? travelers.first.id;
@@ -115,6 +172,19 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
         _selectedDate = existing.createdAt;
         _paidByTravelerId = existing.paidBy;
         _receiptImagePath = existing.receiptImagePath;
+        _notesController.text = existing.notes ?? '';
+        _selectedTags
+          ..clear()
+          ..addAll(existing.tags);
+        if (existing.originalCurrency != null &&
+            existing.originalAmountPaise != null &&
+            existing.exchangeRate != null) {
+          _useForeignCurrency = true;
+          _foreignCurrencyCode = existing.originalCurrency!;
+          _foreignAmountController.text =
+              Money.paiseToDecimalString(existing.originalAmountPaise!);
+          _exchangeRateController.text = existing.exchangeRate.toString();
+        }
 
         // Populate splits
         for (final split in existing.splits) {
@@ -122,6 +192,11 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
         }
       } else {
         _equalIncludedTravelers.addAll(travelers.map((t) => t.id));
+        _foreignCurrencyCode = trip.currency == 'INR' ? 'USD' : 'INR';
+        _exchangeRateController.text = TripCurrency.suggestedRate(
+          _foreignCurrencyCode,
+          trip.currency,
+        ).toString();
       }
 
       for (final t in travelers) {
@@ -169,7 +244,47 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     }
   }
 
-  List<ExpenseSplitModel> _calculateSplits(int totalPaise) {
+  void _recalculateForeignConversion(String tripCurrency) {
+    if (!_useForeignCurrency) return;
+    try {
+      final rawAmt = _foreignAmountController.text.trim();
+      final rate = double.tryParse(_exchangeRateController.text.trim());
+      if (rawAmt.isEmpty || rate == null || rate <= 0) return;
+      final sourceMinor = Money.decimalStringToPaise(rawAmt);
+      final converted = Money.convertAmount(sourceMinor, exchangeRate: rate);
+      _amountController.text = Money.paiseToDecimalString(converted);
+    } catch (_) {}
+  }
+
+  void _addCustomTag() {
+    var tag = _customTagController.text.trim();
+    while (tag.startsWith('#')) {
+      tag = tag.substring(1).trim();
+    }
+    if (tag.isEmpty) return;
+    if (!_selectedTags.any((t) => t.toLowerCase() == tag.toLowerCase())) {
+      setState(() => _selectedTags.add(tag));
+    }
+    _customTagController.clear();
+  }
+
+  void _toggleTag(String tag) {
+    setState(() {
+      final idx = _selectedTags.indexWhere(
+        (t) => t.toLowerCase() == tag.toLowerCase(),
+      );
+      if (idx >= 0) {
+        _selectedTags.removeAt(idx);
+      } else {
+        _selectedTags.add(tag);
+      }
+    });
+  }
+
+  List<ExpenseSplitModel> _calculateSplits(
+    int totalPaise, {
+    String currencyCode = 'INR',
+  }) {
     switch (_splitMode) {
       case SplitMode.equal:
         if (_equalIncludedTravelers.isEmpty) {
@@ -197,6 +312,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
         final validationErr = SplitCalculator.validateExactSplit(
           totalPaise: totalPaise,
           exactSharesPaise: exactMap,
+          currencyCode: currencyCode,
         );
         if (validationErr != null) {
           throw ArgumentError(validationErr);
@@ -250,7 +366,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     }
   }
 
-  Future<void> _save() async {
+  Future<void> _save(TripWithDetails trip) async {
     final formOk = _formKey.currentState?.validate() ?? false;
     if (!formOk) return;
 
@@ -261,8 +377,23 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
 
     try {
       final amountPaise = Money.decimalStringToPaise(_amountController.text);
-      final splits = _calculateSplits(amountPaise);
+      final splits = _calculateSplits(amountPaise, currencyCode: trip.currency);
 
+      String? origCurr;
+      int? origAmt;
+      double? exRate;
+      if (_useForeignCurrency && _foreignCurrencyCode != trip.currency) {
+        final rawForeign = _foreignAmountController.text.trim();
+        final parsedRate =
+            double.tryParse(_exchangeRateController.text.trim());
+        if (rawForeign.isNotEmpty && parsedRate != null && parsedRate > 0) {
+          origCurr = _foreignCurrencyCode;
+          origAmt = Money.decimalStringToPaise(rawForeign);
+          exRate = parsedRate;
+        }
+      }
+
+      final notesText = _notesController.text.trim();
       final expenseRepo = ref.read(expenseRepositoryProvider);
 
       if (widget.expenseId == null) {
@@ -275,7 +406,36 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
           createdAt: _selectedDate,
           splits: splits,
           receiptImagePath: _receiptImagePath,
+          notes: notesText.isNotEmpty ? notesText : null,
+          tags: List<String>.from(_selectedTags),
+          originalCurrency: origCurr,
+          originalAmountPaise: origAmt,
+          exchangeRate: exRate,
         );
+
+        // Fire instant budget threshold alert if enabled and budget crosses 80% / 100%
+        final prefs = ref.read(notificationPreferencesProvider);
+        if (prefs.budgetBurnAlerts && trip.totalBudgetPaise > 0) {
+          final prevSpent = trip.totalSpentPaise;
+          final nextSpent = prevSpent + amountPaise;
+          final prevRatio = prevSpent / trip.totalBudgetPaise;
+          final nextRatio = nextSpent / trip.totalBudgetPaise;
+          if (nextRatio > 1.0 && prevRatio <= 1.0) {
+            await ref.read(tripNotificationServiceProvider).sendInstantAlert(
+                  title: 'Budget exceeded in ${trip.name}',
+                  body:
+                      'Total spent reached ${Money.formatAmount(nextSpent, currencyCode: trip.currency)} against ${Money.formatAmount(trip.totalBudgetPaise, currencyCode: trip.currency)} budget.',
+                  payload: '/trips/${trip.id}',
+                );
+          } else if (nextRatio >= 0.8 && prevRatio < 0.8) {
+            await ref.read(tripNotificationServiceProvider).sendInstantAlert(
+                  title: '80% budget alert • ${trip.name}',
+                  body:
+                      '${Money.formatAmount(trip.totalBudgetPaise - nextSpent, currencyCode: trip.currency)} remaining across ${trip.days} days.',
+                  payload: '/trips/${trip.id}',
+                );
+          }
+        }
       } else {
         await expenseRepo.updateExpense(
           expenseId: widget.expenseId!,
@@ -287,6 +447,13 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
           splits: splits,
           receiptImagePath: _receiptImagePath,
           clearReceiptImage: _clearReceiptImage && _receiptImagePath == null,
+          notes: notesText,
+          clearNotes: notesText.isEmpty,
+          tags: List<String>.from(_selectedTags),
+          originalCurrency: origCurr,
+          originalAmountPaise: origAmt,
+          exchangeRate: exRate,
+          clearOriginalCurrency: origCurr == null,
         );
       }
 
@@ -554,7 +721,8 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
           );
         }
 
-        _initTravelers(travelers, existingExpense);
+        _initTravelers(trip, travelers, existingExpense);
+        final sym = Money.symbolFor(trip.currency).trim();
 
         return Scaffold(
           appBar: AppBar(
@@ -679,10 +847,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                       flex: 3,
                       child: TextFormField(
                         controller: _amountController,
-                        decoration: const InputDecoration(
-                          labelText: 'Amount (₹)',
+                        decoration: InputDecoration(
+                          labelText: 'Amount ($sym)',
                           hintText: 'e.g. 2,400.50',
-                          prefixText: '₹ ',
+                          prefixText: '$sym ',
                         ),
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
@@ -723,6 +891,133 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 10),
+
+                // Optional paid-in-foreign-currency converter
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: FilterChip(
+                    key: const Key('toggle_foreign_currency_chip'),
+                    avatar: const Icon(Icons.currency_exchange, size: 16),
+                    label: Text(
+                      _useForeignCurrency
+                          ? 'Converting from $_foreignCurrencyCode → ${trip.currency}'
+                          : 'Paid in another currency?',
+                    ),
+                    selected: _useForeignCurrency,
+                    onSelected: (selected) {
+                      setState(() {
+                        _useForeignCurrency = selected;
+                        if (selected) {
+                          if (_foreignCurrencyCode == trip.currency) {
+                            _foreignCurrencyCode =
+                                trip.currency == 'INR' ? 'USD' : 'INR';
+                          }
+                          if (_exchangeRateController.text.trim().isEmpty) {
+                            _exchangeRateController.text =
+                                TripCurrency.suggestedRate(
+                              _foreignCurrencyCode,
+                              trip.currency,
+                            ).toString();
+                          }
+                          _recalculateForeignConversion(trip.currency);
+                        }
+                      });
+                    },
+                  ),
+                ),
+                if (_useForeignCurrency) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    key: const Key('foreign_currency_box'),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(12),
+                      border:
+                          Border.all(color: theme.colorScheme.outlineVariant),
+                    ),
+                    child: Column(
+                      children: [
+                        DropdownButtonFormField<String>(
+                          key: const Key('foreign_currency_dropdown'),
+                          initialValue: _foreignCurrencyCode,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Paid currency',
+                            isDense: true,
+                          ),
+                          items: TripCurrency.all
+                              .where((c) => c.code != trip.currency)
+                              .map(
+                                (c) => DropdownMenuItem(
+                                  value: c.code,
+                                  child: Text(
+                                    '${c.flag} ${c.code} (${c.symbol.trim()}) — ${c.name}',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _foreignCurrencyCode = val;
+                                _exchangeRateController.text =
+                                    TripCurrency.suggestedRate(
+                                  val,
+                                  trip.currency,
+                                ).toString();
+                                _recalculateForeignConversion(trip.currency);
+                              });
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                key: const Key('foreign_amount_field'),
+                                controller: _foreignAmountController,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                  decimal: true,
+                                ),
+                                decoration: InputDecoration(
+                                  labelText: 'Original amount',
+                                  prefixText:
+                                      '${Money.symbolFor(_foreignCurrencyCode).trim()} ',
+                                  isDense: true,
+                                ),
+                                onChanged: (_) =>
+                                    _recalculateForeignConversion(trip.currency),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: TextFormField(
+                                key: const Key('foreign_rate_field'),
+                                controller: _exchangeRateController,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                  decimal: true,
+                                ),
+                                decoration: InputDecoration(
+                                  labelText:
+                                      '1 $_foreignCurrencyCode = ${trip.currency}',
+                                  isDense: true,
+                                ),
+                                onChanged: (_) =>
+                                    _recalculateForeignConversion(trip.currency),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
 
                 // Category selector
@@ -771,6 +1066,109 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
 
                 // Receipt photo attachment
                 _buildReceiptAttachmentCard(theme),
+                const SizedBox(height: 16),
+
+                // Tags section
+                Text(
+                  'Tags (optional)',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    ..._presetTags.map((tag) {
+                      final selected = _selectedTags
+                          .any((t) => t.toLowerCase() == tag.toLowerCase());
+                      return FilterChip(
+                        key: Key('tag_chip_$tag'),
+                        label: Text('#$tag'),
+                        selected: selected,
+                        onSelected: (_) => _toggleTag(tag),
+                        visualDensity: VisualDensity.compact,
+                      );
+                    }),
+                    ..._selectedTags
+                        .where((t) => !_presetTags.contains(t.toLowerCase()))
+                        .map(
+                          (custom) => InputChip(
+                            label: Text('#$custom'),
+                            selected: true,
+                            onDeleted: () => _toggleTag(custom),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: const Key('custom_tag_field'),
+                        controller: _customTagController,
+                        decoration: const InputDecoration(
+                          labelText: 'Add custom tag',
+                          hintText: 'e.g. beach-shack, cab',
+                          prefixText: '#',
+                          isDense: true,
+                        ),
+                        onSubmitted: (_) => _addCustomTag(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filledTonal(
+                      key: const Key('add_custom_tag_btn'),
+                      onPressed: _addCustomTag,
+                      icon: const Icon(Icons.add),
+                      tooltip: 'Add tag',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Free-text Notes
+                TextFormField(
+                  key: const Key('expense_notes_field'),
+                  controller: _notesController,
+                  maxLines: 2,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes (optional)',
+                    hintText: 'Add details, coupon used, or split reason...',
+                    prefixIcon: Icon(Icons.notes_outlined, size: 20),
+                  ),
+                ),
+
+                if (existingExpense != null && existingExpense.id.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    key: const Key('open_expense_comments_btn'),
+                    onPressed: () => ExpenseCommentsSheet.show(
+                      context,
+                      trip: trip,
+                      expense: existingExpense!,
+                    ),
+                    icon: Icon(
+                      existingExpense.openDisputeCount > 0
+                          ? Icons.flag
+                          : Icons.forum_outlined,
+                      color: existingExpense.openDisputeCount > 0
+                          ? theme.colorScheme.error
+                          : null,
+                    ),
+                    label: Text(
+                      existingExpense.openDisputeCount > 0
+                          ? 'Comments & Disputes (${existingExpense.commentCount} • ${existingExpense.openDisputeCount} open)'
+                          : existingExpense.commentCount > 0
+                              ? 'Comments (${existingExpense.commentCount})'
+                              : 'Comments & Disputes',
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
 
                 // Split Mode Tabs
@@ -840,13 +1238,13 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                   ),
 
                 // Split mode specific inputs
-                _buildSplitSection(travelers),
+                _buildSplitSection(travelers, sym),
 
                 const SizedBox(height: 24),
 
                 // Submit button
                 FilledButton(
-                  onPressed: _isSaving ? null : _save,
+                  onPressed: _isSaving ? null : () => _save(trip),
                   child: _isSaving
                       ? const SizedBox(
                           height: 20,
@@ -864,7 +1262,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     );
   }
 
-  Widget _buildSplitSection(List<Traveler> travelers) {
+  Widget _buildSplitSection(List<Traveler> travelers, String currencySymbol) {
     switch (_splitMode) {
       case SplitMode.equal:
         return Column(
@@ -905,8 +1303,8 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                     flex: 3,
                     child: TextFormField(
                       controller: _exactControllers[t.id],
-                      decoration: const InputDecoration(
-                        prefixText: '₹ ',
+                      decoration: InputDecoration(
+                        prefixText: '$currencySymbol ',
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 10,
