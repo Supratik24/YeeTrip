@@ -45,10 +45,10 @@ class SpendingVelocityReport {
   final int totalTripDays;
   final int remainingDays;
 
-  /// Average spending pace per day in integer paise.
+  /// Average spending pace per day in integer minor units.
   final int dailyBurnRatePaise;
 
-  /// Projected total expenditure by trip end in integer paise.
+  /// Projected total expenditure by trip end in integer minor units.
   final int projectedTotalSpendPaise;
 
   /// Projected surplus (positive) or deficit (negative) at trip end.
@@ -99,6 +99,7 @@ class SpendingVelocityPredictor {
     required int elapsedDays,
     Map<String, int> categoryBudgetsPaise = const {},
     Map<String, int> categorySpentPaise = const {},
+    String currencyCode = 'INR',
   }) {
     // Sanitize days bounds
     final safeTotalDays = totalTripDays < 1 ? 1 : totalTripDays;
@@ -107,7 +108,7 @@ class SpendingVelocityPredictor {
         : (elapsedDays > safeTotalDays ? safeTotalDays : elapsedDays);
     final remainingDays = (safeTotalDays - safeElapsedDays).clamp(0, safeTotalDays);
 
-    // Compute daily burn rate in paise (floor division)
+    // Compute daily burn rate in minor units (floor division)
     final dailyBurnRatePaise = totalSpentPaise > 0
         ? totalSpentPaise ~/ safeElapsedDays
         : 0;
@@ -167,17 +168,21 @@ class SpendingVelocityPredictor {
     }
 
     // Friendly message
+    final varianceFormatted = Money.formatAmount(
+      projectedVariancePaise.abs(),
+      currencyCode: currencyCode,
+    );
     final String summary;
     if (totalSpentPaise == 0) {
       summary = 'Trip just started. No spending recorded yet.';
     } else if (risk == VelocityRiskLevel.safe) {
-      summary = 'Healthy pace! Projected savings of ${Money.formatRupees(projectedVariancePaise.abs())} by Day $safeTotalDays.';
+      summary = 'Healthy pace! Projected savings of $varianceFormatted by Day $safeTotalDays.';
     } else if (risk == VelocityRiskLevel.moderate) {
       summary = 'On target. Keep monitoring daily expenses to stay within budget.';
     } else if (risk == VelocityRiskLevel.high) {
-      summary = 'High velocity alert! Projected overrun of ${Money.formatRupees(projectedVariancePaise.abs())}. Consider trimming non-essentials.';
+      summary = 'High velocity alert! Projected overrun of $varianceFormatted. Consider trimming non-essentials.';
     } else {
-      summary = 'Critical burn rate! Trip budget projected to exceed by ${Money.formatRupees(projectedVariancePaise.abs())}. Urgent rebalancing recommended!';
+      summary = 'Critical burn rate! Trip budget projected to exceed by $varianceFormatted. Urgent rebalancing recommended!';
     }
 
     return SpendingVelocityReport(
