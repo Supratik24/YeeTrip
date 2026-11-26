@@ -8,6 +8,7 @@ import '../../../core/constants/categories.dart';
 import '../../../data/local/app_database.dart' hide Traveler;
 import '../../../data/repositories/expense_repository.dart';
 import '../../expenses/domain/expense_model.dart';
+import '../../gallery/domain/trip_photo_model.dart';
 import '../../itinerary/domain/itinerary_model.dart';
 import '../domain/trip_model.dart';
 
@@ -18,11 +19,12 @@ class TripBackupService {
 
   TripBackupService(this._db, [Uuid? uuid]) : _uuid = uuid ?? const Uuid();
 
-  /// Serializes a [trip], its [expenses], and optional [itinerary] to an offline portable JSON string.
+  /// Serializes a [trip], its [expenses], optional [itinerary], and optional [photos] to an offline portable JSON string.
   static String exportTripToJson({
     required TripWithDetails trip,
     required List<ExpenseWithSplits> expenses,
     List<ItineraryItemModel> itinerary = const [],
+    List<TripPhotoModel> photos = const [],
   }) {
     final Map<String, dynamic> backupMap = {
       'version': 1,
@@ -95,6 +97,17 @@ class TripBackupService {
                   'sortOrder': item.sortOrder,
                 })
             .toList(),
+      if (photos.isNotEmpty)
+        'photos': photos
+            .map((photo) => {
+                  'imagePath': photo.imagePath,
+                  if (photo.caption != null && photo.caption!.isNotEmpty)
+                    'caption': photo.caption,
+                  'dayNumber': photo.dayNumber,
+                  'uploadedByName': photo.uploadedByName,
+                  'createdAt': photo.createdAt.toUtc().toIso8601String(),
+                })
+            .toList(),
     };
 
     const encoder = JsonEncoder.withIndent('  ');
@@ -106,11 +119,13 @@ class TripBackupService {
     required TripWithDetails trip,
     required List<ExpenseWithSplits> expenses,
     List<ItineraryItemModel> itinerary = const [],
+    List<TripPhotoModel> photos = const [],
   }) async {
     final jsonContent = exportTripToJson(
       trip: trip,
       expenses: expenses,
       itinerary: itinerary,
+      photos: photos,
     );
     final sanitizedName = trip.name.replaceAll(RegExp(r'[^\w\s]+'), '_').trim();
     final fileName = 'yeetrip_${sanitizedName}_backup.json';
