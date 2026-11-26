@@ -1,4 +1,5 @@
 import '../../../../core/money.dart';
+import '../../../../core/receipt_parser.dart';
 
 /// Pure Dart split calculation and validation engine.
 ///
@@ -186,5 +187,112 @@ class SplitCalculator {
     }
 
     return null;
+  }
+
+  /// Calculates an itemized bill split by assigning each line item to one or more travelers.
+  ///
+  /// - Assigned non-tax items are split equally among their assigned travelers.
+  /// - Any positive remainder (taxes, GST, service charge, tip, round-off, or
+  ///   unassigned fee items) is distributed proportionally to each traveler's
+  ///   itemized subtotal using the largest-remainder method.
+  /// - If a discount makes [totalPaise] smaller than the itemized subtotal,
+  ///   shares are scaled down proportionally so the sum ALWAYS equals [totalPaise].
+  static Map<String, int> calculateItemizedSplit({
+    required int totalPaise,
+    required List<ReceiptLineItem> items,
+    required Map<String, Set<String>> itemAssignees,
+    required List<String> allTravelerIds,
+  }) {
+    if (totalPaise < 0) {
+      throw ArgumentError('Total amount cannot be negative');
+    }
+    if (allTravelerIds.isEmpty) {
+      throw ArgumentError('At least one traveler is required');
+    }
+
+    final splitableItems = items.where((i) => !i.isTaxOrFee).toList();
+    if (splitableItems.isEmpty) {
+      throw ArgumentError('Add at least one bill item to split by items');
+    }
+
+    final subtotalByTraveler = <String, int>{
+      for (final id in allTravelerIds) id: 0,
+    };
+
+    var assignedSum = 0;
+    for (final item in splitableItems) {
+      if (item.amountPaise <= 0) {
+        throw ArgumentError('Item "${item.name}" must have a positive amount');
+      }
+      final assignees = (itemAssignees[item.id] ?? const <String>{})
+          .where((id) => subtotalByTraveler.containsKey(id))
+          .toList();
+      if (assignees.isEmpty) {
+        throw ArgumentError(
+          'Assign "${item.name}" to at least one traveler',
+        );
+      }
+      final itemSplits = calculateEqualSplit(
+        totalPaise: item.amountPaise,
+        travelerIds: assignees,
+      );
+      for (final entry in itemSplits.entries) {
+        subtotalByTraveler[entry.key] =
+            (subtotalByTraveler[entry.key] ?? 0) + entry.value;
+      }
+      assignedSum += item.amountPaise;
+    }
+
+    if (totalPaise == 0) {
+      return subtotalByTraveler.map((k, _) => MapEntry(k, 0));
+    }
+
+    if (assignedSum == totalPaise) {
+      assert(
+        subtotalByTraveler.values.fold<int>(0, (s, v) => s + v) == totalPaise,
+      );
+      return subtotalByTraveler;
+    }
+
+    // If subtotal exceeds total (e.g., coupon/discount), scale down proportionally.
+    if (assignedSum > totalPaise) {
+      final positiveWeights = <String, int>{
+        for (final entry in subtotalByTraveler.entries)
+          if (entry.value > 0) entry.key: entry.value,
+      };
+      final scaled = calculateSharesSplit(
+        totalPaise: totalPaise,
+        weights: positiveWeights.isNotEmpty
+            ? positiveWeights
+            : {for (final id in allTravelerIds) id: 1},
+      );
+      return {
+        for (final id in allTravelerIds) id: scaled[id] ?? 0,
+      };
+    }
+
+    // Otherwise distribute remaining taxes/fees/tip/unassigned delta proportionally.
+    final taxAndFeeDelta = totalPaise - assignedSum;
+    final positiveWeights = <String, int>{
+      for (final entry in subtotalByTraveler.entries)
+        if (entry.value > 0) entry.key: entry.value,
+    };
+    final distributedDelta = calculateSharesSplit(
+      totalPaise: taxAndFeeDelta,
+      weights: positiveWeights.isNotEmpty
+          ? positiveWeights
+          : {for (final id in allTravelerIds) id: 1},
+    );
+
+    final result = <String, int>{
+      for (final id in allTravelerIds)
+        id: (subtotalByTraveler[id] ?? 0) + (distributedDelta[id] ?? 0),
+    };
+
+    assert(
+      result.values.fold<int>(0, (s, v) => s + v) == totalPaise,
+      'Itemized split must sum exactly to totalPaise',
+    );
+    return result;
   }
 }
