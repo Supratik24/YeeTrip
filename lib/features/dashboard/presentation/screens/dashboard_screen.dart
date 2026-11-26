@@ -8,14 +8,17 @@ import '../../../../core/notifications/notification_providers.dart';
 import '../../../../core/notifications/notifications_sheet.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
+import '../../../expenses/domain/expense_model.dart';
 import '../../../sync/presentation/widgets/cloud_sync_sheet.dart';
 import '../../../trips/domain/trip_model.dart';
 import '../../../trips/presentation/widgets/trip_cover_picker.dart';
 import '../widgets/category_pie_chart.dart';
 import '../widgets/cooked_meter.dart';
+import '../widgets/daily_spending_chart.dart';
 import '../widgets/metric_cards.dart';
 import '../widgets/planned_vs_actual_bars.dart';
 import '../widgets/spending_velocity_card.dart';
+import '../widgets/trip_share_card_sheet.dart';
 
 /// Dashboard screen showing spending overview, cooked meter, and planned vs actual.
 class DashboardScreen extends ConsumerWidget {
@@ -106,6 +109,13 @@ class DashboardScreen extends ConsumerWidget {
 
                 // 1b. Day-by-Day Itinerary Planner Card
                 _DashboardItineraryCard(trip: effectiveTrip),
+                const SizedBox(height: 12),
+
+                // 1c. Photo Gallery & Share Summary Card quick row
+                _DashboardGalleryShareRow(
+                  trip: effectiveTrip,
+                  expenses: expenses,
+                ),
                 const SizedBox(height: 16),
 
                 // 2. Cooked Meter
@@ -118,6 +128,13 @@ class DashboardScreen extends ConsumerWidget {
 
                 // 3. Spending Velocity & Forecast
                 SpendingVelocityCard(
+                  trip: effectiveTrip,
+                  expenses: expenses,
+                ),
+                const SizedBox(height: 16),
+
+                // 3b. Daily Spending Chart
+                DailySpendingChart(
                   trip: effectiveTrip,
                   expenses: expenses,
                 ),
@@ -209,6 +226,145 @@ class _DashboardItineraryCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _DashboardGalleryShareRow extends StatelessWidget {
+  final TripWithDetails trip;
+  final List<ExpenseWithSplits> expenses;
+
+  const _DashboardGalleryShareRow({
+    required this.trip,
+    required this.expenses,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final receiptPhotosCount = expenses
+        .where(
+          (e) => e.receiptImagePath != null && e.receiptImagePath!.isNotEmpty,
+        )
+        .length;
+    final totalPhotos = trip.photoCount + receiptPhotosCount;
+
+    return Row(
+      children: [
+        Expanded(
+          child: Card(
+            key: const Key('dashboard_gallery_card'),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => context.push('/trips/${trip.id}/gallery'),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: theme.colorScheme.secondaryContainer,
+                      child: Icon(
+                        Icons.photo_library_outlined,
+                        size: 18,
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Photo Gallery',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            totalPhotos == 0
+                                ? 'Add memories'
+                                : '$totalPhotos photo${totalPhotos == 1 ? "" : "s"}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Card(
+            key: const Key('dashboard_share_card_btn'),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => TripShareCardSheet.show(
+                context,
+                trip: trip,
+                expenses: expenses,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: theme.colorScheme.primaryContainer,
+                      child: Icon(
+                        Icons.ios_share_rounded,
+                        size: 18,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Share Card',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'WhatsApp / Chat',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
