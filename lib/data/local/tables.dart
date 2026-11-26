@@ -133,3 +133,20 @@ class ExpenseComments extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// TripPhotos table
+/// Shared photo gallery memories contributed by travelers on a trip.
+class TripPhotos extends Table {
+  TextColumn get id => text()();
+  TextColumn get tripId =>
+      text().references(Trips, #id, onDelete: KeyAction.cascade)();
+  TextColumn get imagePath => text()();
+  TextColumn get caption => text().nullable()();
+  IntColumn get dayNumber => integer().withDefault(const Constant(1))();
+  TextColumn get uploadedByTravelerId => text().nullable()();
+  TextColumn get uploadedByName => text().withDefault(const Constant('You'))();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
