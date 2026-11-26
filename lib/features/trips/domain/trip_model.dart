@@ -51,7 +51,7 @@ class Traveler {
       Object.hash(id, tripId, name, upiVpa, avatarPath, phone);
 }
 
-/// Domain model for a Trip with its travelers, allocations, and spent summary.
+/// Domain model for a Trip with its travelers, allocations, spent summary, and itinerary summary.
 class TripWithDetails {
   final String id;
   final String name;
@@ -70,6 +70,11 @@ class TripWithDetails {
   final DateTime? startDate;
   final DateTime? endDate;
 
+  // Itinerary progress summary for Dashboard & Notifications
+  final int itineraryTotalCount;
+  final int itineraryCompletedCount;
+  final String? nextItineraryTitle;
+
   const TripWithDetails({
     required this.id,
     required this.name,
@@ -85,6 +90,9 @@ class TripWithDetails {
     this.status = 'active',
     this.startDate,
     this.endDate,
+    this.itineraryTotalCount = 0,
+    this.itineraryCompletedCount = 0,
+    this.nextItineraryTitle,
   });
 
   int get remainingBudgetPaise => totalBudgetPaise - totalSpentPaise;
@@ -111,6 +119,9 @@ class TripWithDetails {
     String? status,
     DateTime? startDate,
     DateTime? endDate,
+    int? itineraryTotalCount,
+    int? itineraryCompletedCount,
+    String? nextItineraryTitle,
   }) {
     return TripWithDetails(
       id: id ?? this.id,
@@ -127,6 +138,10 @@ class TripWithDetails {
       status: status ?? this.status,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
+      itineraryTotalCount: itineraryTotalCount ?? this.itineraryTotalCount,
+      itineraryCompletedCount:
+          itineraryCompletedCount ?? this.itineraryCompletedCount,
+      nextItineraryTitle: nextItineraryTitle ?? this.nextItineraryTitle,
     );
   }
 }
