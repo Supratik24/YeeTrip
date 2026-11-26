@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/expenses/presentation/screens/add_edit_expense_screen.dart';
+import '../features/gallery/presentation/screens/trip_gallery_screen.dart';
 import '../features/itinerary/presentation/screens/itinerary_screen.dart';
 import '../features/splash/presentation/animated_splash_screen.dart';
 import '../features/trips/presentation/screens/trip_detail_scaffold.dart';
@@ -65,6 +66,13 @@ final appRouter = GoRouter(
               builder: (context, state) {
                 final tripId = state.pathParameters['id']!;
                 return ItineraryScreen(tripId: tripId);
+              },
+            ),
+            GoRoute(
+              path: 'gallery',
+              builder: (context, state) {
+                final tripId = state.pathParameters['id']!;
+                return TripGalleryScreen(tripId: tripId);
               },
             ),
             GoRoute(
