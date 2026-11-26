@@ -4,6 +4,7 @@ enum SplitMode {
   exact,
   percentage,
   shares,
+  itemized,
 }
 
 /// Split share for a single traveler.
