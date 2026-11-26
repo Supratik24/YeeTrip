@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/locale_provider.dart';
 import '../../../../core/money.dart';
+import '../../../../core/notifications/notification_providers.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../data/providers.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -77,9 +78,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     setState(() => _isBackingUp = true);
     try {
+      final itinerary = await ref
+          .read(itineraryRepositoryProvider)
+          .getItinerary(widget.trip.id);
       await TripBackupService.exportAndShareBackup(
         trip: widget.trip,
         expenses: expenses,
+        itinerary: itinerary,
       );
     } catch (e) {
       if (mounted) {
@@ -266,7 +271,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _buildDetailRow(
                     context,
                     l10n?.totalBudget ?? 'Total budget',
-                    Money.formatRupees(widget.trip.totalBudgetPaise),
+                    '${Money.formatAmount(widget.trip.totalBudgetPaise, currencyCode: widget.trip.currency)} (${widget.trip.currency})',
                   ),
                   const SizedBox(height: 6),
                   _buildDetailRow(
@@ -356,6 +361,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+
+          // Notifications & Reminders Card
+          _buildNotificationsCard(context, ref),
           const SizedBox(height: 16),
 
           // Language Selector Card
@@ -835,6 +844,106 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildNotificationsCard(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final prefs = ref.watch(notificationPreferencesProvider);
+    final notifier = ref.read(notificationPreferencesProvider.notifier);
+
+    return Card(
+      key: const Key('notifications_settings_card'),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.notifications_active_outlined,
+                    color: colorScheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Notifications & Reminders',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Local offline alerts for trip starts, budget limits, and unsettled debts.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Trip start reminders'),
+              subtitle: const Text('1 day before departure'),
+              value: prefs.tripStartReminders,
+              onChanged: (v) => notifier.updatePreferences(
+                prefs.copyWith(tripStartReminders: v),
+              ),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Budget burn alerts'),
+              subtitle: const Text('Alert at 80% and 100% spend'),
+              value: prefs.budgetBurnAlerts,
+              onChanged: (v) => notifier.updatePreferences(
+                prefs.copyWith(budgetBurnAlerts: v),
+              ),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Settlement reminders'),
+              subtitle: const Text('Remind about unsettled balances'),
+              value: prefs.settlementReminders,
+              onChanged: (v) => notifier.updatePreferences(
+                prefs.copyWith(settlementReminders: v),
+              ),
+            ),
+            const SizedBox(height: 4),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                key: const Key('test_notification_btn'),
+                onPressed: () async {
+                  await ref
+                      .read(tripNotificationServiceProvider)
+                      .sendInstantAlert(
+                        title: 'YeeTrip Reminder • ${widget.trip.name}',
+                        body:
+                            'Budget ${Money.formatAmount(widget.trip.remainingBudgetPaise.abs(), currencyCode: widget.trip.currency)} ${widget.trip.remainingBudgetPaise < 0 ? "over" : "left"} • ${widget.trip.days} days',
+                      );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Notification reminder triggered!'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.notifications_outlined, size: 18),
+                label: const Text('Send test notification'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
