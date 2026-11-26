@@ -246,6 +246,7 @@ class _BudgetSlidersScreenState extends ConsumerState<BudgetSlidersScreen> {
             final color = _categoryColor(cat.key, theme);
 
             return Card(
+              key: ValueKey(cat.key),
               margin: const EdgeInsets.only(bottom: 12),
               child: Padding(
                 padding: const EdgeInsets.all(14),
