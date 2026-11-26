@@ -138,6 +138,33 @@ class Money {
     );
   }
 
+  /// Formats integer minor units compactly for chart axis labels (e.g. "₹12K", "$1.5K").
+  static String formatCompact(
+    int minorUnits, {
+    String currencyCode = 'INR',
+  }) {
+    final currency = TripCurrency.fromCode(currencyCode);
+    final sign = minorUnits < 0 ? '-' : '';
+    final absMajor = minorUnits.abs() / 100.0;
+    final sym = currency.symbol;
+
+    if (currency.usesIndianGrouping && absMajor >= 100000) {
+      final lakhs = absMajor / 100000.0;
+      final formatted = lakhs >= 10
+          ? lakhs.toStringAsFixed(0)
+          : lakhs.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
+      return '$sign$sym${formatted}L';
+    }
+    if (absMajor >= 1000) {
+      final k = absMajor / 1000.0;
+      final formatted = k >= 10
+          ? k.toStringAsFixed(0)
+          : k.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
+      return '$sign$sym${formatted}K';
+    }
+    return formatAmount(minorUnits, currencyCode: currencyCode);
+  }
+
   /// Formats an integer using Indian numbering grouping:
   /// The rightmost 3 digits form the first group, then groups of 2 digits.
   /// e.g. 1000000 -> "10,00,000"
