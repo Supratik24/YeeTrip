@@ -116,7 +116,7 @@ class PlannedVsActualBars extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                             color: isOverPlan
                                 ? theme.colorScheme.error
-                                : Colors.grey.shade600,
+                                : theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -127,7 +127,7 @@ class PlannedVsActualBars extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: ratio.clamp(0.0, 1.0),
                         minHeight: 8,
-                        backgroundColor: Colors.grey.shade200,
+                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
                         valueColor: AlwaysStoppedAnimation<Color>(barColor),
                       ),
                     ),
@@ -139,7 +139,7 @@ class PlannedVsActualBars extends StatelessWidget {
                             'Spent: ${Money.formatAmount(actualPaise, currencyCode: trip.currency)}',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey.shade600,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -153,7 +153,7 @@ class PlannedVsActualBars extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey.shade600,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
