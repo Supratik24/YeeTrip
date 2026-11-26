@@ -70,10 +70,11 @@ class TripWithDetails {
   final DateTime? startDate;
   final DateTime? endDate;
 
-  // Itinerary progress summary for Dashboard & Notifications
+  // Itinerary & photo gallery progress summary for Dashboard & Notifications
   final int itineraryTotalCount;
   final int itineraryCompletedCount;
   final String? nextItineraryTitle;
+  final int photoCount;
 
   const TripWithDetails({
     required this.id,
@@ -93,6 +94,7 @@ class TripWithDetails {
     this.itineraryTotalCount = 0,
     this.itineraryCompletedCount = 0,
     this.nextItineraryTitle,
+    this.photoCount = 0,
   });
 
   int get remainingBudgetPaise => totalBudgetPaise - totalSpentPaise;
@@ -122,6 +124,7 @@ class TripWithDetails {
     int? itineraryTotalCount,
     int? itineraryCompletedCount,
     String? nextItineraryTitle,
+    int? photoCount,
   }) {
     return TripWithDetails(
       id: id ?? this.id,
@@ -142,6 +145,7 @@ class TripWithDetails {
       itineraryCompletedCount:
           itineraryCompletedCount ?? this.itineraryCompletedCount,
       nextItineraryTitle: nextItineraryTitle ?? this.nextItineraryTitle,
+      photoCount: photoCount ?? this.photoCount,
     );
   }
 }
