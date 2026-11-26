@@ -1,11 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/expenses/domain/expense_comment_model.dart';
 import '../features/expenses/domain/expense_model.dart';
+import '../features/itinerary/domain/itinerary_model.dart';
 import '../features/trips/domain/trip_model.dart';
 import '../features/trips/services/trip_backup_service.dart';
 import 'local/app_database.dart';
 import 'local/connection/connection.dart';
+import 'repositories/expense_comment_repository.dart';
 import 'repositories/expense_repository.dart';
+import 'repositories/itinerary_repository.dart';
 import 'repositories/trip_repository.dart';
 
 /// Database provider. Can be overridden in tests.
@@ -25,6 +29,19 @@ final tripRepositoryProvider = Provider<TripRepository>((ref) {
 final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
   final db = ref.watch(databaseProvider);
   return DriftExpenseRepository(db);
+});
+
+/// ItineraryRepository provider.
+final itineraryRepositoryProvider = Provider<ItineraryRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return DriftItineraryRepository(db);
+});
+
+/// ExpenseCommentRepository provider.
+final expenseCommentRepositoryProvider =
+    Provider<ExpenseCommentRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return DriftExpenseCommentRepository(db);
 });
 
 /// TripBackupService provider.
@@ -51,4 +68,18 @@ final tripExpensesProvider =
     StreamProvider.family<List<ExpenseWithSplits>, String>((ref, tripId) {
   final repo = ref.watch(expenseRepositoryProvider);
   return repo.watchExpenses(tripId);
+});
+
+/// Stream of day-by-day itinerary items for a specific trip.
+final tripItineraryProvider =
+    StreamProvider.family<List<ItineraryItemModel>, String>((ref, tripId) {
+  final repo = ref.watch(itineraryRepositoryProvider);
+  return repo.watchItinerary(tripId);
+});
+
+/// Stream of comments and disputes for a single expense.
+final expenseCommentsProvider =
+    StreamProvider.family<List<ExpenseCommentModel>, String>((ref, expenseId) {
+  final repo = ref.watch(expenseCommentRepositoryProvider);
+  return repo.watchCommentsForExpense(expenseId);
 });
