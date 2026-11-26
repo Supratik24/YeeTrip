@@ -107,8 +107,8 @@ class PlannedVsActualBars extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           isOverPlan
-                              ? 'Over by ${Money.formatRupees(diffPaise)}'
-                              : '${Money.formatRupees(diffPaise)} left',
+                              ? 'Over by ${Money.formatAmount(diffPaise, currencyCode: trip.currency)}'
+                              : '${Money.formatAmount(diffPaise, currencyCode: trip.currency)} left',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -136,7 +136,7 @@ class PlannedVsActualBars extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            'Spent: ${Money.formatRupees(actualPaise)}',
+                            'Spent: ${Money.formatAmount(actualPaise, currencyCode: trip.currency)}',
                             style: TextStyle(
                               fontSize: 11,
                               color: Colors.grey.shade600,
@@ -148,7 +148,7 @@ class PlannedVsActualBars extends StatelessWidget {
                         const SizedBox(width: 8),
                         Flexible(
                           child: Text(
-                            'Planned: ${Money.formatRupees(plannedPaise)} ($percent%)',
+                            'Planned: ${Money.formatAmount(plannedPaise, currencyCode: trip.currency)} ($percent%)',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
