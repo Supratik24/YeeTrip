@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_models.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/money.dart';
+import '../../../../core/notifications/notification_providers.dart';
+import '../../../../core/notifications/notifications_sheet.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../core/widgets/traveler_avatar.dart';
 import '../../../../data/providers.dart';
@@ -122,12 +124,26 @@ class TripListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tripsAsync = ref.watch(tripsStreamProvider);
+    final notifications = ref.watch(globalNotificationsProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('YeeTrip'),
         actions: [
+          IconButton(
+            key: const Key('open_notifications_btn'),
+            tooltip: 'Notifications & Reminders',
+            icon: Badge.count(
+              count: notifications.length,
+              isLabelVisible: notifications.isNotEmpty,
+              child: const Icon(Icons.notifications_outlined),
+            ),
+            onPressed: () => NotificationsSheet.show(
+              context,
+              notifications: notifications,
+            ),
+          ),
           IconButton(
             key: const Key('join_trip_code_btn'),
             icon: const Icon(Icons.group_add_outlined),
@@ -217,6 +233,8 @@ class TripListScreen extends ConsumerWidget {
                               final tripId = await DemoDataSeeder.seedDemoTrip(
                                 tripRepo: ref.read(tripRepositoryProvider),
                                 expenseRepo: ref.read(expenseRepositoryProvider),
+                                itineraryRepo:
+                                    ref.read(itineraryRepositoryProvider),
                               );
                               if (context.mounted) {
                                 context.go('/trips/$tripId');
@@ -434,7 +452,10 @@ class TripListScreen extends ConsumerWidget {
                                     fit: BoxFit.scaleDown,
                                     alignment: Alignment.centerLeft,
                                     child: Text(
-                                      Money.formatRupees(trip.totalBudgetPaise),
+                                      Money.formatAmount(
+                                        trip.totalBudgetPaise,
+                                        currencyCode: trip.currency,
+                                      ),
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -460,7 +481,10 @@ class TripListScreen extends ConsumerWidget {
                                     fit: BoxFit.scaleDown,
                                     alignment: Alignment.center,
                                     child: Text(
-                                      Money.formatRupees(trip.totalSpentPaise),
+                                      Money.formatAmount(
+                                        trip.totalSpentPaise,
+                                        currencyCode: trip.currency,
+                                      ),
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -488,8 +512,9 @@ class TripListScreen extends ConsumerWidget {
                                     fit: BoxFit.scaleDown,
                                     alignment: Alignment.centerRight,
                                     child: Text(
-                                      Money.formatRupees(
+                                      Money.formatAmount(
                                         trip.remainingBudgetPaise.abs(),
+                                        currencyCode: trip.currency,
                                       ),
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
