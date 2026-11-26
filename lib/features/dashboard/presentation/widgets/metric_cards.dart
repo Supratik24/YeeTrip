@@ -24,7 +24,10 @@ class DashboardMetricCards extends StatelessWidget {
             Expanded(
               child: _MetricCard(
                 title: 'Total budget',
-                value: Money.formatRupees(trip.totalBudgetPaise),
+                value: Money.formatAmount(
+                  trip.totalBudgetPaise,
+                  currencyCode: trip.currency,
+                ),
                 subtitle: '${trip.travelers.length} travelers • ${trip.days} days',
                 icon: Icons.account_balance_wallet_outlined,
               ),
@@ -33,7 +36,10 @@ class DashboardMetricCards extends StatelessWidget {
             Expanded(
               child: _MetricCard(
                 title: isOverBudget ? 'Over by' : 'Remaining',
-                value: Money.formatRupees(trip.remainingBudgetPaise.abs()),
+                value: Money.formatAmount(
+                  trip.remainingBudgetPaise.abs(),
+                  currencyCode: trip.currency,
+                ),
                 subtitle: isOverBudget
                     ? 'Exceeded trip budget'
                     : '${((trip.remainingBudgetPaise / (trip.totalBudgetPaise > 0 ? trip.totalBudgetPaise : 1)) * 100).toStringAsFixed(0)}% available',
@@ -53,7 +59,10 @@ class DashboardMetricCards extends StatelessWidget {
             Expanded(
               child: _MetricCard(
                 title: 'Per person',
-                value: Money.formatRupees(trip.budgetPerPersonPaise),
+                value: Money.formatAmount(
+                  trip.budgetPerPersonPaise,
+                  currencyCode: trip.currency,
+                ),
                 subtitle: 'Target budget',
                 icon: Icons.person_outline,
               ),
@@ -62,7 +71,10 @@ class DashboardMetricCards extends StatelessWidget {
             Expanded(
               child: _MetricCard(
                 title: 'Per day (group)',
-                value: Money.formatRupees(trip.budgetPerDayPaise),
+                value: Money.formatAmount(
+                  trip.budgetPerDayPaise,
+                  currencyCode: trip.currency,
+                ),
                 subtitle: 'Target per day',
                 icon: Icons.calendar_today_outlined,
               ),
