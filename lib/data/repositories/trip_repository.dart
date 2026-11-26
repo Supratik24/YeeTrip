@@ -419,6 +419,11 @@ class DriftTripRepository implements TripRepository {
       }
     }
 
+    // Load gallery photo count
+    final photoRows = await (_db.select(_db.tripPhotos)
+          ..where((p) => p.tripId.equals(row.id)))
+        .get();
+
     return TripWithDetails(
       id: row.id,
       name: row.name,
@@ -437,6 +442,7 @@ class DriftTripRepository implements TripRepository {
       itineraryTotalCount: itineraryTotalCount,
       itineraryCompletedCount: itineraryCompletedCount,
       nextItineraryTitle: nextItineraryTitle,
+      photoCount: photoRows.length,
     );
   }
 }
