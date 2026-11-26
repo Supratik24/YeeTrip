@@ -203,7 +203,10 @@ class _BudgetSlidersScreenState extends ConsumerState<BudgetSlidersScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        Money.formatRupees(totalBudget),
+                        Money.formatAmount(
+                          totalBudget,
+                          currencyCode: trip.currency,
+                        ),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -307,27 +310,36 @@ class _BudgetSlidersScreenState extends ConsumerState<BudgetSlidersScreen> {
                       ),
                     ),
 
-                    // ₹ Amount, ₹ per person, ₹ per day breakdown
+                    // Total, per person, per day breakdown
                     Row(
                       children: [
                         Expanded(
                           child: _StatItem(
                             label: 'Total',
-                            value: Money.formatRupees(catBudget),
+                            value: Money.formatAmount(
+                              catBudget,
+                              currencyCode: trip.currency,
+                            ),
                             alignment: CrossAxisAlignment.start,
                           ),
                         ),
                         Expanded(
                           child: _StatItem(
                             label: 'Per person',
-                            value: Money.formatRupees(perPerson),
+                            value: Money.formatAmount(
+                              perPerson,
+                              currencyCode: trip.currency,
+                            ),
                             alignment: CrossAxisAlignment.center,
                           ),
                         ),
                         Expanded(
                           child: _StatItem(
                             label: 'Per day',
-                            value: Money.formatRupees(perDay),
+                            value: Money.formatAmount(
+                              perDay,
+                              currencyCode: trip.currency,
+                            ),
                             alignment: CrossAxisAlignment.end,
                           ),
                         ),
