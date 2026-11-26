@@ -14,6 +14,7 @@ part 'app_database.g.dart';
     ExpenseSplits,
     ItineraryItems,
     ExpenseComments,
+    TripPhotos,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -23,7 +24,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -60,6 +61,9 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(expenses, expenses.exchangeRate);
             await m.createTable(itineraryItems);
             await m.createTable(expenseComments);
+          }
+          if (from < 5) {
+            await m.createTable(tripPhotos);
           }
         },
       );
