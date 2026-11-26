@@ -11,6 +11,7 @@ import '../../../../core/widgets/responsive_center.dart';
 import '../../../../core/widgets/traveler_avatar.dart';
 import '../../../../data/providers.dart';
 import '../../../auth/presentation/widgets/auth_modal.dart';
+import '../widgets/ai_budget_suggester_sheet.dart';
 import '../widgets/contact_picker_sheet.dart';
 import '../widgets/trip_cover_picker.dart';
 
@@ -58,6 +59,7 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
   String _selectedCurrency = 'INR';
+  Map<String, int>? _suggestedAllocations;
   String? _travelersError;
   bool _isSubmitting = false;
 
@@ -267,6 +269,7 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
         travelerPhones:
             _travelerPhones.isNotEmpty ? _travelerPhones : null,
         currency: _selectedCurrency,
+        allocations: _suggestedAllocations,
       );
 
       if (_startDate != null) {
@@ -298,6 +301,37 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
       if (mounted) {
         setState(() => _isSubmitting = false);
       }
+    }
+  }
+
+  Future<void> _openBudgetSuggester() async {
+    final days = int.tryParse(_daysController.text.trim()) ?? 4;
+    final travelerCount = _travelers.isEmpty ? 1 : _travelers.length;
+    final applied = await AiBudgetSuggesterSheet.show(
+      context,
+      initialDestination: _destinationController.text.trim(),
+      initialDays: days < 1 ? 1 : days,
+      initialTravelerCount: travelerCount,
+      currencyCode: _selectedCurrency,
+    );
+    if (applied != null && mounted) {
+      setState(() {
+        _budgetController.text =
+            Money.paiseToDecimalString(applied.totalBudgetMinor);
+        _suggestedAllocations = applied.categoryAllocations;
+        if (_destinationController.text.trim().isEmpty &&
+            applied.updatedDestination != null) {
+          _destinationController.text = applied.updatedDestination!;
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Applied suggested budget (${Money.formatAmount(applied.totalBudgetMinor, currencyCode: _selectedCurrency)}) & category split',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -446,7 +480,27 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
                     }
                   },
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
+
+                // Smart / AI Budget Suggester trigger
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: ActionChip(
+                    key: const Key('ai_budget_suggester_btn'),
+                    avatar: Icon(
+                      Icons.auto_awesome,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    ),
+                    label: Text(
+                      _suggestedAllocations != null
+                          ? 'AI Budget Applied • Recalculate'
+                          : 'Suggest Smart Budget with AI',
+                    ),
+                    onPressed: _openBudgetSuggester,
+                  ),
+                ),
+                const SizedBox(height: 12),
 
                 // Total budget & Days in a responsive row
                 Row(
