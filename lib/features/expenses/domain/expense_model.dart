@@ -43,7 +43,7 @@ class ExpenseSplitModel {
   int get hashCode => Object.hash(expenseId, travelerId, sharePaise);
 }
 
-/// Domain model for an expense including all its splits.
+/// Domain model for an expense including all its splits, tags, notes, comments count, and optional origin currency.
 class ExpenseWithSplits {
   final String id;
   final String tripId;
@@ -57,6 +57,13 @@ class ExpenseWithSplits {
   final DateTime createdAt;
   final List<ExpenseSplitModel> splits;
   final String? receiptImagePath;
+  final String? notes;
+  final List<String> tags;
+  final String? originalCurrency;
+  final int? originalAmountPaise;
+  final double? exchangeRate;
+  final int commentCount;
+  final int openDisputeCount;
 
   const ExpenseWithSplits({
     required this.id,
@@ -71,6 +78,13 @@ class ExpenseWithSplits {
     required this.createdAt,
     this.splits = const [],
     this.receiptImagePath,
+    this.notes,
+    this.tags = const [],
+    this.originalCurrency,
+    this.originalAmountPaise,
+    this.exchangeRate,
+    this.commentCount = 0,
+    this.openDisputeCount = 0,
   });
 
   ExpenseWithSplits copyWith({
@@ -86,6 +100,13 @@ class ExpenseWithSplits {
     DateTime? createdAt,
     List<ExpenseSplitModel>? splits,
     String? receiptImagePath,
+    String? notes,
+    List<String>? tags,
+    String? originalCurrency,
+    int? originalAmountPaise,
+    double? exchangeRate,
+    int? commentCount,
+    int? openDisputeCount,
   }) {
     return ExpenseWithSplits(
       id: id ?? this.id,
@@ -100,6 +121,13 @@ class ExpenseWithSplits {
       createdAt: createdAt ?? this.createdAt,
       splits: splits ?? this.splits,
       receiptImagePath: receiptImagePath ?? this.receiptImagePath,
+      notes: notes ?? this.notes,
+      tags: tags ?? this.tags,
+      originalCurrency: originalCurrency ?? this.originalCurrency,
+      originalAmountPaise: originalAmountPaise ?? this.originalAmountPaise,
+      exchangeRate: exchangeRate ?? this.exchangeRate,
+      commentCount: commentCount ?? this.commentCount,
+      openDisputeCount: openDisputeCount ?? this.openDisputeCount,
     );
   }
 }
