@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/expenses/presentation/screens/add_edit_expense_screen.dart';
+import '../features/itinerary/presentation/screens/itinerary_screen.dart';
 import '../features/splash/presentation/animated_splash_screen.dart';
 import '../features/trips/presentation/screens/trip_detail_scaffold.dart';
 import '../features/trips/presentation/screens/trip_edit_screen.dart';
@@ -60,10 +61,24 @@ final appRouter = GoRouter(
               },
             ),
             GoRoute(
+              path: 'itinerary',
+              builder: (context, state) {
+                final tripId = state.pathParameters['id']!;
+                return ItineraryScreen(tripId: tripId);
+              },
+            ),
+            GoRoute(
               path: 'expenses/new',
               builder: (context, state) {
                 final tripId = state.pathParameters['id']!;
-                return AddEditExpenseScreen(tripId: tripId);
+                final qp = state.uri.queryParameters;
+                return AddEditExpenseScreen(
+                  tripId: tripId,
+                  initialDescription: qp['desc'],
+                  initialCategory: qp['cat'],
+                  initialAmountDecimal: qp['amt'],
+                  initialNotes: qp['notes'],
+                );
               },
             ),
             GoRoute(
