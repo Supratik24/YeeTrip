@@ -1478,6 +1478,59 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _tagsJsonMeta = const VerificationMeta(
+    'tagsJson',
+  );
+  @override
+  late final GeneratedColumn<String> tagsJson = GeneratedColumn<String>(
+    'tags_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _originalCurrencyMeta = const VerificationMeta(
+    'originalCurrency',
+  );
+  @override
+  late final GeneratedColumn<String> originalCurrency = GeneratedColumn<String>(
+    'original_currency',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _originalAmountPaiseMeta =
+      const VerificationMeta('originalAmountPaise');
+  @override
+  late final GeneratedColumn<int> originalAmountPaise = GeneratedColumn<int>(
+    'original_amount_paise',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _exchangeRateMeta = const VerificationMeta(
+    'exchangeRate',
+  );
+  @override
+  late final GeneratedColumn<double> exchangeRate = GeneratedColumn<double>(
+    'exchange_rate',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1491,6 +1544,11 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
     confirmed,
     createdAt,
     receiptImagePath,
+    notes,
+    tagsJson,
+    originalCurrency,
+    originalAmountPaise,
+    exchangeRate,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1590,6 +1648,45 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
         ),
       );
     }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('tags_json')) {
+      context.handle(
+        _tagsJsonMeta,
+        tagsJson.isAcceptableOrUnknown(data['tags_json']!, _tagsJsonMeta),
+      );
+    }
+    if (data.containsKey('original_currency')) {
+      context.handle(
+        _originalCurrencyMeta,
+        originalCurrency.isAcceptableOrUnknown(
+          data['original_currency']!,
+          _originalCurrencyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('original_amount_paise')) {
+      context.handle(
+        _originalAmountPaiseMeta,
+        originalAmountPaise.isAcceptableOrUnknown(
+          data['original_amount_paise']!,
+          _originalAmountPaiseMeta,
+        ),
+      );
+    }
+    if (data.containsKey('exchange_rate')) {
+      context.handle(
+        _exchangeRateMeta,
+        exchangeRate.isAcceptableOrUnknown(
+          data['exchange_rate']!,
+          _exchangeRateMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1643,6 +1740,26 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
         DriftSqlType.string,
         data['${effectivePrefix}receipt_image_path'],
       ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      tagsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tags_json'],
+      )!,
+      originalCurrency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}original_currency'],
+      ),
+      originalAmountPaise: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}original_amount_paise'],
+      ),
+      exchangeRate: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}exchange_rate'],
+      ),
     );
   }
 
@@ -1664,6 +1781,11 @@ class Expense extends DataClass implements Insertable<Expense> {
   final bool confirmed;
   final DateTime createdAt;
   final String? receiptImagePath;
+  final String? notes;
+  final String tagsJson;
+  final String? originalCurrency;
+  final int? originalAmountPaise;
+  final double? exchangeRate;
   const Expense({
     required this.id,
     required this.tripId,
@@ -1676,6 +1798,11 @@ class Expense extends DataClass implements Insertable<Expense> {
     required this.confirmed,
     required this.createdAt,
     this.receiptImagePath,
+    this.notes,
+    required this.tagsJson,
+    this.originalCurrency,
+    this.originalAmountPaise,
+    this.exchangeRate,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1694,6 +1821,19 @@ class Expense extends DataClass implements Insertable<Expense> {
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || receiptImagePath != null) {
       map['receipt_image_path'] = Variable<String>(receiptImagePath);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['tags_json'] = Variable<String>(tagsJson);
+    if (!nullToAbsent || originalCurrency != null) {
+      map['original_currency'] = Variable<String>(originalCurrency);
+    }
+    if (!nullToAbsent || originalAmountPaise != null) {
+      map['original_amount_paise'] = Variable<int>(originalAmountPaise);
+    }
+    if (!nullToAbsent || exchangeRate != null) {
+      map['exchange_rate'] = Variable<double>(exchangeRate);
     }
     return map;
   }
@@ -1715,6 +1855,19 @@ class Expense extends DataClass implements Insertable<Expense> {
       receiptImagePath: receiptImagePath == null && nullToAbsent
           ? const Value.absent()
           : Value(receiptImagePath),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      tagsJson: Value(tagsJson),
+      originalCurrency: originalCurrency == null && nullToAbsent
+          ? const Value.absent()
+          : Value(originalCurrency),
+      originalAmountPaise: originalAmountPaise == null && nullToAbsent
+          ? const Value.absent()
+          : Value(originalAmountPaise),
+      exchangeRate: exchangeRate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exchangeRate),
     );
   }
 
@@ -1735,6 +1888,13 @@ class Expense extends DataClass implements Insertable<Expense> {
       confirmed: serializer.fromJson<bool>(json['confirmed']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       receiptImagePath: serializer.fromJson<String?>(json['receiptImagePath']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      tagsJson: serializer.fromJson<String>(json['tagsJson']),
+      originalCurrency: serializer.fromJson<String?>(json['originalCurrency']),
+      originalAmountPaise: serializer.fromJson<int?>(
+        json['originalAmountPaise'],
+      ),
+      exchangeRate: serializer.fromJson<double?>(json['exchangeRate']),
     );
   }
   @override
@@ -1752,6 +1912,11 @@ class Expense extends DataClass implements Insertable<Expense> {
       'confirmed': serializer.toJson<bool>(confirmed),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'receiptImagePath': serializer.toJson<String?>(receiptImagePath),
+      'notes': serializer.toJson<String?>(notes),
+      'tagsJson': serializer.toJson<String>(tagsJson),
+      'originalCurrency': serializer.toJson<String?>(originalCurrency),
+      'originalAmountPaise': serializer.toJson<int?>(originalAmountPaise),
+      'exchangeRate': serializer.toJson<double?>(exchangeRate),
     };
   }
 
@@ -1767,6 +1932,11 @@ class Expense extends DataClass implements Insertable<Expense> {
     bool? confirmed,
     DateTime? createdAt,
     Value<String?> receiptImagePath = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
+    String? tagsJson,
+    Value<String?> originalCurrency = const Value.absent(),
+    Value<int?> originalAmountPaise = const Value.absent(),
+    Value<double?> exchangeRate = const Value.absent(),
   }) => Expense(
     id: id ?? this.id,
     tripId: tripId ?? this.tripId,
@@ -1781,6 +1951,15 @@ class Expense extends DataClass implements Insertable<Expense> {
     receiptImagePath: receiptImagePath.present
         ? receiptImagePath.value
         : this.receiptImagePath,
+    notes: notes.present ? notes.value : this.notes,
+    tagsJson: tagsJson ?? this.tagsJson,
+    originalCurrency: originalCurrency.present
+        ? originalCurrency.value
+        : this.originalCurrency,
+    originalAmountPaise: originalAmountPaise.present
+        ? originalAmountPaise.value
+        : this.originalAmountPaise,
+    exchangeRate: exchangeRate.present ? exchangeRate.value : this.exchangeRate,
   );
   Expense copyWithCompanion(ExpensesCompanion data) {
     return Expense(
@@ -1801,6 +1980,17 @@ class Expense extends DataClass implements Insertable<Expense> {
       receiptImagePath: data.receiptImagePath.present
           ? data.receiptImagePath.value
           : this.receiptImagePath,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      tagsJson: data.tagsJson.present ? data.tagsJson.value : this.tagsJson,
+      originalCurrency: data.originalCurrency.present
+          ? data.originalCurrency.value
+          : this.originalCurrency,
+      originalAmountPaise: data.originalAmountPaise.present
+          ? data.originalAmountPaise.value
+          : this.originalAmountPaise,
+      exchangeRate: data.exchangeRate.present
+          ? data.exchangeRate.value
+          : this.exchangeRate,
     );
   }
 
@@ -1817,7 +2007,12 @@ class Expense extends DataClass implements Insertable<Expense> {
           ..write('upiTxnId: $upiTxnId, ')
           ..write('confirmed: $confirmed, ')
           ..write('createdAt: $createdAt, ')
-          ..write('receiptImagePath: $receiptImagePath')
+          ..write('receiptImagePath: $receiptImagePath, ')
+          ..write('notes: $notes, ')
+          ..write('tagsJson: $tagsJson, ')
+          ..write('originalCurrency: $originalCurrency, ')
+          ..write('originalAmountPaise: $originalAmountPaise, ')
+          ..write('exchangeRate: $exchangeRate')
           ..write(')'))
         .toString();
   }
@@ -1835,6 +2030,11 @@ class Expense extends DataClass implements Insertable<Expense> {
     confirmed,
     createdAt,
     receiptImagePath,
+    notes,
+    tagsJson,
+    originalCurrency,
+    originalAmountPaise,
+    exchangeRate,
   );
   @override
   bool operator ==(Object other) =>
@@ -1850,7 +2050,12 @@ class Expense extends DataClass implements Insertable<Expense> {
           other.upiTxnId == this.upiTxnId &&
           other.confirmed == this.confirmed &&
           other.createdAt == this.createdAt &&
-          other.receiptImagePath == this.receiptImagePath);
+          other.receiptImagePath == this.receiptImagePath &&
+          other.notes == this.notes &&
+          other.tagsJson == this.tagsJson &&
+          other.originalCurrency == this.originalCurrency &&
+          other.originalAmountPaise == this.originalAmountPaise &&
+          other.exchangeRate == this.exchangeRate);
 }
 
 class ExpensesCompanion extends UpdateCompanion<Expense> {
@@ -1865,6 +2070,11 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
   final Value<bool> confirmed;
   final Value<DateTime> createdAt;
   final Value<String?> receiptImagePath;
+  final Value<String?> notes;
+  final Value<String> tagsJson;
+  final Value<String?> originalCurrency;
+  final Value<int?> originalAmountPaise;
+  final Value<double?> exchangeRate;
   final Value<int> rowid;
   const ExpensesCompanion({
     this.id = const Value.absent(),
@@ -1878,6 +2088,11 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     this.confirmed = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.receiptImagePath = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.tagsJson = const Value.absent(),
+    this.originalCurrency = const Value.absent(),
+    this.originalAmountPaise = const Value.absent(),
+    this.exchangeRate = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ExpensesCompanion.insert({
@@ -1892,6 +2107,11 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     this.confirmed = const Value.absent(),
     required DateTime createdAt,
     this.receiptImagePath = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.tagsJson = const Value.absent(),
+    this.originalCurrency = const Value.absent(),
+    this.originalAmountPaise = const Value.absent(),
+    this.exchangeRate = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        tripId = Value(tripId),
@@ -1912,6 +2132,11 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     Expression<bool>? confirmed,
     Expression<DateTime>? createdAt,
     Expression<String>? receiptImagePath,
+    Expression<String>? notes,
+    Expression<String>? tagsJson,
+    Expression<String>? originalCurrency,
+    Expression<int>? originalAmountPaise,
+    Expression<double>? exchangeRate,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1926,6 +2151,12 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
       if (confirmed != null) 'confirmed': confirmed,
       if (createdAt != null) 'created_at': createdAt,
       if (receiptImagePath != null) 'receipt_image_path': receiptImagePath,
+      if (notes != null) 'notes': notes,
+      if (tagsJson != null) 'tags_json': tagsJson,
+      if (originalCurrency != null) 'original_currency': originalCurrency,
+      if (originalAmountPaise != null)
+        'original_amount_paise': originalAmountPaise,
+      if (exchangeRate != null) 'exchange_rate': exchangeRate,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1942,6 +2173,11 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     Value<bool>? confirmed,
     Value<DateTime>? createdAt,
     Value<String?>? receiptImagePath,
+    Value<String?>? notes,
+    Value<String>? tagsJson,
+    Value<String?>? originalCurrency,
+    Value<int?>? originalAmountPaise,
+    Value<double?>? exchangeRate,
     Value<int>? rowid,
   }) {
     return ExpensesCompanion(
@@ -1956,6 +2192,11 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
       confirmed: confirmed ?? this.confirmed,
       createdAt: createdAt ?? this.createdAt,
       receiptImagePath: receiptImagePath ?? this.receiptImagePath,
+      notes: notes ?? this.notes,
+      tagsJson: tagsJson ?? this.tagsJson,
+      originalCurrency: originalCurrency ?? this.originalCurrency,
+      originalAmountPaise: originalAmountPaise ?? this.originalAmountPaise,
+      exchangeRate: exchangeRate ?? this.exchangeRate,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1996,6 +2237,21 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     if (receiptImagePath.present) {
       map['receipt_image_path'] = Variable<String>(receiptImagePath.value);
     }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (tagsJson.present) {
+      map['tags_json'] = Variable<String>(tagsJson.value);
+    }
+    if (originalCurrency.present) {
+      map['original_currency'] = Variable<String>(originalCurrency.value);
+    }
+    if (originalAmountPaise.present) {
+      map['original_amount_paise'] = Variable<int>(originalAmountPaise.value);
+    }
+    if (exchangeRate.present) {
+      map['exchange_rate'] = Variable<double>(exchangeRate.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2016,6 +2272,11 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
           ..write('confirmed: $confirmed, ')
           ..write('createdAt: $createdAt, ')
           ..write('receiptImagePath: $receiptImagePath, ')
+          ..write('notes: $notes, ')
+          ..write('tagsJson: $tagsJson, ')
+          ..write('originalCurrency: $originalCurrency, ')
+          ..write('originalAmountPaise: $originalAmountPaise, ')
+          ..write('exchangeRate: $exchangeRate, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2301,6 +2562,1347 @@ class ExpenseSplitsCompanion extends UpdateCompanion<ExpenseSplit> {
   }
 }
 
+class $ItineraryItemsTable extends ItineraryItems
+    with TableInfo<$ItineraryItemsTable, ItineraryItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ItineraryItemsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tripIdMeta = const VerificationMeta('tripId');
+  @override
+  late final GeneratedColumn<String> tripId = GeneratedColumn<String>(
+    'trip_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES trips (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _dayNumberMeta = const VerificationMeta(
+    'dayNumber',
+  );
+  @override
+  late final GeneratedColumn<int> dayNumber = GeneratedColumn<int>(
+    'day_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _locationMeta = const VerificationMeta(
+    'location',
+  );
+  @override
+  late final GeneratedColumn<String> location = GeneratedColumn<String>(
+    'location',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _timeSlotMeta = const VerificationMeta(
+    'timeSlot',
+  );
+  @override
+  late final GeneratedColumn<String> timeSlot = GeneratedColumn<String>(
+    'time_slot',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startTimeMinutesMeta = const VerificationMeta(
+    'startTimeMinutes',
+  );
+  @override
+  late final GeneratedColumn<int> startTimeMinutes = GeneratedColumn<int>(
+    'start_time_minutes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('Activities'),
+  );
+  static const VerificationMeta _estimatedCostPaiseMeta =
+      const VerificationMeta('estimatedCostPaise');
+  @override
+  late final GeneratedColumn<int> estimatedCostPaise = GeneratedColumn<int>(
+    'estimated_cost_paise',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isCompletedMeta = const VerificationMeta(
+    'isCompleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isCompleted = GeneratedColumn<bool>(
+    'is_completed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_completed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    tripId,
+    dayNumber,
+    title,
+    location,
+    timeSlot,
+    startTimeMinutes,
+    category,
+    estimatedCostPaise,
+    notes,
+    isCompleted,
+    sortOrder,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'itinerary_items';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ItineraryItem> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('trip_id')) {
+      context.handle(
+        _tripIdMeta,
+        tripId.isAcceptableOrUnknown(data['trip_id']!, _tripIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tripIdMeta);
+    }
+    if (data.containsKey('day_number')) {
+      context.handle(
+        _dayNumberMeta,
+        dayNumber.isAcceptableOrUnknown(data['day_number']!, _dayNumberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dayNumberMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('location')) {
+      context.handle(
+        _locationMeta,
+        location.isAcceptableOrUnknown(data['location']!, _locationMeta),
+      );
+    }
+    if (data.containsKey('time_slot')) {
+      context.handle(
+        _timeSlotMeta,
+        timeSlot.isAcceptableOrUnknown(data['time_slot']!, _timeSlotMeta),
+      );
+    }
+    if (data.containsKey('start_time_minutes')) {
+      context.handle(
+        _startTimeMinutesMeta,
+        startTimeMinutes.isAcceptableOrUnknown(
+          data['start_time_minutes']!,
+          _startTimeMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    }
+    if (data.containsKey('estimated_cost_paise')) {
+      context.handle(
+        _estimatedCostPaiseMeta,
+        estimatedCostPaise.isAcceptableOrUnknown(
+          data['estimated_cost_paise']!,
+          _estimatedCostPaiseMeta,
+        ),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('is_completed')) {
+      context.handle(
+        _isCompletedMeta,
+        isCompleted.isAcceptableOrUnknown(
+          data['is_completed']!,
+          _isCompletedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ItineraryItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ItineraryItem(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      tripId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}trip_id'],
+      )!,
+      dayNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}day_number'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      location: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location'],
+      ),
+      timeSlot: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}time_slot'],
+      ),
+      startTimeMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}start_time_minutes'],
+      ),
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      )!,
+      estimatedCostPaise: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}estimated_cost_paise'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      isCompleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_completed'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ItineraryItemsTable createAlias(String alias) {
+    return $ItineraryItemsTable(attachedDatabase, alias);
+  }
+}
+
+class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
+  final String id;
+  final String tripId;
+  final int dayNumber;
+  final String title;
+  final String? location;
+  final String? timeSlot;
+  final int? startTimeMinutes;
+  final String category;
+  final int estimatedCostPaise;
+  final String? notes;
+  final bool isCompleted;
+  final int sortOrder;
+  final DateTime createdAt;
+  const ItineraryItem({
+    required this.id,
+    required this.tripId,
+    required this.dayNumber,
+    required this.title,
+    this.location,
+    this.timeSlot,
+    this.startTimeMinutes,
+    required this.category,
+    required this.estimatedCostPaise,
+    this.notes,
+    required this.isCompleted,
+    required this.sortOrder,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['trip_id'] = Variable<String>(tripId);
+    map['day_number'] = Variable<int>(dayNumber);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || location != null) {
+      map['location'] = Variable<String>(location);
+    }
+    if (!nullToAbsent || timeSlot != null) {
+      map['time_slot'] = Variable<String>(timeSlot);
+    }
+    if (!nullToAbsent || startTimeMinutes != null) {
+      map['start_time_minutes'] = Variable<int>(startTimeMinutes);
+    }
+    map['category'] = Variable<String>(category);
+    map['estimated_cost_paise'] = Variable<int>(estimatedCostPaise);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['is_completed'] = Variable<bool>(isCompleted);
+    map['sort_order'] = Variable<int>(sortOrder);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ItineraryItemsCompanion toCompanion(bool nullToAbsent) {
+    return ItineraryItemsCompanion(
+      id: Value(id),
+      tripId: Value(tripId),
+      dayNumber: Value(dayNumber),
+      title: Value(title),
+      location: location == null && nullToAbsent
+          ? const Value.absent()
+          : Value(location),
+      timeSlot: timeSlot == null && nullToAbsent
+          ? const Value.absent()
+          : Value(timeSlot),
+      startTimeMinutes: startTimeMinutes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startTimeMinutes),
+      category: Value(category),
+      estimatedCostPaise: Value(estimatedCostPaise),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      isCompleted: Value(isCompleted),
+      sortOrder: Value(sortOrder),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ItineraryItem.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ItineraryItem(
+      id: serializer.fromJson<String>(json['id']),
+      tripId: serializer.fromJson<String>(json['tripId']),
+      dayNumber: serializer.fromJson<int>(json['dayNumber']),
+      title: serializer.fromJson<String>(json['title']),
+      location: serializer.fromJson<String?>(json['location']),
+      timeSlot: serializer.fromJson<String?>(json['timeSlot']),
+      startTimeMinutes: serializer.fromJson<int?>(json['startTimeMinutes']),
+      category: serializer.fromJson<String>(json['category']),
+      estimatedCostPaise: serializer.fromJson<int>(json['estimatedCostPaise']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      isCompleted: serializer.fromJson<bool>(json['isCompleted']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'tripId': serializer.toJson<String>(tripId),
+      'dayNumber': serializer.toJson<int>(dayNumber),
+      'title': serializer.toJson<String>(title),
+      'location': serializer.toJson<String?>(location),
+      'timeSlot': serializer.toJson<String?>(timeSlot),
+      'startTimeMinutes': serializer.toJson<int?>(startTimeMinutes),
+      'category': serializer.toJson<String>(category),
+      'estimatedCostPaise': serializer.toJson<int>(estimatedCostPaise),
+      'notes': serializer.toJson<String?>(notes),
+      'isCompleted': serializer.toJson<bool>(isCompleted),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  ItineraryItem copyWith({
+    String? id,
+    String? tripId,
+    int? dayNumber,
+    String? title,
+    Value<String?> location = const Value.absent(),
+    Value<String?> timeSlot = const Value.absent(),
+    Value<int?> startTimeMinutes = const Value.absent(),
+    String? category,
+    int? estimatedCostPaise,
+    Value<String?> notes = const Value.absent(),
+    bool? isCompleted,
+    int? sortOrder,
+    DateTime? createdAt,
+  }) => ItineraryItem(
+    id: id ?? this.id,
+    tripId: tripId ?? this.tripId,
+    dayNumber: dayNumber ?? this.dayNumber,
+    title: title ?? this.title,
+    location: location.present ? location.value : this.location,
+    timeSlot: timeSlot.present ? timeSlot.value : this.timeSlot,
+    startTimeMinutes: startTimeMinutes.present
+        ? startTimeMinutes.value
+        : this.startTimeMinutes,
+    category: category ?? this.category,
+    estimatedCostPaise: estimatedCostPaise ?? this.estimatedCostPaise,
+    notes: notes.present ? notes.value : this.notes,
+    isCompleted: isCompleted ?? this.isCompleted,
+    sortOrder: sortOrder ?? this.sortOrder,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  ItineraryItem copyWithCompanion(ItineraryItemsCompanion data) {
+    return ItineraryItem(
+      id: data.id.present ? data.id.value : this.id,
+      tripId: data.tripId.present ? data.tripId.value : this.tripId,
+      dayNumber: data.dayNumber.present ? data.dayNumber.value : this.dayNumber,
+      title: data.title.present ? data.title.value : this.title,
+      location: data.location.present ? data.location.value : this.location,
+      timeSlot: data.timeSlot.present ? data.timeSlot.value : this.timeSlot,
+      startTimeMinutes: data.startTimeMinutes.present
+          ? data.startTimeMinutes.value
+          : this.startTimeMinutes,
+      category: data.category.present ? data.category.value : this.category,
+      estimatedCostPaise: data.estimatedCostPaise.present
+          ? data.estimatedCostPaise.value
+          : this.estimatedCostPaise,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      isCompleted: data.isCompleted.present
+          ? data.isCompleted.value
+          : this.isCompleted,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ItineraryItem(')
+          ..write('id: $id, ')
+          ..write('tripId: $tripId, ')
+          ..write('dayNumber: $dayNumber, ')
+          ..write('title: $title, ')
+          ..write('location: $location, ')
+          ..write('timeSlot: $timeSlot, ')
+          ..write('startTimeMinutes: $startTimeMinutes, ')
+          ..write('category: $category, ')
+          ..write('estimatedCostPaise: $estimatedCostPaise, ')
+          ..write('notes: $notes, ')
+          ..write('isCompleted: $isCompleted, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    tripId,
+    dayNumber,
+    title,
+    location,
+    timeSlot,
+    startTimeMinutes,
+    category,
+    estimatedCostPaise,
+    notes,
+    isCompleted,
+    sortOrder,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ItineraryItem &&
+          other.id == this.id &&
+          other.tripId == this.tripId &&
+          other.dayNumber == this.dayNumber &&
+          other.title == this.title &&
+          other.location == this.location &&
+          other.timeSlot == this.timeSlot &&
+          other.startTimeMinutes == this.startTimeMinutes &&
+          other.category == this.category &&
+          other.estimatedCostPaise == this.estimatedCostPaise &&
+          other.notes == this.notes &&
+          other.isCompleted == this.isCompleted &&
+          other.sortOrder == this.sortOrder &&
+          other.createdAt == this.createdAt);
+}
+
+class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
+  final Value<String> id;
+  final Value<String> tripId;
+  final Value<int> dayNumber;
+  final Value<String> title;
+  final Value<String?> location;
+  final Value<String?> timeSlot;
+  final Value<int?> startTimeMinutes;
+  final Value<String> category;
+  final Value<int> estimatedCostPaise;
+  final Value<String?> notes;
+  final Value<bool> isCompleted;
+  final Value<int> sortOrder;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const ItineraryItemsCompanion({
+    this.id = const Value.absent(),
+    this.tripId = const Value.absent(),
+    this.dayNumber = const Value.absent(),
+    this.title = const Value.absent(),
+    this.location = const Value.absent(),
+    this.timeSlot = const Value.absent(),
+    this.startTimeMinutes = const Value.absent(),
+    this.category = const Value.absent(),
+    this.estimatedCostPaise = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.isCompleted = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ItineraryItemsCompanion.insert({
+    required String id,
+    required String tripId,
+    required int dayNumber,
+    required String title,
+    this.location = const Value.absent(),
+    this.timeSlot = const Value.absent(),
+    this.startTimeMinutes = const Value.absent(),
+    this.category = const Value.absent(),
+    this.estimatedCostPaise = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.isCompleted = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       tripId = Value(tripId),
+       dayNumber = Value(dayNumber),
+       title = Value(title),
+       createdAt = Value(createdAt);
+  static Insertable<ItineraryItem> custom({
+    Expression<String>? id,
+    Expression<String>? tripId,
+    Expression<int>? dayNumber,
+    Expression<String>? title,
+    Expression<String>? location,
+    Expression<String>? timeSlot,
+    Expression<int>? startTimeMinutes,
+    Expression<String>? category,
+    Expression<int>? estimatedCostPaise,
+    Expression<String>? notes,
+    Expression<bool>? isCompleted,
+    Expression<int>? sortOrder,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (tripId != null) 'trip_id': tripId,
+      if (dayNumber != null) 'day_number': dayNumber,
+      if (title != null) 'title': title,
+      if (location != null) 'location': location,
+      if (timeSlot != null) 'time_slot': timeSlot,
+      if (startTimeMinutes != null) 'start_time_minutes': startTimeMinutes,
+      if (category != null) 'category': category,
+      if (estimatedCostPaise != null)
+        'estimated_cost_paise': estimatedCostPaise,
+      if (notes != null) 'notes': notes,
+      if (isCompleted != null) 'is_completed': isCompleted,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ItineraryItemsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? tripId,
+    Value<int>? dayNumber,
+    Value<String>? title,
+    Value<String?>? location,
+    Value<String?>? timeSlot,
+    Value<int?>? startTimeMinutes,
+    Value<String>? category,
+    Value<int>? estimatedCostPaise,
+    Value<String?>? notes,
+    Value<bool>? isCompleted,
+    Value<int>? sortOrder,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return ItineraryItemsCompanion(
+      id: id ?? this.id,
+      tripId: tripId ?? this.tripId,
+      dayNumber: dayNumber ?? this.dayNumber,
+      title: title ?? this.title,
+      location: location ?? this.location,
+      timeSlot: timeSlot ?? this.timeSlot,
+      startTimeMinutes: startTimeMinutes ?? this.startTimeMinutes,
+      category: category ?? this.category,
+      estimatedCostPaise: estimatedCostPaise ?? this.estimatedCostPaise,
+      notes: notes ?? this.notes,
+      isCompleted: isCompleted ?? this.isCompleted,
+      sortOrder: sortOrder ?? this.sortOrder,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (tripId.present) {
+      map['trip_id'] = Variable<String>(tripId.value);
+    }
+    if (dayNumber.present) {
+      map['day_number'] = Variable<int>(dayNumber.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (location.present) {
+      map['location'] = Variable<String>(location.value);
+    }
+    if (timeSlot.present) {
+      map['time_slot'] = Variable<String>(timeSlot.value);
+    }
+    if (startTimeMinutes.present) {
+      map['start_time_minutes'] = Variable<int>(startTimeMinutes.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (estimatedCostPaise.present) {
+      map['estimated_cost_paise'] = Variable<int>(estimatedCostPaise.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (isCompleted.present) {
+      map['is_completed'] = Variable<bool>(isCompleted.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ItineraryItemsCompanion(')
+          ..write('id: $id, ')
+          ..write('tripId: $tripId, ')
+          ..write('dayNumber: $dayNumber, ')
+          ..write('title: $title, ')
+          ..write('location: $location, ')
+          ..write('timeSlot: $timeSlot, ')
+          ..write('startTimeMinutes: $startTimeMinutes, ')
+          ..write('category: $category, ')
+          ..write('estimatedCostPaise: $estimatedCostPaise, ')
+          ..write('notes: $notes, ')
+          ..write('isCompleted: $isCompleted, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ExpenseCommentsTable extends ExpenseComments
+    with TableInfo<$ExpenseCommentsTable, ExpenseComment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExpenseCommentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _expenseIdMeta = const VerificationMeta(
+    'expenseId',
+  );
+  @override
+  late final GeneratedColumn<String> expenseId = GeneratedColumn<String>(
+    'expense_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES expenses (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _tripIdMeta = const VerificationMeta('tripId');
+  @override
+  late final GeneratedColumn<String> tripId = GeneratedColumn<String>(
+    'trip_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES trips (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _authorTravelerIdMeta = const VerificationMeta(
+    'authorTravelerId',
+  );
+  @override
+  late final GeneratedColumn<String> authorTravelerId = GeneratedColumn<String>(
+    'author_traveler_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _authorNameMeta = const VerificationMeta(
+    'authorName',
+  );
+  @override
+  late final GeneratedColumn<String> authorName = GeneratedColumn<String>(
+    'author_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isDisputeMeta = const VerificationMeta(
+    'isDispute',
+  );
+  @override
+  late final GeneratedColumn<bool> isDispute = GeneratedColumn<bool>(
+    'is_dispute',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_dispute" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _isResolvedMeta = const VerificationMeta(
+    'isResolved',
+  );
+  @override
+  late final GeneratedColumn<bool> isResolved = GeneratedColumn<bool>(
+    'is_resolved',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_resolved" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    expenseId,
+    tripId,
+    authorTravelerId,
+    authorName,
+    body,
+    isDispute,
+    isResolved,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'expense_comments';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ExpenseComment> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('expense_id')) {
+      context.handle(
+        _expenseIdMeta,
+        expenseId.isAcceptableOrUnknown(data['expense_id']!, _expenseIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_expenseIdMeta);
+    }
+    if (data.containsKey('trip_id')) {
+      context.handle(
+        _tripIdMeta,
+        tripId.isAcceptableOrUnknown(data['trip_id']!, _tripIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tripIdMeta);
+    }
+    if (data.containsKey('author_traveler_id')) {
+      context.handle(
+        _authorTravelerIdMeta,
+        authorTravelerId.isAcceptableOrUnknown(
+          data['author_traveler_id']!,
+          _authorTravelerIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('author_name')) {
+      context.handle(
+        _authorNameMeta,
+        authorName.isAcceptableOrUnknown(data['author_name']!, _authorNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_authorNameMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bodyMeta);
+    }
+    if (data.containsKey('is_dispute')) {
+      context.handle(
+        _isDisputeMeta,
+        isDispute.isAcceptableOrUnknown(data['is_dispute']!, _isDisputeMeta),
+      );
+    }
+    if (data.containsKey('is_resolved')) {
+      context.handle(
+        _isResolvedMeta,
+        isResolved.isAcceptableOrUnknown(data['is_resolved']!, _isResolvedMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ExpenseComment map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExpenseComment(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      expenseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}expense_id'],
+      )!,
+      tripId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}trip_id'],
+      )!,
+      authorTravelerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author_traveler_id'],
+      ),
+      authorName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author_name'],
+      )!,
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      )!,
+      isDispute: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_dispute'],
+      )!,
+      isResolved: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_resolved'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ExpenseCommentsTable createAlias(String alias) {
+    return $ExpenseCommentsTable(attachedDatabase, alias);
+  }
+}
+
+class ExpenseComment extends DataClass implements Insertable<ExpenseComment> {
+  final String id;
+  final String expenseId;
+  final String tripId;
+  final String? authorTravelerId;
+  final String authorName;
+  final String body;
+  final bool isDispute;
+  final bool isResolved;
+  final DateTime createdAt;
+  const ExpenseComment({
+    required this.id,
+    required this.expenseId,
+    required this.tripId,
+    this.authorTravelerId,
+    required this.authorName,
+    required this.body,
+    required this.isDispute,
+    required this.isResolved,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['expense_id'] = Variable<String>(expenseId);
+    map['trip_id'] = Variable<String>(tripId);
+    if (!nullToAbsent || authorTravelerId != null) {
+      map['author_traveler_id'] = Variable<String>(authorTravelerId);
+    }
+    map['author_name'] = Variable<String>(authorName);
+    map['body'] = Variable<String>(body);
+    map['is_dispute'] = Variable<bool>(isDispute);
+    map['is_resolved'] = Variable<bool>(isResolved);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ExpenseCommentsCompanion toCompanion(bool nullToAbsent) {
+    return ExpenseCommentsCompanion(
+      id: Value(id),
+      expenseId: Value(expenseId),
+      tripId: Value(tripId),
+      authorTravelerId: authorTravelerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(authorTravelerId),
+      authorName: Value(authorName),
+      body: Value(body),
+      isDispute: Value(isDispute),
+      isResolved: Value(isResolved),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ExpenseComment.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExpenseComment(
+      id: serializer.fromJson<String>(json['id']),
+      expenseId: serializer.fromJson<String>(json['expenseId']),
+      tripId: serializer.fromJson<String>(json['tripId']),
+      authorTravelerId: serializer.fromJson<String?>(json['authorTravelerId']),
+      authorName: serializer.fromJson<String>(json['authorName']),
+      body: serializer.fromJson<String>(json['body']),
+      isDispute: serializer.fromJson<bool>(json['isDispute']),
+      isResolved: serializer.fromJson<bool>(json['isResolved']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'expenseId': serializer.toJson<String>(expenseId),
+      'tripId': serializer.toJson<String>(tripId),
+      'authorTravelerId': serializer.toJson<String?>(authorTravelerId),
+      'authorName': serializer.toJson<String>(authorName),
+      'body': serializer.toJson<String>(body),
+      'isDispute': serializer.toJson<bool>(isDispute),
+      'isResolved': serializer.toJson<bool>(isResolved),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  ExpenseComment copyWith({
+    String? id,
+    String? expenseId,
+    String? tripId,
+    Value<String?> authorTravelerId = const Value.absent(),
+    String? authorName,
+    String? body,
+    bool? isDispute,
+    bool? isResolved,
+    DateTime? createdAt,
+  }) => ExpenseComment(
+    id: id ?? this.id,
+    expenseId: expenseId ?? this.expenseId,
+    tripId: tripId ?? this.tripId,
+    authorTravelerId: authorTravelerId.present
+        ? authorTravelerId.value
+        : this.authorTravelerId,
+    authorName: authorName ?? this.authorName,
+    body: body ?? this.body,
+    isDispute: isDispute ?? this.isDispute,
+    isResolved: isResolved ?? this.isResolved,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  ExpenseComment copyWithCompanion(ExpenseCommentsCompanion data) {
+    return ExpenseComment(
+      id: data.id.present ? data.id.value : this.id,
+      expenseId: data.expenseId.present ? data.expenseId.value : this.expenseId,
+      tripId: data.tripId.present ? data.tripId.value : this.tripId,
+      authorTravelerId: data.authorTravelerId.present
+          ? data.authorTravelerId.value
+          : this.authorTravelerId,
+      authorName: data.authorName.present
+          ? data.authorName.value
+          : this.authorName,
+      body: data.body.present ? data.body.value : this.body,
+      isDispute: data.isDispute.present ? data.isDispute.value : this.isDispute,
+      isResolved: data.isResolved.present
+          ? data.isResolved.value
+          : this.isResolved,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExpenseComment(')
+          ..write('id: $id, ')
+          ..write('expenseId: $expenseId, ')
+          ..write('tripId: $tripId, ')
+          ..write('authorTravelerId: $authorTravelerId, ')
+          ..write('authorName: $authorName, ')
+          ..write('body: $body, ')
+          ..write('isDispute: $isDispute, ')
+          ..write('isResolved: $isResolved, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    expenseId,
+    tripId,
+    authorTravelerId,
+    authorName,
+    body,
+    isDispute,
+    isResolved,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExpenseComment &&
+          other.id == this.id &&
+          other.expenseId == this.expenseId &&
+          other.tripId == this.tripId &&
+          other.authorTravelerId == this.authorTravelerId &&
+          other.authorName == this.authorName &&
+          other.body == this.body &&
+          other.isDispute == this.isDispute &&
+          other.isResolved == this.isResolved &&
+          other.createdAt == this.createdAt);
+}
+
+class ExpenseCommentsCompanion extends UpdateCompanion<ExpenseComment> {
+  final Value<String> id;
+  final Value<String> expenseId;
+  final Value<String> tripId;
+  final Value<String?> authorTravelerId;
+  final Value<String> authorName;
+  final Value<String> body;
+  final Value<bool> isDispute;
+  final Value<bool> isResolved;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const ExpenseCommentsCompanion({
+    this.id = const Value.absent(),
+    this.expenseId = const Value.absent(),
+    this.tripId = const Value.absent(),
+    this.authorTravelerId = const Value.absent(),
+    this.authorName = const Value.absent(),
+    this.body = const Value.absent(),
+    this.isDispute = const Value.absent(),
+    this.isResolved = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ExpenseCommentsCompanion.insert({
+    required String id,
+    required String expenseId,
+    required String tripId,
+    this.authorTravelerId = const Value.absent(),
+    required String authorName,
+    required String body,
+    this.isDispute = const Value.absent(),
+    this.isResolved = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       expenseId = Value(expenseId),
+       tripId = Value(tripId),
+       authorName = Value(authorName),
+       body = Value(body),
+       createdAt = Value(createdAt);
+  static Insertable<ExpenseComment> custom({
+    Expression<String>? id,
+    Expression<String>? expenseId,
+    Expression<String>? tripId,
+    Expression<String>? authorTravelerId,
+    Expression<String>? authorName,
+    Expression<String>? body,
+    Expression<bool>? isDispute,
+    Expression<bool>? isResolved,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (expenseId != null) 'expense_id': expenseId,
+      if (tripId != null) 'trip_id': tripId,
+      if (authorTravelerId != null) 'author_traveler_id': authorTravelerId,
+      if (authorName != null) 'author_name': authorName,
+      if (body != null) 'body': body,
+      if (isDispute != null) 'is_dispute': isDispute,
+      if (isResolved != null) 'is_resolved': isResolved,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ExpenseCommentsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? expenseId,
+    Value<String>? tripId,
+    Value<String?>? authorTravelerId,
+    Value<String>? authorName,
+    Value<String>? body,
+    Value<bool>? isDispute,
+    Value<bool>? isResolved,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return ExpenseCommentsCompanion(
+      id: id ?? this.id,
+      expenseId: expenseId ?? this.expenseId,
+      tripId: tripId ?? this.tripId,
+      authorTravelerId: authorTravelerId ?? this.authorTravelerId,
+      authorName: authorName ?? this.authorName,
+      body: body ?? this.body,
+      isDispute: isDispute ?? this.isDispute,
+      isResolved: isResolved ?? this.isResolved,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (expenseId.present) {
+      map['expense_id'] = Variable<String>(expenseId.value);
+    }
+    if (tripId.present) {
+      map['trip_id'] = Variable<String>(tripId.value);
+    }
+    if (authorTravelerId.present) {
+      map['author_traveler_id'] = Variable<String>(authorTravelerId.value);
+    }
+    if (authorName.present) {
+      map['author_name'] = Variable<String>(authorName.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (isDispute.present) {
+      map['is_dispute'] = Variable<bool>(isDispute.value);
+    }
+    if (isResolved.present) {
+      map['is_resolved'] = Variable<bool>(isResolved.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExpenseCommentsCompanion(')
+          ..write('id: $id, ')
+          ..write('expenseId: $expenseId, ')
+          ..write('tripId: $tripId, ')
+          ..write('authorTravelerId: $authorTravelerId, ')
+          ..write('authorName: $authorName, ')
+          ..write('body: $body, ')
+          ..write('isDispute: $isDispute, ')
+          ..write('isResolved: $isResolved, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2310,6 +3912,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $CategoryAllocationsTable(this);
   late final $ExpensesTable expenses = $ExpensesTable(this);
   late final $ExpenseSplitsTable expenseSplits = $ExpenseSplitsTable(this);
+  late final $ItineraryItemsTable itineraryItems = $ItineraryItemsTable(this);
+  late final $ExpenseCommentsTable expenseComments = $ExpenseCommentsTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2320,6 +3926,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     categoryAllocations,
     expenses,
     expenseSplits,
+    itineraryItems,
+    expenseComments,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -2364,6 +3972,27 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('expense_splits', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'trips',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('itinerary_items', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'expenses',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('expense_comments', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'trips',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('expense_comments', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -2457,6 +4086,44 @@ final class $$TripsTableReferences
     ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_expensesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$ItineraryItemsTable, List<ItineraryItem>>
+  _itineraryItemsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.itineraryItems,
+    aliasName: 'trips__id__itinerary_items__trip_id',
+  );
+
+  $$ItineraryItemsTableProcessedTableManager get itineraryItemsRefs {
+    final manager = $$ItineraryItemsTableTableManager(
+      $_db,
+      $_db.itineraryItems,
+    ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_itineraryItemsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$ExpenseCommentsTable, List<ExpenseComment>>
+  _expenseCommentsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.expenseComments,
+    aliasName: 'trips__id__expense_comments__trip_id',
+  );
+
+  $$ExpenseCommentsTableProcessedTableManager get expenseCommentsRefs {
+    final manager = $$ExpenseCommentsTableTableManager(
+      $_db,
+      $_db.expenseComments,
+    ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _expenseCommentsRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -2592,6 +4259,56 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
           }) => $$ExpensesTableFilterComposer(
             $db: $db,
             $table: $db.expenses,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> itineraryItemsRefs(
+    Expression<bool> Function($$ItineraryItemsTableFilterComposer f) f,
+  ) {
+    final $$ItineraryItemsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.itineraryItems,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItineraryItemsTableFilterComposer(
+            $db: $db,
+            $table: $db.itineraryItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> expenseCommentsRefs(
+    Expression<bool> Function($$ExpenseCommentsTableFilterComposer f) f,
+  ) {
+    final $$ExpenseCommentsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.expenseComments,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExpenseCommentsTableFilterComposer(
+            $db: $db,
+            $table: $db.expenseComments,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -2790,6 +4507,56 @@ class $$TripsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> itineraryItemsRefs<T extends Object>(
+    Expression<T> Function($$ItineraryItemsTableAnnotationComposer a) f,
+  ) {
+    final $$ItineraryItemsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.itineraryItems,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItineraryItemsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.itineraryItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> expenseCommentsRefs<T extends Object>(
+    Expression<T> Function($$ExpenseCommentsTableAnnotationComposer a) f,
+  ) {
+    final $$ExpenseCommentsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.expenseComments,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExpenseCommentsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.expenseComments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$TripsTableTableManager
@@ -2809,6 +4576,8 @@ class $$TripsTableTableManager
             bool travelersRefs,
             bool categoryAllocationsRefs,
             bool expensesRefs,
+            bool itineraryItemsRefs,
+            bool expenseCommentsRefs,
           })
         > {
   $$TripsTableTableManager(_$AppDatabase db, $TripsTable table)
@@ -2891,6 +4660,8 @@ class $$TripsTableTableManager
                 travelersRefs = false,
                 categoryAllocationsRefs = false,
                 expensesRefs = false,
+                itineraryItemsRefs = false,
+                expenseCommentsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -2898,6 +4669,8 @@ class $$TripsTableTableManager
                     if (travelersRefs) db.travelers,
                     if (categoryAllocationsRefs) db.categoryAllocations,
                     if (expensesRefs) db.expenses,
+                    if (itineraryItemsRefs) db.itineraryItems,
+                    if (expenseCommentsRefs) db.expenseComments,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -2962,6 +4735,46 @@ class $$TripsTableTableManager
                           referencedColumn: 'trip_id',
                           typedResults: items,
                         ),
+                      if (itineraryItemsRefs)
+                        await $_getPrefetchedDataByColumns<
+                          Trip,
+                          $TripsTable,
+                          ItineraryItem,
+                          $ItineraryItemsTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TripsTableReferences
+                              ._itineraryItemsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TripsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).itineraryItemsRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'trip_id',
+                          typedResults: items,
+                        ),
+                      if (expenseCommentsRefs)
+                        await $_getPrefetchedDataByColumns<
+                          Trip,
+                          $TripsTable,
+                          ExpenseComment,
+                          $ExpenseCommentsTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TripsTableReferences
+                              ._expenseCommentsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TripsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).expenseCommentsRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'trip_id',
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -2986,6 +4799,8 @@ typedef $$TripsTableProcessedTableManager =
         bool travelersRefs,
         bool categoryAllocationsRefs,
         bool expensesRefs,
+        bool itineraryItemsRefs,
+        bool expenseCommentsRefs,
       })
     >;
 typedef $$TravelersTableCreateCompanionBuilder = TravelersCompanion Function({
@@ -3824,6 +5639,11 @@ typedef $$ExpensesTableCreateCompanionBuilder = ExpensesCompanion Function({
   Value<bool> confirmed,
   required DateTime createdAt,
   Value<String?> receiptImagePath,
+  Value<String?> notes,
+  Value<String> tagsJson,
+  Value<String?> originalCurrency,
+  Value<int?> originalAmountPaise,
+  Value<double?> exchangeRate,
   Value<int> rowid,
 });
 typedef $$ExpensesTableUpdateCompanionBuilder = ExpensesCompanion Function({
@@ -3838,6 +5658,11 @@ typedef $$ExpensesTableUpdateCompanionBuilder = ExpensesCompanion Function({
   Value<bool> confirmed,
   Value<DateTime> createdAt,
   Value<String?> receiptImagePath,
+  Value<String?> notes,
+  Value<String> tagsJson,
+  Value<String?> originalCurrency,
+  Value<int?> originalAmountPaise,
+  Value<double?> exchangeRate,
   Value<int> rowid,
 });
 
@@ -3896,6 +5721,26 @@ final class $$ExpensesTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$ExpenseCommentsTable, List<ExpenseComment>>
+  _expenseCommentsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.expenseComments,
+    aliasName: 'expenses__id__expense_comments__expense_id',
+  );
+
+  $$ExpenseCommentsTableProcessedTableManager get expenseCommentsRefs {
+    final manager = $$ExpenseCommentsTableTableManager(
+      $_db,
+      $_db.expenseComments,
+    ).filter((f) => f.expenseId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _expenseCommentsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ExpensesTableFilterComposer
@@ -3949,6 +5794,31 @@ class $$ExpensesTableFilterComposer
 
   ColumnFilters<String> get receiptImagePath => $composableBuilder(
     column: $table.receiptImagePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tagsJson => $composableBuilder(
+    column: $table.tagsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get originalCurrency => $composableBuilder(
+    column: $table.originalCurrency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get originalAmountPaise => $composableBuilder(
+    column: $table.originalAmountPaise,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get exchangeRate => $composableBuilder(
+    column: $table.exchangeRate,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4022,6 +5892,31 @@ class $$ExpensesTableFilterComposer
     );
     return f(composer);
   }
+
+  Expression<bool> expenseCommentsRefs(
+    Expression<bool> Function($$ExpenseCommentsTableFilterComposer f) f,
+  ) {
+    final $$ExpenseCommentsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.expenseComments,
+      getReferencedColumn: (t) => t.expenseId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExpenseCommentsTableFilterComposer(
+            $db: $db,
+            $table: $db.expenseComments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ExpensesTableOrderingComposer
@@ -4075,6 +5970,31 @@ class $$ExpensesTableOrderingComposer
 
   ColumnOrderings<String> get receiptImagePath => $composableBuilder(
     column: $table.receiptImagePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tagsJson => $composableBuilder(
+    column: $table.tagsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get originalCurrency => $composableBuilder(
+    column: $table.originalCurrency,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get originalAmountPaise => $composableBuilder(
+    column: $table.originalAmountPaise,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get exchangeRate => $composableBuilder(
+    column: $table.exchangeRate,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4167,6 +6087,27 @@ class $$ExpensesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<String> get tagsJson =>
+      $composableBuilder(column: $table.tagsJson, builder: (column) => column);
+
+  GeneratedColumn<String> get originalCurrency => $composableBuilder(
+    column: $table.originalCurrency,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get originalAmountPaise => $composableBuilder(
+    column: $table.originalAmountPaise,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get exchangeRate => $composableBuilder(
+    column: $table.exchangeRate,
+    builder: (column) => column,
+  );
+
   $$TripsTableAnnotationComposer get tripId {
     final $$TripsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -4237,6 +6178,31 @@ class $$ExpensesTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> expenseCommentsRefs<T extends Object>(
+    Expression<T> Function($$ExpenseCommentsTableAnnotationComposer a) f,
+  ) {
+    final $$ExpenseCommentsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.expenseComments,
+      getReferencedColumn: (t) => t.expenseId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExpenseCommentsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.expenseComments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ExpensesTableTableManager
@@ -4256,6 +6222,7 @@ class $$ExpensesTableTableManager
             bool tripId,
             bool paidBy,
             bool expenseSplitsRefs,
+            bool expenseCommentsRefs,
           })
         > {
   $$ExpensesTableTableManager(_$AppDatabase db, $ExpensesTable table)
@@ -4282,6 +6249,11 @@ class $$ExpensesTableTableManager
                 Value<bool> confirmed = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<String?> receiptImagePath = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<String> tagsJson = const Value.absent(),
+                Value<String?> originalCurrency = const Value.absent(),
+                Value<int?> originalAmountPaise = const Value.absent(),
+                Value<double?> exchangeRate = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExpensesCompanion(
                 id: id,
@@ -4295,6 +6267,11 @@ class $$ExpensesTableTableManager
                 confirmed: confirmed,
                 createdAt: createdAt,
                 receiptImagePath: receiptImagePath,
+                notes: notes,
+                tagsJson: tagsJson,
+                originalCurrency: originalCurrency,
+                originalAmountPaise: originalAmountPaise,
+                exchangeRate: exchangeRate,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4310,6 +6287,11 @@ class $$ExpensesTableTableManager
                 Value<bool> confirmed = const Value.absent(),
                 required DateTime createdAt,
                 Value<String?> receiptImagePath = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<String> tagsJson = const Value.absent(),
+                Value<String?> originalCurrency = const Value.absent(),
+                Value<int?> originalAmountPaise = const Value.absent(),
+                Value<double?> exchangeRate = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExpensesCompanion.insert(
                 id: id,
@@ -4323,6 +6305,11 @@ class $$ExpensesTableTableManager
                 confirmed: confirmed,
                 createdAt: createdAt,
                 receiptImagePath: receiptImagePath,
+                notes: notes,
+                tagsJson: tagsJson,
+                originalCurrency: originalCurrency,
+                originalAmountPaise: originalAmountPaise,
+                exchangeRate: exchangeRate,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -4334,11 +6321,17 @@ class $$ExpensesTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({tripId = false, paidBy = false, expenseSplitsRefs = false}) {
+              ({
+                tripId = false,
+                paidBy = false,
+                expenseSplitsRefs = false,
+                expenseCommentsRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (expenseSplitsRefs) db.expenseSplits,
+                    if (expenseCommentsRefs) db.expenseComments,
                   ],
                   addJoins:
                       <
@@ -4403,6 +6396,26 @@ class $$ExpensesTableTableManager
                           referencedColumn: 'expense_id',
                           typedResults: items,
                         ),
+                      if (expenseCommentsRefs)
+                        await $_getPrefetchedDataByColumns<
+                          Expense,
+                          $ExpensesTable,
+                          ExpenseComment,
+                          $ExpenseCommentsTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ExpensesTableReferences
+                              ._expenseCommentsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ExpensesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).expenseCommentsRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'expense_id',
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -4423,7 +6436,12 @@ typedef $$ExpensesTableProcessedTableManager =
       $$ExpensesTableUpdateCompanionBuilder,
       (Expense, $$ExpensesTableReferences),
       Expense,
-      PrefetchHooks Function({bool tripId, bool paidBy, bool expenseSplitsRefs})
+      PrefetchHooks Function({
+        bool tripId,
+        bool paidBy,
+        bool expenseSplitsRefs,
+        bool expenseCommentsRefs,
+      })
     >;
 typedef $$ExpenseSplitsTableCreateCompanionBuilder =
     ExpenseSplitsCompanion Function({
@@ -4792,6 +6810,973 @@ typedef $$ExpenseSplitsTableProcessedTableManager =
       ExpenseSplit,
       PrefetchHooks Function({bool expenseId, bool travelerId})
     >;
+typedef $$ItineraryItemsTableCreateCompanionBuilder =
+    ItineraryItemsCompanion Function({
+      required String id,
+      required String tripId,
+      required int dayNumber,
+      required String title,
+      Value<String?> location,
+      Value<String?> timeSlot,
+      Value<int?> startTimeMinutes,
+      Value<String> category,
+      Value<int> estimatedCostPaise,
+      Value<String?> notes,
+      Value<bool> isCompleted,
+      Value<int> sortOrder,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$ItineraryItemsTableUpdateCompanionBuilder =
+    ItineraryItemsCompanion Function({
+      Value<String> id,
+      Value<String> tripId,
+      Value<int> dayNumber,
+      Value<String> title,
+      Value<String?> location,
+      Value<String?> timeSlot,
+      Value<int?> startTimeMinutes,
+      Value<String> category,
+      Value<int> estimatedCostPaise,
+      Value<String?> notes,
+      Value<bool> isCompleted,
+      Value<int> sortOrder,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$ItineraryItemsTableReferences
+    extends BaseReferences<_$AppDatabase, $ItineraryItemsTable, ItineraryItem> {
+  $$ItineraryItemsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $TripsTable _tripIdTable(_$AppDatabase db) =>
+      db.trips.createAlias('itinerary_items__trip_id__trips__id');
+
+  $$TripsTableProcessedTableManager get tripId {
+    final $_column = $_itemColumn<String>('trip_id')!;
+
+    final manager = $$TripsTableTableManager(
+      $_db,
+      $_db.trips,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_tripIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ItineraryItemsTableFilterComposer
+    extends Composer<_$AppDatabase, $ItineraryItemsTable> {
+  $$ItineraryItemsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get dayNumber => $composableBuilder(
+    column: $table.dayNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get location => $composableBuilder(
+    column: $table.location,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get timeSlot => $composableBuilder(
+    column: $table.timeSlot,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get startTimeMinutes => $composableBuilder(
+    column: $table.startTimeMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get estimatedCostPaise => $composableBuilder(
+    column: $table.estimatedCostPaise,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isCompleted => $composableBuilder(
+    column: $table.isCompleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$TripsTableFilterComposer get tripId {
+    final $$TripsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableFilterComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ItineraryItemsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ItineraryItemsTable> {
+  $$ItineraryItemsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get dayNumber => $composableBuilder(
+    column: $table.dayNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get location => $composableBuilder(
+    column: $table.location,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get timeSlot => $composableBuilder(
+    column: $table.timeSlot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get startTimeMinutes => $composableBuilder(
+    column: $table.startTimeMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get estimatedCostPaise => $composableBuilder(
+    column: $table.estimatedCostPaise,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isCompleted => $composableBuilder(
+    column: $table.isCompleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TripsTableOrderingComposer get tripId {
+    final $$TripsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableOrderingComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ItineraryItemsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ItineraryItemsTable> {
+  $$ItineraryItemsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get dayNumber =>
+      $composableBuilder(column: $table.dayNumber, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get location =>
+      $composableBuilder(column: $table.location, builder: (column) => column);
+
+  GeneratedColumn<String> get timeSlot =>
+      $composableBuilder(column: $table.timeSlot, builder: (column) => column);
+
+  GeneratedColumn<int> get startTimeMinutes => $composableBuilder(
+    column: $table.startTimeMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<int> get estimatedCostPaise => $composableBuilder(
+    column: $table.estimatedCostPaise,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<bool> get isCompleted => $composableBuilder(
+    column: $table.isCompleted,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$TripsTableAnnotationComposer get tripId {
+    final $$TripsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ItineraryItemsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ItineraryItemsTable,
+          ItineraryItem,
+          $$ItineraryItemsTableFilterComposer,
+          $$ItineraryItemsTableOrderingComposer,
+          $$ItineraryItemsTableAnnotationComposer,
+          $$ItineraryItemsTableCreateCompanionBuilder,
+          $$ItineraryItemsTableUpdateCompanionBuilder,
+          (ItineraryItem, $$ItineraryItemsTableReferences),
+          ItineraryItem,
+          PrefetchHooks Function({bool tripId})
+        > {
+  $$ItineraryItemsTableTableManager(
+    _$AppDatabase db,
+    $ItineraryItemsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ItineraryItemsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ItineraryItemsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ItineraryItemsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> tripId = const Value.absent(),
+                Value<int> dayNumber = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> location = const Value.absent(),
+                Value<String?> timeSlot = const Value.absent(),
+                Value<int?> startTimeMinutes = const Value.absent(),
+                Value<String> category = const Value.absent(),
+                Value<int> estimatedCostPaise = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<bool> isCompleted = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ItineraryItemsCompanion(
+                id: id,
+                tripId: tripId,
+                dayNumber: dayNumber,
+                title: title,
+                location: location,
+                timeSlot: timeSlot,
+                startTimeMinutes: startTimeMinutes,
+                category: category,
+                estimatedCostPaise: estimatedCostPaise,
+                notes: notes,
+                isCompleted: isCompleted,
+                sortOrder: sortOrder,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String tripId,
+                required int dayNumber,
+                required String title,
+                Value<String?> location = const Value.absent(),
+                Value<String?> timeSlot = const Value.absent(),
+                Value<int?> startTimeMinutes = const Value.absent(),
+                Value<String> category = const Value.absent(),
+                Value<int> estimatedCostPaise = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<bool> isCompleted = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ItineraryItemsCompanion.insert(
+                id: id,
+                tripId: tripId,
+                dayNumber: dayNumber,
+                title: title,
+                location: location,
+                timeSlot: timeSlot,
+                startTimeMinutes: startTimeMinutes,
+                category: category,
+                estimatedCostPaise: estimatedCostPaise,
+                notes: notes,
+                isCompleted: isCompleted,
+                sortOrder: sortOrder,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ItineraryItemsTable, ItineraryItem>(table),
+                  $$ItineraryItemsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({tripId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (tripId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.tripId,
+                        referencedTable: $$ItineraryItemsTableReferences
+                            ._tripIdTable(db),
+                        referencedColumn: $$ItineraryItemsTableReferences
+                            ._tripIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ItineraryItemsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ItineraryItemsTable,
+      ItineraryItem,
+      $$ItineraryItemsTableFilterComposer,
+      $$ItineraryItemsTableOrderingComposer,
+      $$ItineraryItemsTableAnnotationComposer,
+      $$ItineraryItemsTableCreateCompanionBuilder,
+      $$ItineraryItemsTableUpdateCompanionBuilder,
+      (ItineraryItem, $$ItineraryItemsTableReferences),
+      ItineraryItem,
+      PrefetchHooks Function({bool tripId})
+    >;
+typedef $$ExpenseCommentsTableCreateCompanionBuilder =
+    ExpenseCommentsCompanion Function({
+      required String id,
+      required String expenseId,
+      required String tripId,
+      Value<String?> authorTravelerId,
+      required String authorName,
+      required String body,
+      Value<bool> isDispute,
+      Value<bool> isResolved,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$ExpenseCommentsTableUpdateCompanionBuilder =
+    ExpenseCommentsCompanion Function({
+      Value<String> id,
+      Value<String> expenseId,
+      Value<String> tripId,
+      Value<String?> authorTravelerId,
+      Value<String> authorName,
+      Value<String> body,
+      Value<bool> isDispute,
+      Value<bool> isResolved,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$ExpenseCommentsTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $ExpenseCommentsTable, ExpenseComment> {
+  $$ExpenseCommentsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ExpensesTable _expenseIdTable(_$AppDatabase db) =>
+      db.expenses.createAlias('expense_comments__expense_id__expenses__id');
+
+  $$ExpensesTableProcessedTableManager get expenseId {
+    final $_column = $_itemColumn<String>('expense_id')!;
+
+    final manager = $$ExpensesTableTableManager(
+      $_db,
+      $_db.expenses,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_expenseIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $TripsTable _tripIdTable(_$AppDatabase db) =>
+      db.trips.createAlias('expense_comments__trip_id__trips__id');
+
+  $$TripsTableProcessedTableManager get tripId {
+    final $_column = $_itemColumn<String>('trip_id')!;
+
+    final manager = $$TripsTableTableManager(
+      $_db,
+      $_db.trips,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_tripIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ExpenseCommentsTableFilterComposer
+    extends Composer<_$AppDatabase, $ExpenseCommentsTable> {
+  $$ExpenseCommentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get authorTravelerId => $composableBuilder(
+    column: $table.authorTravelerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get authorName => $composableBuilder(
+    column: $table.authorName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDispute => $composableBuilder(
+    column: $table.isDispute,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isResolved => $composableBuilder(
+    column: $table.isResolved,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ExpensesTableFilterComposer get expenseId {
+    final $$ExpensesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.expenseId,
+      referencedTable: $db.expenses,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExpensesTableFilterComposer(
+            $db: $db,
+            $table: $db.expenses,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TripsTableFilterComposer get tripId {
+    final $$TripsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableFilterComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ExpenseCommentsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExpenseCommentsTable> {
+  $$ExpenseCommentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get authorTravelerId => $composableBuilder(
+    column: $table.authorTravelerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get authorName => $composableBuilder(
+    column: $table.authorName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDispute => $composableBuilder(
+    column: $table.isDispute,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isResolved => $composableBuilder(
+    column: $table.isResolved,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ExpensesTableOrderingComposer get expenseId {
+    final $$ExpensesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.expenseId,
+      referencedTable: $db.expenses,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExpensesTableOrderingComposer(
+            $db: $db,
+            $table: $db.expenses,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TripsTableOrderingComposer get tripId {
+    final $$TripsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableOrderingComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ExpenseCommentsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExpenseCommentsTable> {
+  $$ExpenseCommentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get authorTravelerId => $composableBuilder(
+    column: $table.authorTravelerId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get authorName => $composableBuilder(
+    column: $table.authorName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDispute =>
+      $composableBuilder(column: $table.isDispute, builder: (column) => column);
+
+  GeneratedColumn<bool> get isResolved => $composableBuilder(
+    column: $table.isResolved,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$ExpensesTableAnnotationComposer get expenseId {
+    final $$ExpensesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.expenseId,
+      referencedTable: $db.expenses,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExpensesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.expenses,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TripsTableAnnotationComposer get tripId {
+    final $$TripsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ExpenseCommentsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ExpenseCommentsTable,
+          ExpenseComment,
+          $$ExpenseCommentsTableFilterComposer,
+          $$ExpenseCommentsTableOrderingComposer,
+          $$ExpenseCommentsTableAnnotationComposer,
+          $$ExpenseCommentsTableCreateCompanionBuilder,
+          $$ExpenseCommentsTableUpdateCompanionBuilder,
+          (ExpenseComment, $$ExpenseCommentsTableReferences),
+          ExpenseComment,
+          PrefetchHooks Function({bool expenseId, bool tripId})
+        > {
+  $$ExpenseCommentsTableTableManager(
+    _$AppDatabase db,
+    $ExpenseCommentsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExpenseCommentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ExpenseCommentsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ExpenseCommentsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> expenseId = const Value.absent(),
+                Value<String> tripId = const Value.absent(),
+                Value<String?> authorTravelerId = const Value.absent(),
+                Value<String> authorName = const Value.absent(),
+                Value<String> body = const Value.absent(),
+                Value<bool> isDispute = const Value.absent(),
+                Value<bool> isResolved = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ExpenseCommentsCompanion(
+                id: id,
+                expenseId: expenseId,
+                tripId: tripId,
+                authorTravelerId: authorTravelerId,
+                authorName: authorName,
+                body: body,
+                isDispute: isDispute,
+                isResolved: isResolved,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String expenseId,
+                required String tripId,
+                Value<String?> authorTravelerId = const Value.absent(),
+                required String authorName,
+                required String body,
+                Value<bool> isDispute = const Value.absent(),
+                Value<bool> isResolved = const Value.absent(),
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ExpenseCommentsCompanion.insert(
+                id: id,
+                expenseId: expenseId,
+                tripId: tripId,
+                authorTravelerId: authorTravelerId,
+                authorName: authorName,
+                body: body,
+                isDispute: isDispute,
+                isResolved: isResolved,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ExpenseCommentsTable, ExpenseComment>(table),
+                  $$ExpenseCommentsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({expenseId = false, tripId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (expenseId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.expenseId,
+                        referencedTable: $$ExpenseCommentsTableReferences
+                            ._expenseIdTable(db),
+                        referencedColumn: $$ExpenseCommentsTableReferences
+                            ._expenseIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+                    if (tripId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.tripId,
+                        referencedTable: $$ExpenseCommentsTableReferences
+                            ._tripIdTable(db),
+                        referencedColumn: $$ExpenseCommentsTableReferences
+                            ._tripIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ExpenseCommentsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ExpenseCommentsTable,
+      ExpenseComment,
+      $$ExpenseCommentsTableFilterComposer,
+      $$ExpenseCommentsTableOrderingComposer,
+      $$ExpenseCommentsTableAnnotationComposer,
+      $$ExpenseCommentsTableCreateCompanionBuilder,
+      $$ExpenseCommentsTableUpdateCompanionBuilder,
+      (ExpenseComment, $$ExpenseCommentsTableReferences),
+      ExpenseComment,
+      PrefetchHooks Function({bool expenseId, bool tripId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4806,4 +7791,8 @@ class $AppDatabaseManager {
       $$ExpensesTableTableManager(_db, _db.expenses);
   $$ExpenseSplitsTableTableManager get expenseSplits =>
       $$ExpenseSplitsTableTableManager(_db, _db.expenseSplits);
+  $$ItineraryItemsTableTableManager get itineraryItems =>
+      $$ItineraryItemsTableTableManager(_db, _db.itineraryItems);
+  $$ExpenseCommentsTableTableManager get expenseComments =>
+      $$ExpenseCommentsTableTableManager(_db, _db.expenseComments);
 }
