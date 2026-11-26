@@ -28,23 +28,22 @@ final tripVelocityReportProvider =
         data: (expenses) {
           final predictor = ref.watch(spendingVelocityPredictorProvider);
 
-          // Calculate elapsed days from trip creation to today
+          // Calculate elapsed days from trip start/creation to today
           final now = DateTime.now();
-          final start = trip.createdAt;
+          final start = trip.startDate ?? trip.createdAt;
           final diffDays = now.difference(start).inDays + 1; // at least day 1
           final elapsedDays = diffDays.clamp(1, trip.days);
 
-          // Calculate total category budgets in paise
+          // Calculate total category budgets in minor units
           final categoryBudgetsPaise = <String, int>{};
           for (final entry in trip.categoryAllocations.entries) {
             final percent = entry.value;
-            // allocation in paise = totalBudgetPaise * percent / 100
             categoryBudgetsPaise[entry.key] = (trip.totalBudgetPaise * percent) ~/ 100;
           }
 
-          // Calculate category spent in paise
+          // Calculate confirmed non-settlement category spent
           final categorySpentPaise = <String, int>{};
-          for (final exp in expenses) {
+          for (final exp in expenses.where((e) => e.confirmed && e.source != 'settlement')) {
             categorySpentPaise[exp.category] =
                 (categorySpentPaise[exp.category] ?? 0) + exp.amountPaise;
           }
@@ -56,6 +55,7 @@ final tripVelocityReportProvider =
             elapsedDays: elapsedDays,
             categoryBudgetsPaise: categoryBudgetsPaise,
             categorySpentPaise: categorySpentPaise,
+            currencyCode: trip.currency,
           );
         },
         loading: () => null,
