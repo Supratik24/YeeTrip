@@ -165,6 +165,7 @@ class SplitCalculator {
   static String? validateExactSplit({
     required int totalPaise,
     required Map<String, int> exactSharesPaise,
+    String currencyCode = 'INR',
   }) {
     if (exactSharesPaise.values.any((s) => s < 0)) {
       return 'Individual shares cannot be negative';
@@ -173,9 +174,9 @@ class SplitCalculator {
     final sumPaise = exactSharesPaise.values.fold<int>(0, (s, v) => s + v);
     if (sumPaise != totalPaise) {
       final diff = (totalPaise - sumPaise).abs();
-      final diffFormatted = Money.formatRupees(diff);
-      final sumFormatted = Money.formatRupees(sumPaise);
-      final totalFormatted = Money.formatRupees(totalPaise);
+      final diffFormatted = Money.formatAmount(diff, currencyCode: currencyCode);
+      final sumFormatted = Money.formatAmount(sumPaise, currencyCode: currencyCode);
+      final totalFormatted = Money.formatAmount(totalPaise, currencyCode: currencyCode);
 
       if (sumPaise < totalPaise) {
         return 'Shares sum to $sumFormatted, which is $diffFormatted short of $totalFormatted';
