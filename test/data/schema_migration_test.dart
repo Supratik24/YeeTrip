@@ -4,10 +4,11 @@ import 'package:yeetrip/data/local/app_database.dart' hide Traveler;
 import 'package:yeetrip/data/repositories/expense_comment_repository.dart';
 import 'package:yeetrip/data/repositories/expense_repository.dart';
 import 'package:yeetrip/data/repositories/itinerary_repository.dart';
+import 'package:yeetrip/data/repositories/trip_photo_repository.dart';
 import 'package:yeetrip/data/repositories/trip_repository.dart';
 
 void main() {
-  test('AppDatabase upgrades cleanly from schema v1 to v4 preserving existing rows',
+  test('AppDatabase upgrades cleanly from schema v1 to v5 preserving existing rows',
       () async {
     final db = AppDatabase.forTesting(
       NativeDatabase.memory(
@@ -84,6 +85,7 @@ void main() {
     final expenseRepo = DriftExpenseRepository(db);
     final itineraryRepo = DriftItineraryRepository(db);
     final commentRepo = DriftExpenseCommentRepository(db);
+    final photoRepo = DriftTripPhotoRepository(db);
 
     final legacyTrip = await tripRepo.getTripById('old-trip');
     expect(legacyTrip, isNotNull);
@@ -93,7 +95,7 @@ void main() {
     expect(legacyExpenses.length, equals(1));
     expect(legacyExpenses.first.tags, isEmpty);
 
-    // Ensure v4 tables work on the upgraded database
+    // Ensure v4 & v5 tables work on the upgraded database
     await itineraryRepo.addItem(
       tripId: 'old-trip',
       dayNumber: 1,
@@ -105,11 +107,25 @@ void main() {
       authorName: 'Aarav',
       body: 'Upgraded Comment',
     );
+    final photoId = await photoRepo.addPhoto(
+      tripId: 'old-trip',
+      imagePath: '/tmp/goa_sunset.jpg',
+      caption: 'Sunset at Baga',
+      dayNumber: 2,
+      uploadedByName: 'Aarav',
+    );
 
     final updatedTrip = await tripRepo.getTripById('old-trip');
     final updatedExpenses = await expenseRepo.getExpenses('old-trip');
+    final photos = await photoRepo.getPhotos('old-trip');
     expect(updatedTrip!.itineraryTotalCount, equals(1));
+    expect(updatedTrip.photoCount, equals(1));
     expect(updatedExpenses.first.commentCount, equals(1));
+    expect(photos.single.id, equals(photoId));
+    expect(photos.single.caption, equals('Sunset at Baga'));
+
+    await photoRepo.deletePhoto(photoId);
+    expect((await photoRepo.getPhotos('old-trip')), isEmpty);
 
     await db.close();
   });
