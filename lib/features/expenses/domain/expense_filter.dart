@@ -29,12 +29,14 @@ class ExpenseFilterCriteria {
   final String searchQuery;
   final String category;
   final String paidByTravelerId;
+  final String tag;
   final ExpenseSortOption sortOption;
 
   const ExpenseFilterCriteria({
     this.searchQuery = '',
     this.category = 'All',
     this.paidByTravelerId = 'All',
+    this.tag = 'All',
     this.sortOption = ExpenseSortOption.dateDesc,
   });
 
@@ -42,18 +44,21 @@ class ExpenseFilterCriteria {
       searchQuery.trim().isNotEmpty ||
       category != 'All' ||
       paidByTravelerId != 'All' ||
+      tag != 'All' ||
       sortOption != ExpenseSortOption.dateDesc;
 
   ExpenseFilterCriteria copyWith({
     String? searchQuery,
     String? category,
     String? paidByTravelerId,
+    String? tag,
     ExpenseSortOption? sortOption,
   }) {
     return ExpenseFilterCriteria(
       searchQuery: searchQuery ?? this.searchQuery,
       category: category ?? this.category,
       paidByTravelerId: paidByTravelerId ?? this.paidByTravelerId,
+      tag: tag ?? this.tag,
       sortOption: sortOption ?? this.sortOption,
     );
   }
@@ -61,6 +66,7 @@ class ExpenseFilterCriteria {
   /// Filters and sorts the provided expenses according to the criteria.
   List<ExpenseWithSplits> apply(List<ExpenseWithSplits> expenses) {
     final query = searchQuery.trim().toLowerCase();
+    final cleanQuery = query.startsWith('#') ? query.substring(1) : query;
 
     final filtered = expenses.where((e) {
       // 1. Category check
@@ -73,11 +79,23 @@ class ExpenseFilterCriteria {
         return false;
       }
 
-      // 3. Search query check (matches description or category)
+      // 3. Tag check
+      if (tag != 'All') {
+        final target = tag.toLowerCase();
+        if (!e.tags.any((t) => t.toLowerCase() == target)) {
+          return false;
+        }
+      }
+
+      // 4. Search query check (matches description, category, notes, or tags)
       if (query.isNotEmpty) {
         final matchesDesc = e.description.toLowerCase().contains(query);
         final matchesCat = e.category.toLowerCase().contains(query);
-        if (!matchesDesc && !matchesCat) {
+        final matchesNotes =
+            e.notes != null && e.notes!.toLowerCase().contains(query);
+        final matchesTag = cleanQuery.isNotEmpty &&
+            e.tags.any((t) => t.toLowerCase().contains(cleanQuery));
+        if (!matchesDesc && !matchesCat && !matchesNotes && !matchesTag) {
           return false;
         }
       }
