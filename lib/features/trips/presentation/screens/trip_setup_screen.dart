@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_models.dart';
 import '../../../../core/auth/auth_providers.dart';
+import '../../../../core/constants/currencies.dart';
 import '../../../../core/money.dart';
+import '../../../../core/notifications/notification_providers.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../core/widgets/traveler_avatar.dart';
 import '../../../../data/providers.dart';
@@ -55,6 +57,7 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
   String? _coverPhotoPath;
   DateTime? _startDate;
   DateTime? _endDate;
+  String _selectedCurrency = 'INR';
   String? _travelersError;
   bool _isSubmitting = false;
 
@@ -263,7 +266,17 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
         endDate: _endDate,
         travelerPhones:
             _travelerPhones.isNotEmpty ? _travelerPhones : null,
+        currency: _selectedCurrency,
       );
+
+      if (_startDate != null) {
+        final created = await tripRepo.getTripById(tripId);
+        if (created != null) {
+          await ref
+              .read(tripNotificationServiceProvider)
+              .scheduleTripStartReminder(created);
+        }
+      }
 
       // Auto-link traveler profile and default UPI to the new trip
       final currentUser = ref.read(currentUserProvider);
@@ -407,6 +420,34 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
                 ),
                 const SizedBox(height: 16),
 
+                // Trip currency selector
+                DropdownButtonFormField<String>(
+                  key: const Key('trip_currency_dropdown'),
+                  initialValue: _selectedCurrency,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Trip currency',
+                    prefixIcon: Icon(Icons.currency_exchange, size: 20),
+                  ),
+                  items: TripCurrency.all
+                      .map(
+                        (c) => DropdownMenuItem<String>(
+                          value: c.code,
+                          child: Text(
+                            '${c.flag} ${c.code} (${c.symbol.trim()}) — ${c.name}',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() => _selectedCurrency = val);
+                    }
+                  },
+                ),
+                const SizedBox(height: 14),
+
                 // Total budget & Days in a responsive row
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -419,10 +460,11 @@ class _TripSetupScreenState extends ConsumerState<TripSetupScreen> {
                         focusNode: _budgetFocusNode,
                         textInputAction: TextInputAction.next,
                         onFieldSubmitted: (_) => _daysFocusNode.requestFocus(),
-                        decoration: const InputDecoration(
-                          labelText: 'Total budget (₹)',
+                        decoration: InputDecoration(
+                          labelText:
+                              'Total budget (${Money.symbolFor(_selectedCurrency).trim()})',
                           hintText: 'e.g. 50,000',
-                          prefixText: '₹ ',
+                          prefixText: '${Money.symbolFor(_selectedCurrency).trim()} ',
                         ),
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
