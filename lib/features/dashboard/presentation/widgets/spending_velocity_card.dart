@@ -53,6 +53,7 @@ class SpendingVelocityCard extends ConsumerWidget {
       elapsedDays: elapsedDays,
       categoryBudgetsPaise: categoryBudgetsPaise,
       categorySpentPaise: categorySpentPaise,
+      currencyCode: trip.currency,
     );
 
     final (badgeColor, badgeTextColor, riskLabel) = switch (report.riskLevel) {
@@ -140,7 +141,8 @@ class SpendingVelocityCard extends ConsumerWidget {
                 Expanded(
                   child: _MetricTile(
                     label: 'Daily Burn Rate',
-                    value: '${Money.formatRupees(report.dailyBurnRatePaise)}/day',
+                    value:
+                        '${Money.formatAmount(report.dailyBurnRatePaise, currencyCode: trip.currency)}/day',
                     subtext: 'Day ${report.elapsedDays} of ${report.totalTripDays}',
                   ),
                 ),
@@ -148,10 +150,13 @@ class SpendingVelocityCard extends ConsumerWidget {
                 Expanded(
                   child: _MetricTile(
                     label: 'Projected Total',
-                    value: Money.formatRupees(report.projectedTotalSpendPaise),
+                    value: Money.formatAmount(
+                      report.projectedTotalSpendPaise,
+                      currencyCode: trip.currency,
+                    ),
                     subtext: report.isDeficitProjected
-                        ? '${Money.formatRupees(report.projectedVariancePaise.abs())} Deficit'
-                        : '${Money.formatRupees(report.projectedVariancePaise.abs())} Savings',
+                        ? '${Money.formatAmount(report.projectedVariancePaise.abs(), currencyCode: trip.currency)} Deficit'
+                        : '${Money.formatAmount(report.projectedVariancePaise.abs(), currencyCode: trip.currency)} Savings',
                     isWarning: report.isDeficitProjected,
                   ),
                 ),
@@ -209,7 +214,7 @@ class SpendingVelocityCard extends ConsumerWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '${warning.categoryKey}: At ${Money.formatRupees(warning.dailyBurnRatePaise)}/day, budget will exhaust in ${warning.daysUntilExhausted.toStringAsFixed(1)} days (Overrun: ${Money.formatRupees(warning.projectedOverrunPaise)})',
+                          '${warning.categoryKey}: At ${Money.formatAmount(warning.dailyBurnRatePaise, currencyCode: trip.currency)}/day, budget will exhaust in ${warning.daysUntilExhausted.toStringAsFixed(1)} days (Overrun: ${Money.formatAmount(warning.projectedOverrunPaise, currencyCode: trip.currency)})',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
