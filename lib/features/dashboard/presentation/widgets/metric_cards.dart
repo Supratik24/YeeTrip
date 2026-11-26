@@ -122,12 +122,12 @@ class _MetricCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
                 const SizedBox(width: 4),
-                Icon(icon, size: 16, color: Colors.grey.shade500),
+                Icon(icon, size: 16, color: theme.colorScheme.onSurfaceVariant),
               ],
             ),
             const SizedBox(height: 6),
@@ -152,7 +152,7 @@ class _MetricCard extends StatelessWidget {
                 maxLines: 1,
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.grey.shade500,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
