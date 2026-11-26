@@ -108,7 +108,7 @@ class CategoryPieChart extends StatelessWidget {
                       '${cat.displayName} ($percent% • ${Money.formatAmount(catPaise, currencyCode: trip.currency)})',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade700,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
