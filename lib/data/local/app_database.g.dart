@@ -3903,6 +3903,534 @@ class ExpenseCommentsCompanion extends UpdateCompanion<ExpenseComment> {
   }
 }
 
+class $TripPhotosTable extends TripPhotos
+    with TableInfo<$TripPhotosTable, TripPhoto> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TripPhotosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tripIdMeta = const VerificationMeta('tripId');
+  @override
+  late final GeneratedColumn<String> tripId = GeneratedColumn<String>(
+    'trip_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES trips (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _imagePathMeta = const VerificationMeta(
+    'imagePath',
+  );
+  @override
+  late final GeneratedColumn<String> imagePath = GeneratedColumn<String>(
+    'image_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _captionMeta = const VerificationMeta(
+    'caption',
+  );
+  @override
+  late final GeneratedColumn<String> caption = GeneratedColumn<String>(
+    'caption',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _dayNumberMeta = const VerificationMeta(
+    'dayNumber',
+  );
+  @override
+  late final GeneratedColumn<int> dayNumber = GeneratedColumn<int>(
+    'day_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _uploadedByTravelerIdMeta =
+      const VerificationMeta('uploadedByTravelerId');
+  @override
+  late final GeneratedColumn<String> uploadedByTravelerId =
+      GeneratedColumn<String>(
+        'uploaded_by_traveler_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _uploadedByNameMeta = const VerificationMeta(
+    'uploadedByName',
+  );
+  @override
+  late final GeneratedColumn<String> uploadedByName = GeneratedColumn<String>(
+    'uploaded_by_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('You'),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    tripId,
+    imagePath,
+    caption,
+    dayNumber,
+    uploadedByTravelerId,
+    uploadedByName,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'trip_photos';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TripPhoto> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('trip_id')) {
+      context.handle(
+        _tripIdMeta,
+        tripId.isAcceptableOrUnknown(data['trip_id']!, _tripIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tripIdMeta);
+    }
+    if (data.containsKey('image_path')) {
+      context.handle(
+        _imagePathMeta,
+        imagePath.isAcceptableOrUnknown(data['image_path']!, _imagePathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_imagePathMeta);
+    }
+    if (data.containsKey('caption')) {
+      context.handle(
+        _captionMeta,
+        caption.isAcceptableOrUnknown(data['caption']!, _captionMeta),
+      );
+    }
+    if (data.containsKey('day_number')) {
+      context.handle(
+        _dayNumberMeta,
+        dayNumber.isAcceptableOrUnknown(data['day_number']!, _dayNumberMeta),
+      );
+    }
+    if (data.containsKey('uploaded_by_traveler_id')) {
+      context.handle(
+        _uploadedByTravelerIdMeta,
+        uploadedByTravelerId.isAcceptableOrUnknown(
+          data['uploaded_by_traveler_id']!,
+          _uploadedByTravelerIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('uploaded_by_name')) {
+      context.handle(
+        _uploadedByNameMeta,
+        uploadedByName.isAcceptableOrUnknown(
+          data['uploaded_by_name']!,
+          _uploadedByNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TripPhoto map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TripPhoto(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      tripId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}trip_id'],
+      )!,
+      imagePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}image_path'],
+      )!,
+      caption: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}caption'],
+      ),
+      dayNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}day_number'],
+      )!,
+      uploadedByTravelerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}uploaded_by_traveler_id'],
+      ),
+      uploadedByName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}uploaded_by_name'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $TripPhotosTable createAlias(String alias) {
+    return $TripPhotosTable(attachedDatabase, alias);
+  }
+}
+
+class TripPhoto extends DataClass implements Insertable<TripPhoto> {
+  final String id;
+  final String tripId;
+  final String imagePath;
+  final String? caption;
+  final int dayNumber;
+  final String? uploadedByTravelerId;
+  final String uploadedByName;
+  final DateTime createdAt;
+  const TripPhoto({
+    required this.id,
+    required this.tripId,
+    required this.imagePath,
+    this.caption,
+    required this.dayNumber,
+    this.uploadedByTravelerId,
+    required this.uploadedByName,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['trip_id'] = Variable<String>(tripId);
+    map['image_path'] = Variable<String>(imagePath);
+    if (!nullToAbsent || caption != null) {
+      map['caption'] = Variable<String>(caption);
+    }
+    map['day_number'] = Variable<int>(dayNumber);
+    if (!nullToAbsent || uploadedByTravelerId != null) {
+      map['uploaded_by_traveler_id'] = Variable<String>(uploadedByTravelerId);
+    }
+    map['uploaded_by_name'] = Variable<String>(uploadedByName);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  TripPhotosCompanion toCompanion(bool nullToAbsent) {
+    return TripPhotosCompanion(
+      id: Value(id),
+      tripId: Value(tripId),
+      imagePath: Value(imagePath),
+      caption: caption == null && nullToAbsent
+          ? const Value.absent()
+          : Value(caption),
+      dayNumber: Value(dayNumber),
+      uploadedByTravelerId: uploadedByTravelerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(uploadedByTravelerId),
+      uploadedByName: Value(uploadedByName),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory TripPhoto.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TripPhoto(
+      id: serializer.fromJson<String>(json['id']),
+      tripId: serializer.fromJson<String>(json['tripId']),
+      imagePath: serializer.fromJson<String>(json['imagePath']),
+      caption: serializer.fromJson<String?>(json['caption']),
+      dayNumber: serializer.fromJson<int>(json['dayNumber']),
+      uploadedByTravelerId: serializer.fromJson<String?>(
+        json['uploadedByTravelerId'],
+      ),
+      uploadedByName: serializer.fromJson<String>(json['uploadedByName']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'tripId': serializer.toJson<String>(tripId),
+      'imagePath': serializer.toJson<String>(imagePath),
+      'caption': serializer.toJson<String?>(caption),
+      'dayNumber': serializer.toJson<int>(dayNumber),
+      'uploadedByTravelerId': serializer.toJson<String?>(uploadedByTravelerId),
+      'uploadedByName': serializer.toJson<String>(uploadedByName),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  TripPhoto copyWith({
+    String? id,
+    String? tripId,
+    String? imagePath,
+    Value<String?> caption = const Value.absent(),
+    int? dayNumber,
+    Value<String?> uploadedByTravelerId = const Value.absent(),
+    String? uploadedByName,
+    DateTime? createdAt,
+  }) => TripPhoto(
+    id: id ?? this.id,
+    tripId: tripId ?? this.tripId,
+    imagePath: imagePath ?? this.imagePath,
+    caption: caption.present ? caption.value : this.caption,
+    dayNumber: dayNumber ?? this.dayNumber,
+    uploadedByTravelerId: uploadedByTravelerId.present
+        ? uploadedByTravelerId.value
+        : this.uploadedByTravelerId,
+    uploadedByName: uploadedByName ?? this.uploadedByName,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  TripPhoto copyWithCompanion(TripPhotosCompanion data) {
+    return TripPhoto(
+      id: data.id.present ? data.id.value : this.id,
+      tripId: data.tripId.present ? data.tripId.value : this.tripId,
+      imagePath: data.imagePath.present ? data.imagePath.value : this.imagePath,
+      caption: data.caption.present ? data.caption.value : this.caption,
+      dayNumber: data.dayNumber.present ? data.dayNumber.value : this.dayNumber,
+      uploadedByTravelerId: data.uploadedByTravelerId.present
+          ? data.uploadedByTravelerId.value
+          : this.uploadedByTravelerId,
+      uploadedByName: data.uploadedByName.present
+          ? data.uploadedByName.value
+          : this.uploadedByName,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TripPhoto(')
+          ..write('id: $id, ')
+          ..write('tripId: $tripId, ')
+          ..write('imagePath: $imagePath, ')
+          ..write('caption: $caption, ')
+          ..write('dayNumber: $dayNumber, ')
+          ..write('uploadedByTravelerId: $uploadedByTravelerId, ')
+          ..write('uploadedByName: $uploadedByName, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    tripId,
+    imagePath,
+    caption,
+    dayNumber,
+    uploadedByTravelerId,
+    uploadedByName,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TripPhoto &&
+          other.id == this.id &&
+          other.tripId == this.tripId &&
+          other.imagePath == this.imagePath &&
+          other.caption == this.caption &&
+          other.dayNumber == this.dayNumber &&
+          other.uploadedByTravelerId == this.uploadedByTravelerId &&
+          other.uploadedByName == this.uploadedByName &&
+          other.createdAt == this.createdAt);
+}
+
+class TripPhotosCompanion extends UpdateCompanion<TripPhoto> {
+  final Value<String> id;
+  final Value<String> tripId;
+  final Value<String> imagePath;
+  final Value<String?> caption;
+  final Value<int> dayNumber;
+  final Value<String?> uploadedByTravelerId;
+  final Value<String> uploadedByName;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const TripPhotosCompanion({
+    this.id = const Value.absent(),
+    this.tripId = const Value.absent(),
+    this.imagePath = const Value.absent(),
+    this.caption = const Value.absent(),
+    this.dayNumber = const Value.absent(),
+    this.uploadedByTravelerId = const Value.absent(),
+    this.uploadedByName = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TripPhotosCompanion.insert({
+    required String id,
+    required String tripId,
+    required String imagePath,
+    this.caption = const Value.absent(),
+    this.dayNumber = const Value.absent(),
+    this.uploadedByTravelerId = const Value.absent(),
+    this.uploadedByName = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       tripId = Value(tripId),
+       imagePath = Value(imagePath),
+       createdAt = Value(createdAt);
+  static Insertable<TripPhoto> custom({
+    Expression<String>? id,
+    Expression<String>? tripId,
+    Expression<String>? imagePath,
+    Expression<String>? caption,
+    Expression<int>? dayNumber,
+    Expression<String>? uploadedByTravelerId,
+    Expression<String>? uploadedByName,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (tripId != null) 'trip_id': tripId,
+      if (imagePath != null) 'image_path': imagePath,
+      if (caption != null) 'caption': caption,
+      if (dayNumber != null) 'day_number': dayNumber,
+      if (uploadedByTravelerId != null)
+        'uploaded_by_traveler_id': uploadedByTravelerId,
+      if (uploadedByName != null) 'uploaded_by_name': uploadedByName,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TripPhotosCompanion copyWith({
+    Value<String>? id,
+    Value<String>? tripId,
+    Value<String>? imagePath,
+    Value<String?>? caption,
+    Value<int>? dayNumber,
+    Value<String?>? uploadedByTravelerId,
+    Value<String>? uploadedByName,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return TripPhotosCompanion(
+      id: id ?? this.id,
+      tripId: tripId ?? this.tripId,
+      imagePath: imagePath ?? this.imagePath,
+      caption: caption ?? this.caption,
+      dayNumber: dayNumber ?? this.dayNumber,
+      uploadedByTravelerId: uploadedByTravelerId ?? this.uploadedByTravelerId,
+      uploadedByName: uploadedByName ?? this.uploadedByName,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (tripId.present) {
+      map['trip_id'] = Variable<String>(tripId.value);
+    }
+    if (imagePath.present) {
+      map['image_path'] = Variable<String>(imagePath.value);
+    }
+    if (caption.present) {
+      map['caption'] = Variable<String>(caption.value);
+    }
+    if (dayNumber.present) {
+      map['day_number'] = Variable<int>(dayNumber.value);
+    }
+    if (uploadedByTravelerId.present) {
+      map['uploaded_by_traveler_id'] = Variable<String>(
+        uploadedByTravelerId.value,
+      );
+    }
+    if (uploadedByName.present) {
+      map['uploaded_by_name'] = Variable<String>(uploadedByName.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TripPhotosCompanion(')
+          ..write('id: $id, ')
+          ..write('tripId: $tripId, ')
+          ..write('imagePath: $imagePath, ')
+          ..write('caption: $caption, ')
+          ..write('dayNumber: $dayNumber, ')
+          ..write('uploadedByTravelerId: $uploadedByTravelerId, ')
+          ..write('uploadedByName: $uploadedByName, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3916,6 +4444,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ExpenseCommentsTable expenseComments = $ExpenseCommentsTable(
     this,
   );
+  late final $TripPhotosTable tripPhotos = $TripPhotosTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3928,6 +4457,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     expenseSplits,
     itineraryItems,
     expenseComments,
+    tripPhotos,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -3993,6 +4523,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('expense_comments', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'trips',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('trip_photos', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -4124,6 +4661,24 @@ final class $$TripsTableReferences
     final cache = $_typedResult.readTableOrNull(
       _expenseCommentsRefsTable($_db),
     );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$TripPhotosTable, List<TripPhoto>>
+  _tripPhotosRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.tripPhotos,
+    aliasName: 'trips__id__trip_photos__trip_id',
+  );
+
+  $$TripPhotosTableProcessedTableManager get tripPhotosRefs {
+    final manager = $$TripPhotosTableTableManager(
+      $_db,
+      $_db.tripPhotos,
+    ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_tripPhotosRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -4309,6 +4864,31 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
           }) => $$ExpenseCommentsTableFilterComposer(
             $db: $db,
             $table: $db.expenseComments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> tripPhotosRefs(
+    Expression<bool> Function($$TripPhotosTableFilterComposer f) f,
+  ) {
+    final $$TripPhotosTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.tripPhotos,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripPhotosTableFilterComposer(
+            $db: $db,
+            $table: $db.tripPhotos,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4557,6 +5137,31 @@ class $$TripsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> tripPhotosRefs<T extends Object>(
+    Expression<T> Function($$TripPhotosTableAnnotationComposer a) f,
+  ) {
+    final $$TripPhotosTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.tripPhotos,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripPhotosTableAnnotationComposer(
+            $db: $db,
+            $table: $db.tripPhotos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$TripsTableTableManager
@@ -4578,6 +5183,7 @@ class $$TripsTableTableManager
             bool expensesRefs,
             bool itineraryItemsRefs,
             bool expenseCommentsRefs,
+            bool tripPhotosRefs,
           })
         > {
   $$TripsTableTableManager(_$AppDatabase db, $TripsTable table)
@@ -4662,6 +5268,7 @@ class $$TripsTableTableManager
                 expensesRefs = false,
                 itineraryItemsRefs = false,
                 expenseCommentsRefs = false,
+                tripPhotosRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -4671,6 +5278,7 @@ class $$TripsTableTableManager
                     if (expensesRefs) db.expenses,
                     if (itineraryItemsRefs) db.itineraryItems,
                     if (expenseCommentsRefs) db.expenseComments,
+                    if (tripPhotosRefs) db.tripPhotos,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -4775,6 +5383,26 @@ class $$TripsTableTableManager
                           referencedColumn: 'trip_id',
                           typedResults: items,
                         ),
+                      if (tripPhotosRefs)
+                        await $_getPrefetchedDataByColumns<
+                          Trip,
+                          $TripsTable,
+                          TripPhoto,
+                          $TripPhotosTable
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TripsTableReferences
+                              ._tripPhotosRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TripsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).tripPhotosRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'trip_id',
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -4801,6 +5429,7 @@ typedef $$TripsTableProcessedTableManager =
         bool expensesRefs,
         bool itineraryItemsRefs,
         bool expenseCommentsRefs,
+        bool tripPhotosRefs,
       })
     >;
 typedef $$TravelersTableCreateCompanionBuilder = TravelersCompanion Function({
@@ -7777,6 +8406,380 @@ typedef $$ExpenseCommentsTableProcessedTableManager =
       ExpenseComment,
       PrefetchHooks Function({bool expenseId, bool tripId})
     >;
+typedef $$TripPhotosTableCreateCompanionBuilder = TripPhotosCompanion Function({
+  required String id,
+  required String tripId,
+  required String imagePath,
+  Value<String?> caption,
+  Value<int> dayNumber,
+  Value<String?> uploadedByTravelerId,
+  Value<String> uploadedByName,
+  required DateTime createdAt,
+  Value<int> rowid,
+});
+typedef $$TripPhotosTableUpdateCompanionBuilder = TripPhotosCompanion Function({
+  Value<String> id,
+  Value<String> tripId,
+  Value<String> imagePath,
+  Value<String?> caption,
+  Value<int> dayNumber,
+  Value<String?> uploadedByTravelerId,
+  Value<String> uploadedByName,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+
+final class $$TripPhotosTableReferences
+    extends BaseReferences<_$AppDatabase, $TripPhotosTable, TripPhoto> {
+  $$TripPhotosTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $TripsTable _tripIdTable(_$AppDatabase db) =>
+      db.trips.createAlias('trip_photos__trip_id__trips__id');
+
+  $$TripsTableProcessedTableManager get tripId {
+    final $_column = $_itemColumn<String>('trip_id')!;
+
+    final manager = $$TripsTableTableManager(
+      $_db,
+      $_db.trips,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_tripIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$TripPhotosTableFilterComposer
+    extends Composer<_$AppDatabase, $TripPhotosTable> {
+  $$TripPhotosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get imagePath => $composableBuilder(
+    column: $table.imagePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get caption => $composableBuilder(
+    column: $table.caption,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get dayNumber => $composableBuilder(
+    column: $table.dayNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get uploadedByTravelerId => $composableBuilder(
+    column: $table.uploadedByTravelerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get uploadedByName => $composableBuilder(
+    column: $table.uploadedByName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$TripsTableFilterComposer get tripId {
+    final $$TripsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableFilterComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TripPhotosTableOrderingComposer
+    extends Composer<_$AppDatabase, $TripPhotosTable> {
+  $$TripPhotosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get imagePath => $composableBuilder(
+    column: $table.imagePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get caption => $composableBuilder(
+    column: $table.caption,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get dayNumber => $composableBuilder(
+    column: $table.dayNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get uploadedByTravelerId => $composableBuilder(
+    column: $table.uploadedByTravelerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get uploadedByName => $composableBuilder(
+    column: $table.uploadedByName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TripsTableOrderingComposer get tripId {
+    final $$TripsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableOrderingComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TripPhotosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TripPhotosTable> {
+  $$TripPhotosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get imagePath =>
+      $composableBuilder(column: $table.imagePath, builder: (column) => column);
+
+  GeneratedColumn<String> get caption =>
+      $composableBuilder(column: $table.caption, builder: (column) => column);
+
+  GeneratedColumn<int> get dayNumber =>
+      $composableBuilder(column: $table.dayNumber, builder: (column) => column);
+
+  GeneratedColumn<String> get uploadedByTravelerId => $composableBuilder(
+    column: $table.uploadedByTravelerId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get uploadedByName => $composableBuilder(
+    column: $table.uploadedByName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$TripsTableAnnotationComposer get tripId {
+    final $$TripsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TripPhotosTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TripPhotosTable,
+          TripPhoto,
+          $$TripPhotosTableFilterComposer,
+          $$TripPhotosTableOrderingComposer,
+          $$TripPhotosTableAnnotationComposer,
+          $$TripPhotosTableCreateCompanionBuilder,
+          $$TripPhotosTableUpdateCompanionBuilder,
+          (TripPhoto, $$TripPhotosTableReferences),
+          TripPhoto,
+          PrefetchHooks Function({bool tripId})
+        > {
+  $$TripPhotosTableTableManager(_$AppDatabase db, $TripPhotosTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TripPhotosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TripPhotosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TripPhotosTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> tripId = const Value.absent(),
+                Value<String> imagePath = const Value.absent(),
+                Value<String?> caption = const Value.absent(),
+                Value<int> dayNumber = const Value.absent(),
+                Value<String?> uploadedByTravelerId = const Value.absent(),
+                Value<String> uploadedByName = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TripPhotosCompanion(
+                id: id,
+                tripId: tripId,
+                imagePath: imagePath,
+                caption: caption,
+                dayNumber: dayNumber,
+                uploadedByTravelerId: uploadedByTravelerId,
+                uploadedByName: uploadedByName,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String tripId,
+                required String imagePath,
+                Value<String?> caption = const Value.absent(),
+                Value<int> dayNumber = const Value.absent(),
+                Value<String?> uploadedByTravelerId = const Value.absent(),
+                Value<String> uploadedByName = const Value.absent(),
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => TripPhotosCompanion.insert(
+                id: id,
+                tripId: tripId,
+                imagePath: imagePath,
+                caption: caption,
+                dayNumber: dayNumber,
+                uploadedByTravelerId: uploadedByTravelerId,
+                uploadedByName: uploadedByName,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$TripPhotosTable, TripPhoto>(table),
+                  $$TripPhotosTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({tripId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (tripId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.tripId,
+                        referencedTable: $$TripPhotosTableReferences
+                            ._tripIdTable(db),
+                        referencedColumn: $$TripPhotosTableReferences
+                            ._tripIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TripPhotosTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TripPhotosTable,
+      TripPhoto,
+      $$TripPhotosTableFilterComposer,
+      $$TripPhotosTableOrderingComposer,
+      $$TripPhotosTableAnnotationComposer,
+      $$TripPhotosTableCreateCompanionBuilder,
+      $$TripPhotosTableUpdateCompanionBuilder,
+      (TripPhoto, $$TripPhotosTableReferences),
+      TripPhoto,
+      PrefetchHooks Function({bool tripId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7795,4 +8798,6 @@ class $AppDatabaseManager {
       $$ItineraryItemsTableTableManager(_db, _db.itineraryItems);
   $$ExpenseCommentsTableTableManager get expenseComments =>
       $$ExpenseCommentsTableTableManager(_db, _db.expenseComments);
+  $$TripPhotosTableTableManager get tripPhotos =>
+      $$TripPhotosTableTableManager(_db, _db.tripPhotos);
 }
