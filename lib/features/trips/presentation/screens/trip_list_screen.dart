@@ -9,6 +9,7 @@ import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/money.dart';
 import '../../../../core/notifications/notification_providers.dart';
 import '../../../../core/notifications/notifications_sheet.dart';
+import '../../../../core/theme_provider.dart';
 import '../../../../core/widgets/responsive_center.dart';
 import '../../../../core/widgets/traveler_avatar.dart';
 import '../../../../data/providers.dart';
@@ -125,12 +126,26 @@ class TripListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tripsAsync = ref.watch(tripsStreamProvider);
     final notifications = ref.watch(globalNotificationsProvider);
+    final themeMode = ref.watch(appThemeModeProvider);
     final theme = Theme.of(context);
+
+    final (themeIcon, themeTooltip) = switch (themeMode) {
+      ThemeMode.light => (Icons.light_mode_outlined, 'Theme: Light (tap for Dark)'),
+      ThemeMode.dark => (Icons.dark_mode_outlined, 'Theme: Dark (tap for System)'),
+      ThemeMode.system => (Icons.brightness_auto_outlined, 'Theme: System (tap for Light)'),
+    };
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('YeeTrip'),
         actions: [
+          IconButton(
+            key: const Key('theme_toggle_btn'),
+            tooltip: themeTooltip,
+            icon: Icon(themeIcon),
+            onPressed: () =>
+                ref.read(appThemeModeProvider.notifier).cycleThemeMode(),
+          ),
           IconButton(
             key: const Key('open_notifications_btn'),
             tooltip: 'Notifications & Reminders',
