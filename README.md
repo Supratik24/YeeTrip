@@ -1,4 +1,4 @@
-# YeeTrip ✈️🇮🇳
+# YeeTrip
 
 **YeeTrip** is an offline-first group trip budget and expense-splitting mobile app crafted specifically for Indian travelers and domestic/international group travel. Everything works natively offline with zero network dependency required, while offering optional cloud sync, on-device OCR bill parsing, ML spending predictions, and user account management.
 
